@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAdminStore } from '@/store/adminStore';
 import { formatCurrency } from '@/lib/utils';
 import { proxyImageUrl, handleImageError } from '@/lib/imageProxy';
@@ -39,7 +39,7 @@ import {
   Gift,
   SlidersHorizontal,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AT_DEPARTMENTS, getDepartmentCount } from '@/data/departments';
 
 type SortKey = 'name' | 'price' | 'stock' | 'brand' | 'category';
@@ -64,7 +64,13 @@ export function AdminProducts() {
   const { products, categories, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, clearAllProducts } = useAdminStore();
 
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+
+  // Sync with top-bar quick search (?search=...) on every navigation
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '');
+  }, [searchParams]);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'out'>('all');
   const [sortKey, setSortKey] = useState<SortKey>('name');

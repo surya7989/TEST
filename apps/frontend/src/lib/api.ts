@@ -240,7 +240,21 @@ export async function getCustomerProfile(): Promise<{ success: boolean; user: an
 // ============================================================================
 
 export async function getProducts(): Promise<{ products: any[] }> {
-  return apiRequest<{ products: any[] }>('/products');
+  // The full catalogue is 1200+ products (>5MB in one response). Requesting it
+  // unbounded exhausts PHP memory on shared hosting and returns HTTP 500, so
+  // page through ?limit=&offset= (supported by GET /api/products) instead.
+  const PAGE = 400;
+  const all: any[] = [];
+  let offset = 0;
+  for (;;) {
+    const res = await apiRequest<{ products: any[] }>(`/products?limit=${PAGE}&offset=${offset}`);
+    const batch = res?.products ?? [];
+    all.push(...batch);
+    if (batch.length < PAGE) break;
+    offset += PAGE;
+    if (offset > 20000) break; // safety cap
+  }
+  return { products: all };
 }
 
 export async function getProduct(id: string): Promise<{ product: any }> {

@@ -30,7 +30,7 @@ import {
   ExternalLink,
   RefreshCw,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 type SortKey = 'name' | 'totalSpent' | 'ordersCount' | 'joinedAt';
 type SortDir = 'asc' | 'desc';
@@ -40,7 +40,13 @@ export function AdminCustomers() {
   const { customers, orders, addCustomer, updateCustomer, deleteCustomer, fetchAllData } = useAdminStore();
 
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+
+  // Sync with top-bar quick search (?search=...) on every navigation
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '');
+  }, [searchParams]);
   const [ndisFilter, setNdisFilter] = useState<'all' | 'ndis' | 'self' | 'high-value'>('all');
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdminStore, type OrderStatus } from '@/store/adminStore';
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -25,7 +25,7 @@ import {
   ChevronRight,
   ExternalLink,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; badgeColor: string; icon: React.ElementType }> = {
   pending: { label: 'Pending', color: 'bg-amber-50 text-amber-700 border border-amber-200', badgeColor: 'bg-amber-100 text-amber-800', icon: Clock },
@@ -39,13 +39,19 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; badgeCol
 export function AdminOrders() {
   const { orders, updateOrderStatus, updateOrderTracking } = useAdminStore();
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
-  const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [trackingInput, setTrackingInput] = useState('');
   const [isCopied, setIsCopied] = useState(false);
+
+  // Sync with top-bar quick search (?search=...) on every navigation
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '');
+  }, [searchParams]);
 
   const filteredOrders = orders.filter((o) => {
     const s = (search || '').toLowerCase();
@@ -206,7 +212,7 @@ export function AdminOrders() {
                   {buyItems.map((item, idx) => {
                     let extras = (item as any).selectedExtras;
                     if (!extras && typeof (item as any).selected_extras === 'string' && (item as any).selected_extras.startsWith('[')) {
-                      try { extras = JSON.parse((item as any).selected_extras); } catch {}
+                      try { extras = JSON.parse((item as any).selected_extras); } catch { /* keep raw value on parse failure */ }
                     }
                     const hasExtras = Array.isArray(extras) && extras.length > 0;
 
@@ -271,7 +277,7 @@ export function AdminOrders() {
                     const returnDueDate = getReturnDate(activeOrder.createdAt, weeks);
                     let extras = (item as any).selectedExtras;
                     if (!extras && typeof (item as any).selected_extras === 'string' && (item as any).selected_extras.startsWith('[')) {
-                      try { extras = JSON.parse((item as any).selected_extras); } catch {}
+                      try { extras = JSON.parse((item as any).selected_extras); } catch { /* keep raw value on parse failure */ }
                     }
                     const hasExtras = Array.isArray(extras) && extras.length > 0;
 

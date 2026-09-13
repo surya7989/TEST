@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAdminStore, type QuoteStatus } from '@/store/adminStore';
 import { formatCurrency } from '@/lib/utils';
@@ -21,6 +21,11 @@ export function AdminQuotes() {
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
+
+  // Sync with top-bar quick search (?search=...) on every navigation
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '');
+  }, [searchParams]);
 
   const filteredQuotes = ndisQuotes.filter((q) => {
     const s = (search || '').toLowerCase();
@@ -265,7 +270,7 @@ export function AdminQuotes() {
                 {quote.items.map((item, idx) => {
                   let extras = (item as any).selectedExtras;
                   if (!extras && typeof (item as any).selected_extras === 'string' && (item as any).selected_extras.startsWith('[')) {
-                    try { extras = JSON.parse((item as any).selected_extras); } catch {}
+                    try { extras = JSON.parse((item as any).selected_extras); } catch { /* keep raw value on parse failure */ }
                   }
                   const hasExtras = Array.isArray(extras) && extras.length > 0;
 

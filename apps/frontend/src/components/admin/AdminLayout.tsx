@@ -16,6 +16,9 @@ import {
   Truck,
   Tag,
   Star,
+  FileText,
+  Mail,
+  FileSpreadsheet,
   MessageSquare,
   Clock,
   BarChart3,
@@ -41,6 +44,7 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Executive Dashboard', icon: LayoutDashboard, path: '/at', description: 'Central command, live metrics & recent activity' },
       { label: 'Analytics & Reports', icon: BarChart3, path: '/at/analytics', description: 'Financial trends, ATO tax reports & stock health' },
+      { label: 'Reports', icon: FileSpreadsheet, path: '/at/reports', description: 'Saved reports & export history' },
     ],
   },
   {
@@ -54,6 +58,7 @@ export const navSections: NavSection[] = [
     title: 'Orders & Fulfilment',
     items: [
       { label: 'Orders Queue', icon: ShoppingCart, path: '/at/orders', description: 'Customer orders, dispatch status & parcel tracking' },
+      { label: 'NDIS Quotes', icon: FileText, path: '/at/quotes', description: 'NDIS participant quotations, approvals & conversions' },
       { label: 'Invoices & Documents', icon: Receipt, path: '/at/invoices', description: 'ATO tax invoices, PDF generator, email dispatch & NDIS quotes' },
       { label: 'Equipment Hire Fleet', icon: Clock, path: '/at/rentals', description: 'Clinical rental equipment schedules & returns' },
       { label: 'Shipping & Freight', icon: Truck, path: '/at/shipping', description: 'Australian shipping zones & courier rates' },
@@ -64,6 +69,7 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Customer Directory', icon: Users, path: '/at/customers', description: 'Client CRM, NDIS participants & lifetime spend' },
       { label: 'Inquiries & Leads', icon: MessageSquare, path: '/at/inquiries', description: 'Contact requests, trial bookings & clinical triage' },
+      { label: 'Email Templates', icon: Mail, path: '/at/emails', description: 'Transactional email templates & dispatch log' },
       { label: 'Reviews & Ratings', icon: Star, path: '/at/reviews', description: 'Product reviews moderation & verified buyer badges' },
     ],
   },
