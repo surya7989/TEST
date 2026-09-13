@@ -25,6 +25,7 @@ import {
   getSettings as apiGetSettings,
   saveSettings as apiSaveSettings,
   saveSmtpConfig as apiSaveSmtpConfig,
+  clearAllProductsApi,
   clearAdminToken,
   getAdminToken,
 } from '@/lib/api';
@@ -1319,7 +1320,7 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
 
       clearAllProducts: async () => {
         try {
-          await fetch('/api/products/clear-all', { method: 'DELETE' });
+          await clearAllProductsApi();
         } catch (e) {
           console.warn('Backend clear all products notice:', e);
         }

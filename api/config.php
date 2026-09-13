@@ -71,8 +71,16 @@ if ($devCors === 'true') {
     ]);
 }
 
-// Strict Origin Matching (No substring wildcards)
-if ($origin !== '' && in_array($origin, $allowed_origins, true)) {
+// Strict Origin Matching (allow production domains, configured client url, and any atspecialists.com.au subdomain)
+$isAllowedOrigin = false;
+if ($origin !== '') {
+    if (in_array($origin, $allowed_origins, true)) {
+        $isAllowedOrigin = true;
+    } elseif (preg_match('#^https?://([a-z0-9-]+\.)*atspecialists\.com\.au(:[0-9]+)?$#i', $origin)) {
+        $isAllowedOrigin = true;
+    }
+}
+if ($isAllowedOrigin) {
     header("Access-Control-Allow-Origin: " . $origin);
     header("Vary: Origin");
 }
@@ -323,8 +331,15 @@ function throttle(string $action, int $maxAttempts = 5, int $windowSeconds = 60)
 function publicBaseUrl(): string {
     global $envVars;
     $url = rtrim((string)($envVars['CLIENT_URL'] ?? $_ENV['CLIENT_URL'] ?? ''), '/');
-    if ($url !== '' && preg_match('#^https://([a-z0-9-]+\.)*atspecialists\.com\.au$#i', $url)) {
+    if ($url !== '' && preg_match('#^https?://([a-z0-9-]+\.)*atspecialists\.com\.au$#i', $url)) {
         return $url;
+    }
+    if (!empty($_SERVER['HTTP_HOST'])) {
+        $host = strtolower($_SERVER['HTTP_HOST']);
+        if (preg_match('#^([a-z0-9-]+\.)*atspecialists\.com\.au$#i', $host)) {
+            $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            return "{$proto}://{$host}";
+        }
     }
     return 'https://atspecialists.com.au';
 }

@@ -267,6 +267,12 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; mes
   });
 }
 
+export async function clearAllProductsApi(): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>('/products/clear-all', {
+    method: 'DELETE',
+  });
+}
+
 // ============================================================================
 // 3. CART & PRICING API
 // ============================================================================
@@ -435,6 +441,13 @@ export interface PayPalClientConfig {
 
 export async function getPayPalClientId(): Promise<PayPalClientConfig> {
   return apiRequest<PayPalClientConfig>('/paypal/client-id');
+}
+
+export async function savePayPalSettings(data: { clientId: string; secretKey?: string; mode: string }): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>('/paypal/settings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function createPayPalOrder(data: {

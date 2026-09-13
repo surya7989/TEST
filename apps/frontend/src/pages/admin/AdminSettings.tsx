@@ -40,6 +40,7 @@ import {
   saveSmtpConfig,
   verifySmtp,
   sendTestEmail,
+  savePayPalSettings,
   type SmtpConfigData,
 } from '@/lib/api';
 
@@ -221,17 +222,13 @@ export function AdminSettings() {
     
     // Sync with backend
     try {
-      await fetch('/api/paypal/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: localPaymentSettings.paypalClientId,
-          secretKey: localPaymentSettings.paypalSecretKey,
-          mode: localPaymentSettings.paypalMode,
-        }),
+      await savePayPalSettings({
+        clientId: localPaymentSettings.paypalClientId,
+        secretKey: localPaymentSettings.paypalSecretKey,
+        mode: localPaymentSettings.paypalMode,
       });
-    } catch {
-      // Backend may be offline in dev
+    } catch (err) {
+      console.warn('Backend PayPal settings sync notice:', err);
     }
 
     setSaveNotice(true);

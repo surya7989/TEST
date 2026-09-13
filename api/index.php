@@ -50,7 +50,7 @@ function tableHasColumn(PDO $db, string $table, string $column): bool {
 
 // 0. ROOT API DISCOVERY & HEALTH CHECK (`GET /api` or `GET /api/health`)
 if ($endpoint === '' || $endpoint === 'health') {
-    global $pdo;
+    global $pdo, $paypal_client_id, $paypal_secret, $paypal_mode, $currency;
     $dbConnected = false;
     try {
         if ($pdo) {
@@ -59,6 +59,19 @@ if ($endpoint === '' || $endpoint === 'health') {
         }
     } catch (Exception $e) {
         $dbConnected = false;
+    }
+
+    if ($endpoint === 'health') {
+        sendJson([
+            'status' => $dbConnected ? 'ok' : 'degraded',
+            'service' => 'AT Specialists Production PHP API (PHP 8 + MySQL)',
+            'version' => '2.1.0',
+            'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
+            'database' => $dbConnected ? 'connected (MySQL/MariaDB)' : 'unavailable',
+            'paypalConfigured' => !empty($paypal_client_id) && !empty($paypal_secret),
+            'paypalMode' => $paypal_mode,
+            'currency' => $currency
+        ]);
     }
 
     sendJson([
@@ -554,24 +567,8 @@ function calculateAuthoritativeCart(array $rawItems, string $deliveryMethod = 's
         'deliveryMethod' => $deliveryMethod
     ];
 }
-
 // ============================================================================
-// 1. HEALTH CHECK (`GET /api/health`)
-// ============================================================================
-if ($endpoint === 'health' || $endpoint === '') {
-    sendJson([
-        'status' => 'ok',
-        'service' => 'AT Specialists Production PHP API (PHP 8 + MySQL)',
-        'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
-        'database' => $pdo ? 'connected (MySQL/MariaDB)' : 'unavailable',
-        'paypalConfigured' => !empty($paypal_client_id) && !empty($paypal_secret),
-        'paypalMode' => $paypal_mode,
-        'currency' => $currency
-    ]);
-}
-
-// ============================================================================
-// 2. AUTHENTICATION ROUTES (`/api/auth/*`)
+// 1. AUTHENTICATION ROUTES (`/api/auth/*`)
 // ============================================================================
 if ($endpoint === 'auth') {
     $sub = strtolower($segments[1] ?? '');
@@ -968,27 +965,41 @@ if ($endpoint === 'auth') {
 // 3. PRODUCTS ROUTES (`/api/products/*`)
 // ============================================================================
 function formatProductRow(array $row): array {
-    $categories = !empty($row['categories_json']) ? json_decode((string)$row['categories_json'], true) : null;
+    $categories = !empty($row['categories_json']) 
+        ? json_decode((string)$row['categories_json'], true) 
+        : ($row['categories'] ?? null);
     if (!is_array($categories) || empty($categories)) {
         $categories = [(string)($row['category'] ?? 'General')];
     }
 
-    $galleryImages = !empty($row['gallery_images_json']) ? json_decode((string)$row['gallery_images_json'], true) : null;
+    $galleryImages = !empty($row['gallery_images_json']) 
+        ? json_decode((string)$row['gallery_images_json'], true) 
+        : ($row['galleryImages'] ?? ($row['images'] ?? null));
     if (!is_array($galleryImages) || empty($galleryImages)) {
         $galleryImages = !empty($row['image']) ? [(string)$row['image']] : [];
     }
 
-    $attributes = !empty($row['attributes_json']) ? json_decode((string)$row['attributes_json'], true) : [];
-    $variants = !empty($row['variants_json']) ? json_decode((string)$row['variants_json'], true) : [];
-    $features = !empty($row['features_json']) ? json_decode((string)$row['features_json'], true) : [];
-    $specifications = !empty($row['specs_json']) ? json_decode((string)$row['specs_json'], true) : [];
+    $attributes = !empty($row['attributes_json']) 
+        ? json_decode((string)$row['attributes_json'], true) 
+        : ($row['attributes'] ?? []);
+    $variants = !empty($row['variants_json']) 
+        ? json_decode((string)$row['variants_json'], true) 
+        : ($row['variants'] ?? []);
+    $features = !empty($row['features_json']) 
+        ? json_decode((string)$row['features_json'], true) 
+        : ($row['features'] ?? []);
+    $specifications = !empty($row['specs_json']) 
+        ? json_decode((string)$row['specs_json'], true) 
+        : ($row['specifications'] ?? ($row['specs'] ?? []));
 
-    $price = floatval($row['price'] ?? 0);
-    $hirePrice = floatval($row['hire_price'] ?? 0);
+    $price = floatval($row['price'] ?? ($row['buyPrice'] ?? 0));
+    $hirePrice = floatval($row['hire_price'] ?? ($row['hirePrice'] ?? 0));
     $id = (string)($row['id'] ?? '');
     $sku = (string)($row['sku'] ?? $id);
-    $desc = (string)($row['description'] ?? '');
-    $shortDesc = (string)($row['short_description'] ?? ($desc !== '' ? substr($desc, 0, 150) : ''));
+    $desc = (string)($row['description'] ?? ($row['fullDescription'] ?? ''));
+    $shortDesc = (string)($row['short_description'] ?? ($row['shortDescription'] ?? ($desc !== '' ? substr($desc, 0, 150) : '')));
+    $isActive = isset($row['is_active']) ? (intval($row['is_active']) !== 0) : (isset($row['available']) ? (bool)$row['available'] : true);
+    $isFeatured = !empty($row['is_featured']) || !empty($row['featured']);
 
     return [
         'id' => $id,
@@ -1006,33 +1017,33 @@ function formatProductRow(array $row): array {
         'price' => $price,
         'buyPrice' => $price,
         'hirePrice' => $hirePrice,
-        'hirePeriod' => (string)($row['hire_period'] ?? 'week'),
+        'hirePeriod' => (string)($row['hire_period'] ?? ($row['hirePeriod'] ?? 'week')),
         'stock' => intval($row['stock'] ?? 25),
-        'lowStockThreshold' => intval($row['low_stock_threshold'] ?? 5),
-        'available' => intval($row['is_active'] ?? 1) !== 0,
+        'lowStockThreshold' => intval($row['low_stock_threshold'] ?? ($row['lowStockThreshold'] ?? 5)),
+        'available' => $isActive,
         'buyAvailable' => $price > 0 || !empty($variants),
         'hireAvailable' => $hirePrice > 0,
         'purchaseType' => ($hirePrice > 0 && $price > 0) ? 'both' : ($hirePrice > 0 ? 'hire' : 'buy'),
-        'featured' => intval($row['is_featured'] ?? 0) === 1,
-        'is_featured' => intval($row['is_featured'] ?? 0),
-        'is_active' => intval($row['is_active'] ?? 1),
-        'gstType' => (string)($row['gst_type'] ?? 'gst-free'),
-        'gst_type' => (string)($row['gst_type'] ?? 'gst-free'),
-        'gstRate' => floatval($row['gst_rate'] ?? 0),
-        'gst_rate' => floatval($row['gst_rate'] ?? 0),
-        'deliveryFee' => floatval($row['delivery_fee'] ?? 0),
-        'delivery_fee' => floatval($row['delivery_fee'] ?? 0),
-        'freeDelivery' => floatval($row['delivery_fee'] ?? 0) == 0,
-        'ndisCode' => (string)($row['ndis_code'] ?? ''),
-        'ndis_code' => (string)($row['ndis_code'] ?? ''),
+        'featured' => $isFeatured,
+        'is_featured' => $isFeatured ? 1 : 0,
+        'is_active' => $isActive ? 1 : 0,
+        'gstType' => (string)($row['gst_type'] ?? ($row['gstType'] ?? 'gst-free')),
+        'gst_type' => (string)($row['gst_type'] ?? ($row['gstType'] ?? 'gst-free')),
+        'gstRate' => floatval($row['gst_rate'] ?? ($row['gstRate'] ?? 0)),
+        'gst_rate' => floatval($row['gst_rate'] ?? ($row['gstRate'] ?? 0)),
+        'deliveryFee' => floatval($row['delivery_fee'] ?? ($row['deliveryFee'] ?? 0)),
+        'delivery_fee' => floatval($row['delivery_fee'] ?? ($row['deliveryFee'] ?? 0)),
+        'freeDelivery' => floatval($row['delivery_fee'] ?? ($row['deliveryFee'] ?? 0)) == 0,
+        'ndisCode' => (string)($row['ndis_code'] ?? ($row['ndisCode'] ?? '')),
+        'ndis_code' => (string)($row['ndis_code'] ?? ($row['ndisCode'] ?? '')),
         'shortDescription' => $shortDesc,
         'fullDescription' => $desc,
         'description' => $desc,
         'badge' => $row['badge'] ?? ($hirePrice > 0 ? 'Hire Available' : null),
-        'hasFreeSample' => intval($row['has_free_sample'] ?? 0) === 1,
-        'sampleNote' => (string)($row['sample_note'] ?? ''),
+        'hasFreeSample' => !empty($row['has_free_sample']) || !empty($row['hasFreeSample']),
+        'sampleNote' => (string)($row['sample_note'] ?? ($row['sampleNote'] ?? '')),
         'rating' => floatval($row['rating'] ?? 5.0),
-        'reviewCount' => intval($row['review_count'] ?? 10),
+        'reviewCount' => intval($row['review_count'] ?? ($row['reviewCount'] ?? 10)),
         'attributes' => is_array($attributes) ? $attributes : [],
         'variants' => is_array($variants) ? $variants : [],
         'features' => is_array($features) ? $features : [],
@@ -1043,6 +1054,8 @@ function formatProductRow(array $row): array {
 
 if ($endpoint === 'products') {
     $prodId = $segments[1] ?? '';
+    global $pdo;
+    $db = $pdo;
 
     // POST /api/products/sync-catalog (Admin Sync Catalog from products.json to MySQL)
     if ($prodId === 'sync-catalog' && $method === 'POST') {
@@ -1065,21 +1078,20 @@ if ($endpoint === 'products') {
     // returns the full active catalogue (legacy behaviour for the SPA bundle).
     if ($prodId === '' && $method === 'GET') {
         try {
-            global $pdo;
-            if ($pdo) {
+            if ($db) {
                 $limit = isset($_GET['limit']) ? max(1, min(500, intval($_GET['limit']))) : 0;
                 $offset = isset($_GET['offset']) ? max(0, intval($_GET['offset'])) : 0;
                 $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, name ASC";
                 if ($limit > 0) {
                     $sql .= " LIMIT {$limit} OFFSET {$offset}";
                 }
-                $stmt = $pdo->query($sql);
+                $stmt = $db->query($sql);
                 $rows = $stmt ? $stmt->fetchAll() : [];
 
                 // If table has <= 4 products (empty or default dummy seeds), seed standard catalog
                 if (count($rows) <= 4) {
-                    seedCatalogIntoDatabase($pdo);
-                    $stmt = $pdo->query($sql);
+                    seedCatalogIntoDatabase($db);
+                    $stmt = $db->query($sql);
                     $rows = $stmt ? $stmt->fetchAll() : $rows;
                 }
 
@@ -1098,29 +1110,7 @@ if ($endpoint === 'products') {
         $catalog = getStaticCatalog();
         if (!empty($catalog)) {
             $slice = array_slice($catalog, 0, 500);
-            $fallbackFormatted = array_map(function($p) {
-                $price = floatval($p['buyPrice'] ?? ($p['price'] ?? 0));
-                $hirePrice = floatval($p['hirePrice'] ?? ($p['hire_price'] ?? 0));
-                return [
-                    'id' => (string)($p['id'] ?? ''),
-                    'name' => (string)($p['name'] ?? ''),
-                    'slug' => (string)($p['slug'] ?? $p['id'] ?? ''),
-                    'sku' => (string)($p['sku'] ?? $p['id'] ?? ''),
-                    'brand' => (string)($p['brand'] ?? 'AT Specialists'),
-                    'category' => is_array($p['categories'] ?? null) ? (string)($p['categories'][0] ?? 'Mobility') : (string)($p['category'] ?? 'Mobility'),
-                    'categories' => $p['categories'] ?? [$p['category'] ?? 'Mobility'],
-                    'image' => (string)($p['image'] ?? ''),
-                    'galleryImages' => $p['galleryImages'] ?? [$p['image'] ?? ''],
-                    'thumbnail' => (string)($p['image'] ?? ''),
-                    'price' => $price,
-                    'buyPrice' => $price,
-                    'hirePrice' => $hirePrice,
-                    'stock' => intval($p['stock'] ?? 50),
-                    'available' => true,
-                    'is_active' => 1,
-                    'is_featured' => !empty($p['featured']) ? 1 : 0,
-                ];
-            }, $slice);
+            $fallbackFormatted = array_map('formatProductRow', $slice);
             sendJson(['products' => $fallbackFormatted]);
         }
         sendJson(['products' => []]);
@@ -1128,20 +1118,24 @@ if ($endpoint === 'products') {
 
     // GET /api/products/{id}
     if ($prodId !== '' && $method === 'GET') {
-        try {
-            $stmt = $db->prepare("SELECT * FROM products WHERE id = ? OR slug = ? OR sku = ? LIMIT 1");
-            $stmt->execute([$prodId, $prodId, $prodId]);
-            $row = $stmt->fetch();
-            if ($row) {
-                sendJson(['product' => formatProductRow($row)]);
+        if ($db) {
+            try {
+                $stmt = $db->prepare("SELECT * FROM products WHERE id = ? OR slug = ? OR sku = ? LIMIT 1");
+                $stmt->execute([$prodId, $prodId, $prodId]);
+                $row = $stmt->fetch();
+                if ($row) {
+                    sendJson(['product' => formatProductRow($row)]);
+                }
+            } catch (Throwable $e) {
+                error_log("GET /api/products/{$prodId} DB error: " . $e->getMessage());
             }
-        } catch (Throwable $e) {}
+        }
 
         // Fallback to static catalog if not yet in MySQL
         $matchedVar = null;
         $catProd = findProductInCatalog($prodId, $matchedVar);
         if ($catProd) {
-            sendJson(['product' => $catProd]);
+            sendJson(['product' => formatProductRow($catProd)]);
         }
         sendJson(['error' => 'Product not found'], 404);
     }
@@ -1149,6 +1143,7 @@ if ($endpoint === 'products') {
     // POST /api/products (Admin Create)
     if ($prodId === '' && $method === 'POST') {
         requireAdminAuth();
+        $db = requireDatabase();
         $b = getRequestBody();
         $id = $b['id'] ?? ('eq-'. round(microtime(true) * 1000));
         $name = trim((string)($b['name'] ?? ''));
@@ -1205,6 +1200,7 @@ if ($endpoint === 'products') {
     // PUT /api/products/{id} (Admin Update)
     if ($prodId !== '' && ($method === 'PUT' || $method === 'PATCH')) {
         requireAdminAuth();
+        $db = requireDatabase();
         $b = getRequestBody();
         
         $fields = [];
@@ -1271,6 +1267,7 @@ if ($endpoint === 'products') {
     // DELETE /api/products/clear-all (Admin Clear All Products)
     if ($prodId === 'clear-all' && $method === 'DELETE') {
         requireAdminAuth();
+        $db = requireDatabase();
         $db->exec("UPDATE products SET is_active = 0");
         sendJson(['success' => true, 'message' => 'All products archived successfully.']);
     }
@@ -1278,6 +1275,7 @@ if ($endpoint === 'products') {
     // DELETE /api/products/{id} (Admin Delete)
     if ($prodId !== '' && $method === 'DELETE') {
         requireAdminAuth();
+        $db = requireDatabase();
         $stmt = $db->prepare("UPDATE products SET is_active = 0 WHERE id = ? OR sku = ?");
         $stmt->execute([$prodId, $prodId]);
         if ($stmt->rowCount() === 0) {
@@ -2984,26 +2982,29 @@ if ($endpoint === 'emails') {
 // 11. SETTINGS ROUTES (`/api/settings/*`)
 // ============================================================================
 if ($endpoint === 'settings') {
-    $db = requireDatabase();
+    global $pdo;
+    $db = $pdo;
 
     // GET /api/settings (Admin gets full masked settings; Public/Guests get store info & checkout state)
     if ($method === 'GET') {
         $admin = getAdminFromToken();
-        if ($admin) {
-            $stmt = $db->query("SELECT * FROM app_settings");
-            $rows = $stmt ? $stmt->fetchAll() : [];
-            $settings = [];
-            foreach ($rows as $r) {
-                $decoded = json_decode((string)$r['setting_value'], true);
-                $settings[$r['setting_key']] = is_array($decoded) ? $decoded : $r['setting_value'];
-            }
-            // Never expose the PayPal secret via the API (it lives in server env)
-            if (isset($settings['paypal_config']) && is_array($settings['paypal_config'])) {
-                $settings['paypal_config']['secretKey'] = '';
-                $settings['paypal_config']['secret'] = '';
-                $settings['paypal_config']['hasSecret'] = true;
-            }
-            sendJson(['settings' => $settings]);
+        if ($admin && $db) {
+            try {
+                $stmt = $db->query("SELECT * FROM app_settings");
+                $rows = $stmt ? $stmt->fetchAll() : [];
+                $settings = [];
+                foreach ($rows as $r) {
+                    $decoded = json_decode((string)$r['setting_value'], true);
+                    $settings[$r['setting_key']] = is_array($decoded) ? $decoded : $r['setting_value'];
+                }
+                // Never expose the PayPal secret via the API (it lives in server env)
+                if (isset($settings['paypal_config']) && is_array($settings['paypal_config'])) {
+                    $settings['paypal_config']['secretKey'] = '';
+                    $settings['paypal_config']['secret'] = '';
+                    $settings['paypal_config']['hasSecret'] = true;
+                }
+                sendJson(['settings' => $settings]);
+            } catch (Throwable $e) {}
         }
 
         // Public safe settings for guest storefront
@@ -3025,15 +3026,17 @@ if ($endpoint === 'settings') {
                 'mode' => $paypal_mode
             ]
         ];
-        try {
-            $stmt = $db->query("SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ('checkout_settings', 'company_settings')");
-            if ($stmt) {
-                while ($r = $stmt->fetch()) {
-                    $decoded = json_decode((string)$r['setting_value'], true);
-                    $publicSettings[$r['setting_key']] = is_array($decoded) ? $decoded : $r['setting_value'];
+        if ($db) {
+            try {
+                $stmt = $db->query("SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ('checkout_settings', 'company_settings')");
+                if ($stmt) {
+                    while ($r = $stmt->fetch()) {
+                        $decoded = json_decode((string)$r['setting_value'], true);
+                        $publicSettings[$r['setting_key']] = is_array($decoded) ? $decoded : $r['setting_value'];
+                    }
                 }
-            }
-        } catch (Exception $e) {}
+            } catch (Throwable $e) {}
+        }
 
         sendJson(['settings' => $publicSettings]);
     }
@@ -3041,6 +3044,7 @@ if ($endpoint === 'settings') {
     // POST /api/settings (Admin only)
     if ($method === 'POST') {
         requireAdminAuth();
+        $db = requireDatabase();
         $b = getRequestBody();
         $key = trim((string)($b['key'] ?? ''));
         $val = $b['value'] ?? $b;
@@ -3143,11 +3147,43 @@ if ($endpoint === 'rentals') {
     $db = requireDatabase();
     $rentalId = $segments[1] ?? '';
 
+    // Ensure rentals table exists
+    try {
+        $db->query("SELECT 1 FROM rentals LIMIT 1");
+    } catch (Throwable $e) {
+        try {
+            $db->exec("
+                CREATE TABLE IF NOT EXISTS `rentals` (
+                  `id` varchar(100) NOT NULL,
+                  `customer_name` varchar(255) NOT NULL,
+                  `customer_email` varchar(255) NOT NULL,
+                  `customer_phone` varchar(50) DEFAULT '',
+                  `product_id` varchar(100) NOT NULL,
+                  `product_name` varchar(255) NOT NULL,
+                  `start_date` date DEFAULT NULL,
+                  `end_date` date DEFAULT NULL,
+                  `weeks` int(11) NOT NULL DEFAULT 2,
+                  `weekly_rate` decimal(10,2) NOT NULL DEFAULT 0.00,
+                  `delivery_fee` decimal(10,2) DEFAULT 0.00,
+                  `deposit` decimal(10,2) DEFAULT 0.00,
+                  `total` decimal(10,2) NOT NULL DEFAULT 0.00,
+                  `status` varchar(50) NOT NULL DEFAULT 'active',
+                  `notes` text DEFAULT NULL,
+                  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  KEY `idx_rentals_customer_email` (`customer_email`),
+                  KEY `idx_rentals_status` (`status`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+        } catch (Throwable $ex) {}
+    }
+
     if ($method === 'GET') {
         requireAdminAuth();
         try {
             $stmt = $db->query("SELECT * FROM rentals ORDER BY created_at DESC");
-            $rows = $stmt->fetchAll();
+            $rows = $stmt ? $stmt->fetchAll() : [];
             sendJson(['rentals' => $rows]);
         } catch (Exception $e) {
             sendJson(['rentals' => []]);
@@ -3199,17 +3235,86 @@ if ($endpoint === 'rentals') {
 // /api/reviews → Customer & Verified Purchase Reviews
 if ($endpoint === 'reviews') {
     $db = requireDatabase();
+    $sub = strtolower($segments[1] ?? '');
+    $action = strtolower($segments[2] ?? '');
 
-    if ($method === 'GET') {
+    // Ensure reviews table exists
+    try {
+        $db->query("SELECT 1 FROM reviews LIMIT 1");
+    } catch (Throwable $e) {
         try {
-            $stmt = $db->query("SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC");
-            $rows = $stmt->fetchAll();
+            $db->exec("
+                CREATE TABLE IF NOT EXISTS `reviews` (
+                  `id` varchar(100) NOT NULL,
+                  `product_id` varchar(100) DEFAULT '',
+                  `customer_name` varchar(255) NOT NULL,
+                  `customer_email` varchar(255) DEFAULT '',
+                  `rating` int(1) NOT NULL DEFAULT 5,
+                  `title` varchar(255) DEFAULT '',
+                  `comment` longtext DEFAULT NULL,
+                  `status` varchar(50) DEFAULT 'approved',
+                  `verified_purchase` tinyint(1) DEFAULT 1,
+                  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  KEY `idx_reviews_product` (`product_id`),
+                  KEY `idx_reviews_status` (`status`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+        } catch (Throwable $ex) {}
+    }
+
+    // GET /api/reviews/admin/all (Admin view all reviews)
+    if ($sub === 'admin' && $action === 'all' && $method === 'GET') {
+        requireAdminAuth();
+        try {
+            $stmt = $db->query("SELECT * FROM reviews ORDER BY created_at DESC");
+            $rows = $stmt ? $stmt->fetchAll() : [];
             sendJson(['reviews' => $rows]);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             sendJson(['reviews' => []]);
         }
     }
 
+    // PATCH or PUT /api/reviews/{id}/status (Admin moderate review)
+    if ($sub !== '' && $action === 'status' && ($method === 'PATCH' || $method === 'PUT')) {
+        requireAdminAuth();
+        $b = getRequestBody();
+        $status = $b['status'] ?? 'approved';
+        $validStatuses = ['approved', 'pending', 'flagged', 'rejected'];
+        if (!in_array($status, $validStatuses, true)) {
+            $status = 'approved';
+        }
+        $stmt = $db->prepare("UPDATE reviews SET status = ? WHERE id = ?");
+        $stmt->execute([$status, $sub]);
+        sendJson(['success' => true, 'message' => "Review status updated to '{$status}'."]);
+    }
+
+    // DELETE /api/reviews/{id} (Admin delete review)
+    if ($sub !== '' && $action === '' && $method === 'DELETE') {
+        requireAdminAuth();
+        $stmt = $db->prepare("DELETE FROM reviews WHERE id = ?");
+        $stmt->execute([$sub]);
+        sendJson(['success' => true, 'message' => 'Review deleted successfully.']);
+    }
+
+    // GET /api/reviews (Storefront: approved reviews, optionally filtered by productId)
+    if ($method === 'GET') {
+        try {
+            $productId = trim((string)($_GET['productId'] ?? ''));
+            if ($productId !== '') {
+                $stmt = $db->prepare("SELECT * FROM reviews WHERE (product_id = ? OR product_id = '') AND status = 'approved' ORDER BY created_at DESC");
+                $stmt->execute([$productId]);
+            } else {
+                $stmt = $db->query("SELECT * FROM reviews WHERE status = 'approved' ORDER BY created_at DESC");
+            }
+            $rows = $stmt ? $stmt->fetchAll() : [];
+            sendJson(['reviews' => $rows]);
+        } catch (Throwable $e) {
+            sendJson(['reviews' => []]);
+        }
+    }
+
+    // POST /api/reviews (Submit new review)
     if ($method === 'POST') {
         throttle('review_submit', 5, 3600);
         $b = getRequestBody();
@@ -3229,10 +3334,10 @@ if ($endpoint === 'reviews') {
 
         $stmt = $db->prepare("
             INSERT INTO reviews (id, product_id, customer_name, customer_email, rating, title, comment, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', NOW())
         ");
         $stmt->execute([$id, $prodId, $name, $email, $rating, $title, $comment]);
-        sendJson(['success' => true, 'message' => 'Review submitted for moderation. Thank you!']);
+        sendJson(['success' => true, 'message' => 'Review submitted successfully. Thank you!', 'id' => $id]);
     }
 }
 
@@ -3240,6 +3345,36 @@ if ($endpoint === 'reviews') {
 if ($endpoint === 'promotions') {
     $db = requireDatabase();
     $promoAction = $segments[1] ?? '';
+
+    // Ensure promotions table exists
+    try {
+        $db->query("SELECT 1 FROM promotions LIMIT 1");
+    } catch (Throwable $e) {
+        try {
+            $db->exec("
+                CREATE TABLE IF NOT EXISTS `promotions` (
+                  `id` varchar(100) NOT NULL,
+                  `code` varchar(50) NOT NULL UNIQUE,
+                  `description` varchar(255) DEFAULT '',
+                  `discount_type` varchar(20) NOT NULL DEFAULT 'percentage',
+                  `discount_value` decimal(10,2) NOT NULL DEFAULT 0.00,
+                  `min_spend` decimal(10,2) DEFAULT 0.00,
+                  `max_usage` int(11) DEFAULT NULL,
+                  `usage_count` int(11) DEFAULT 0,
+                  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+                  `valid_until` datetime DEFAULT NULL,
+                  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+                  PRIMARY KEY (`id`),
+                  UNIQUE KEY `idx_promo_code` (`code`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $db->exec("
+                INSERT IGNORE INTO `promotions` (`id`, `code`, `description`, `discount_type`, `discount_value`, `min_spend`, `is_active`) VALUES
+                ('promo-01', 'NDIS10', '10% Assistive Equipment Rebate for Self/Plan Managed Participants', 'percentage', 10.00, 200.00, 1),
+                ('promo-02', 'CLINICAL50', '$50 Clinical Equipment Credit on Orders Above $500', 'fixed', 50.00, 500.00, 1);
+            ");
+        } catch (Throwable $ex) {}
+    }
 
     // POST /api/promotions/validate {code, subtotal} — coupon check used at checkout
     if ($promoAction === 'validate' && $method === 'POST') {
@@ -3296,11 +3431,78 @@ if ($endpoint === 'promotions') {
         sendJson(['success' => true, 'usageCount' => $usageCount]);
     }
 
+    // POST /api/promotions (Admin Create Promotion)
+    if ($promoAction === '' && $method === 'POST') {
+        requireAdminAuth();
+        $b = getRequestBody();
+        $code = strtoupper(trim((string)($b['code'] ?? '')));
+        if ($code === '') sendJson(['success' => false, 'error' => 'Promotion code is required.'], 400);
+
+        $id = $b['id'] ?? ('promo-'. strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $code)));
+        $desc = trim((string)($b['description'] ?? ''));
+        $type = (string)($b['type'] ?? ($b['discount_type'] ?? 'percentage'));
+        $val = floatval($b['value'] ?? ($b['discount_value'] ?? 10));
+        $minSpend = floatval($b['minOrder'] ?? ($b['min_spend'] ?? 0));
+        $maxUsage = isset($b['maxUsage']) ? intval($b['maxUsage']) : null;
+        $active = isset($b['active']) ? ($b['active'] ? 1 : 0) : (isset($b['is_active']) ? ($b['is_active'] ? 1 : 0) : 1);
+        $expiresAt = !empty($b['expiresAt']) ? $b['expiresAt'] : (!empty($b['valid_until']) ? $b['valid_until'] : null);
+
+        $stmt = $db->prepare("
+            INSERT INTO promotions (id, code, description, discount_type, discount_value, min_spend, max_usage, is_active, valid_until, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE description = VALUES(description), discount_type = VALUES(discount_type),
+                discount_value = VALUES(discount_value), min_spend = VALUES(min_spend), max_usage = VALUES(max_usage),
+                is_active = VALUES(is_active), valid_until = VALUES(valid_until)
+        ");
+        $stmt->execute([$id, $code, $desc, $type, $val, $minSpend, $maxUsage, $active, $expiresAt]);
+        sendJson(['success' => true, 'message' => "Promotion '{$code}' created successfully.", 'promotion' => ['id' => $id, 'code' => $code]]);
+    }
+
+    // PUT /api/promotions/{id} (Admin Update Promotion)
+    if ($promoAction !== '' && ($method === 'PUT' || $method === 'PATCH')) {
+        requireAdminAuth();
+        $b = getRequestBody();
+        $fields = [];
+        $params = [];
+        if (isset($b['code'])) { $fields[] = "code = ?"; $params[] = strtoupper(trim((string)$b['code'])); }
+        if (isset($b['description'])) { $fields[] = "description = ?"; $params[] = trim((string)$b['description']); }
+        if (isset($b['type']) || isset($b['discount_type'])) { $fields[] = "discount_type = ?"; $params[] = ($b['type'] ?? $b['discount_type']); }
+        if (isset($b['value']) || isset($b['discount_value'])) { $fields[] = "discount_value = ?"; $params[] = floatval($b['value'] ?? $b['discount_value']); }
+        if (isset($b['minOrder']) || isset($b['min_spend'])) { $fields[] = "min_spend = ?"; $params[] = floatval($b['minOrder'] ?? $b['min_spend']); }
+        if (isset($b['maxUsage'])) { $fields[] = "max_usage = ?"; $params[] = intval($b['maxUsage']); }
+        if (isset($b['active'])) { $fields[] = "is_active = ?"; $params[] = $b['active'] ? 1 : 0; }
+        elseif (isset($b['is_active'])) { $fields[] = "is_active = ?"; $params[] = $b['is_active'] ? 1 : 0; }
+        if (isset($b['expiresAt'])) { $fields[] = "valid_until = ?"; $params[] = $b['expiresAt']; }
+        elseif (isset($b['valid_until'])) { $fields[] = "valid_until = ?"; $params[] = $b['valid_until']; }
+
+        if (!empty($fields)) {
+            $params[] = $promoAction;
+            $stmt = $db->prepare("UPDATE promotions SET ". implode(', ', $fields) . " WHERE id = ? OR code = ?");
+            $params[] = $promoAction;
+            $stmt->execute($params);
+        }
+        sendJson(['success' => true, 'message' => 'Promotion updated successfully.']);
+    }
+
+    // DELETE /api/promotions/{id} (Admin Delete Promotion)
+    if ($promoAction !== '' && $method === 'DELETE') {
+        requireAdminAuth();
+        $stmt = $db->prepare("DELETE FROM promotions WHERE id = ? OR code = ?");
+        $stmt->execute([$promoAction, $promoAction]);
+        sendJson(['success' => true, 'message' => 'Promotion deleted successfully.']);
+    }
+
+    // GET /api/promotions (Listing)
     try {
-        $stmt = $db->query("SELECT id, code, description, discount_type, discount_value, min_spend FROM promotions WHERE is_active = 1");
-        $promos = $stmt->fetchAll();
+        $admin = getAdminFromToken();
+        if ($admin) {
+            $stmt = $db->query("SELECT * FROM promotions ORDER BY created_at DESC");
+        } else {
+            $stmt = $db->query("SELECT id, code, description, discount_type, discount_value, min_spend FROM promotions WHERE is_active = 1");
+        }
+        $promos = $stmt ? $stmt->fetchAll() : [];
         sendJson(['promotions' => $promos]);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         sendJson(['promotions' => []]);
     }
 }
