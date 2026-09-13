@@ -1879,7 +1879,16 @@ if ($endpoint === 'orders') {
         $stmtItems->execute([$orderId]);
         $order['items'] = $stmtItems->fetchAll();
 
-        $pdfBytes = generateOrderInvoicePdfPhp($order);
+        try {
+            $pdfBytes = generateOrderInvoicePdfPhp($order);
+        } catch (Throwable $e) {
+            error_log("Order invoice PDF failed for {$orderId}: " . $e->getMessage());
+            sendJson(['error' => 'Could not generate the invoice PDF. Please try again shortly.'], 500);
+        }
+        if (!is_string($pdfBytes) || $pdfBytes === '' || strpos($pdfBytes, '%PDF') !== 0) {
+            sendJson(['error' => 'Could not generate the invoice PDF. Please try again shortly.'], 500);
+        }
+        while (ob_get_level() > 0) ob_end_clean();
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="Tax_Invoice_'. preg_replace('/[^a-zA-Z0-9_-]/', '', $orderId). '.pdf"');
         header('Content-Length: '. strlen($pdfBytes));
@@ -2159,8 +2168,17 @@ if ($endpoint === 'quotes') {
         }
 
         $quote['items'] = json_decode((string)$quote['items_json'], true) ?: [];
-        $pdfBytes = generateQuotePdfPhp($quote);
+        try {
+            $pdfBytes = generateQuotePdfPhp($quote);
+        } catch (Throwable $e) {
+            error_log("Quote PDF failed for {$quoteId}: " . $e->getMessage());
+            sendJson(['error' => 'Could not generate the quotation PDF. Please try again shortly.'], 500);
+        }
+        if (!is_string($pdfBytes) || $pdfBytes === '' || strpos($pdfBytes, '%PDF') !== 0) {
+            sendJson(['error' => 'Could not generate the quotation PDF. Please try again shortly.'], 500);
+        }
 
+        while (ob_get_level() > 0) ob_end_clean();
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="NDIS_Quote_'. preg_replace('/[^a-zA-Z0-9_-]/', '', $quoteId). '.pdf"');
         header('Content-Length: '. strlen($pdfBytes));
@@ -2588,13 +2606,52 @@ function authorizeDocumentAccess(?array $doc): bool {
     return verifyOrderAccessToken($docId, $ownerEmail, (string)$token);
 }
 
+function buildDispatchItemsTableHtml(array $items, float $subtotal, float $deliveryFee, float $gstTotal, float $total): string {
+    if (empty($items)) return '';
+    $rows = '';
+    $idx = 0;
+    foreach ($items as $it) {
+        if (!is_array($it)) continue;
+        $idx++;
+        $name = (string)($it['name'] ?? 'Assistive Technology Item');
+        $code = (string)($it['code'] ?? ($it['sku'] ?? ($it['productId'] ?? ($it['id'] ?? ''))));
+        $qty = max(1, intval($it['quantity'] ?? 1));
+        $price = floatval($it['price'] ?? (($it['amount'] ?? 0) / max(1, $qty)));
+        if ($price <= 0 && isset($it['amount'])) $price = floatval($it['amount']) / $qty;
+        $line = isset($it['amount']) ? floatval($it['amount']) : $price * $qty;
+        $rows .= "<tr>"
+            . "<td style='padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;'>"
+            . "<div style='font-weight:700;'>" . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . "</div>"
+            . ($code !== '' ? "<div style='font-size:11px;color:#64748b;'>Code: " . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</div>" : "")
+            . "</td>"
+            . "<td style='padding:10px 12px;text-align:center;border-bottom:1px solid #f1f5f9;font-weight:700;color:#475569;'>{$qty}</td>"
+            . "<td style='padding:10px 12px;text-align:right;border-bottom:1px solid #f1f5f9;font-weight:700;color:#0f172a;'>$" . number_format($line, 2) . "</td>"
+            . "</tr>";
+    }
+    if ($rows === '') return '';
+    return "<div style='border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin:18px 0;'>"
+        . "<table style='width:100%;border-collapse:collapse;font-size:12.5px;'>"
+        . "<thead><tr style='background:#f8fafc;border-bottom:1px solid #e2e8f0;color:#475569;'>"
+        . "<th style='padding:8px 12px;text-align:left;font-weight:700;'>Item Description</th>"
+        . "<th style='padding:8px 12px;text-align:center;font-weight:700;width:50px;'>Qty</th>"
+        . "<th style='padding:8px 12px;text-align:right;font-weight:700;width:90px;'>Price</th>"
+        . "</tr></thead><tbody>{$rows}</tbody></table>"
+        . "<div style='background:#ffffff;padding:12px 14px;border-top:1px solid #e2e8f0;font-size:12px;'>"
+        . "<div style='display:flex;justify-content:space-between;color:#64748b;'><span>Subtotal:</span><span>$" . number_format($subtotal, 2) . " AUD</span></div>"
+        . "<div style='display:flex;justify-content:space-between;color:#64748b;'><span>Delivery:</span><span>$" . number_format($deliveryFee, 2) . " AUD</span></div>"
+        . "<div style='display:flex;justify-content:space-between;color:#64748b;'><span>GST:</span><span>$" . number_format($gstTotal, 2) . " AUD</span></div>"
+        . "<div style='display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#0f172a;margin-top:4px;padding-top:6px;border-top:1px solid #f1f5f9;'><span>Total:</span><span>$" . number_format($total, 2) . " AUD</span></div>"
+        . "</div></div>";
+}
+
 function dispatchUnifiedDocument(array $payload): array {
     global $envVars, $smtp_from_email, $admin_email;
     $db = requireDatabase();
 
     $templateId = (string)($payload['templateId'] ?? 'quote');
     $customerName = trim((string)($payload['customerName'] ?? 'Valued Client'));
-    $customerEmail = trim((string)($payload['customerEmail'] ?? ($payload['recipientEmail'] ?? '')));
+    if ($customerName === '') $customerName = 'Valued Client';
+    $customerEmail = trim((string)($payload['customerEmail'] ?? ($payload['recipientEmail'] ?? ($payload['to'] ?? ''))));
     $customerPhone = trim((string)($payload['customerPhone'] ?? ''));
     $shippingAddress = trim((string)($payload['shippingAddress'] ?? ''));
     $notes = trim((string)($payload['notes'] ?? ''));
@@ -2607,6 +2664,41 @@ function dispatchUnifiedDocument(array $payload): array {
     $items = is_array($payload['items'] ?? null) ? $payload['items'] : [];
     $extraMeta = is_array($payload['extraMeta'] ?? null) ? $payload['extraMeta'] : [];
     $customSettings = is_array($payload['customSettings'] ?? null) ? $payload['customSettings'] : [];
+    // Flat branding keys sent by AdminEmails/AdminInvoices are merged for convenience.
+    foreach (['companyName','abn','addressLine1','addressLine2','addressCountry','address','phone','email','website','bankName','accountName','bsb','accountNumber'] as $bk) {
+        if (!isset($customSettings[$bk]) && isset($payload[$bk])) $customSettings[$bk] = $payload[$bk];
+    }
+
+    // Branding (matches ExactEmailPreview defaults so live mail looks like local preview).
+    $brandCompany = (string)($customSettings['companyName'] ?? 'AT Specialists Australia');
+    $brandAddress = (string)($customSettings['address'] ?? (
+        isset($customSettings['addressLine1'])
+            ? trim((string)$customSettings['addressLine1'] . ', ' . (string)($customSettings['addressLine2'] ?? ''))
+            : 'Level 2, 88 Holmes Road, Moonee Ponds VIC 3039'
+    ));
+    $brandPhone = (string)($customSettings['phone'] ?? '0494 767 409');
+    $brandAbn = (string)($customSettings['abn'] ?? '48 123 456 789');
+    $brandEmail = (string)($customSettings['email'] ?? $smtp_from_email ?? 'admin@atspecialists.com.au');
+    $brandBank = (string)($customSettings['bankName'] ?? 'Commonwealth Bank of Australia (CBA)');
+    $brandAccName = (string)($customSettings['accountName'] ?? 'AT Specialists Australia Pty Ltd');
+    $brandBsb = (string)($customSettings['bsb'] ?? '063-000');
+    $brandAcc = (string)($customSettings['accountNumber'] ?? '1088 4422');
+
+    // Fallback sample line so a dispatch without items never renders a $0.00 empty mail
+    // (AdminEmails "Dispatch Both" sends no items; send-template-sample already has items).
+    if (empty($items) && $total <= 0 && $subtotal <= 0) {
+        $items = [[
+            'code' => 'AT-PRD-01',
+            'name' => 'Sample Clinical Assistive Technology Item',
+            'quantity' => 1,
+            'price' => 1850.00,
+            'amount' => 1850.00,
+        ]];
+        $subtotal = 1850.00;
+        $total = 1850.00;
+    } elseif ($total <= 0 && $subtotal > 0) {
+        $total = $subtotal + $deliveryFee;
+    }
 
     // Derive or generate Document ID
     $docId = trim((string)($payload['documentId'] ?? ($payload['docId'] ?? '')));
@@ -2624,7 +2716,6 @@ function dispatchUnifiedDocument(array $payload): array {
     }
 
     $filename = "{$docId}.pdf";
-    $attachPdf = false;
 
     // Persist into `documents` table
     try {
@@ -2670,9 +2761,6 @@ function dispatchUnifiedDocument(array $payload): array {
         error_log("Failed to persist document to MySQL: ". $e->getMessage());
     }
 
-    // Attachments disabled per configuration (clean links provided instead)
-    $attachments = [];
-
     $clientUrl = publicBaseUrl();
 
     $viewDocumentUrl = "{$clientUrl}/view-document/". rawurlencode($docId);
@@ -2680,6 +2768,8 @@ function dispatchUnifiedDocument(array $payload): array {
 
     $customerSent = false;
     $adminSent = false;
+    $customerError = null;
+    $adminError = null;
 
     $docTitle = match($templateId) {
         'quote', 'ndis_quote' => "NDIS Equipment Quotation #{$docId}",
@@ -2691,15 +2781,40 @@ function dispatchUnifiedDocument(array $payload): array {
         default => "Equipment Documentation #{$docId}"
     };
 
+    // Build rich itemized body so live mail matches the local ExactEmailPreview.
+    $itemsHtml = buildDispatchItemsTableHtml($items, $subtotal, $deliveryFee, $gstTotal, $total);
+    $bankHtml = '';
+    if (in_array($templateId, ['order', 'invoice', 'quote', 'ndis_quote', 'hire'], true)) {
+        $bankHtml = "<div style='border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:18px;background:#f8fafc;'>"
+            . "<div style='font-weight:800;font-size:13px;color:#0f172a;margin-bottom:8px;'>Direct Bank Transfer (EFT) Details:</div>"
+            . "<div style='font-size:12px;color:#334155;line-height:1.6;'>"
+            . "Account Name: <strong>" . htmlspecialchars($brandAccName, ENT_QUOTES, 'UTF-8') . "</strong><br>"
+            . "Bank: <strong>" . htmlspecialchars($brandBank, ENT_QUOTES, 'UTF-8') . "</strong><br>"
+            . "BSB: <strong>" . htmlspecialchars($brandBsb, ENT_QUOTES, 'UTF-8') . "</strong> | Account: <strong>" . htmlspecialchars($brandAcc, ENT_QUOTES, 'UTF-8') . "</strong><br>"
+            . "Reference: <code>" . htmlspecialchars($docId, ENT_QUOTES, 'UTF-8') . "</code>"
+            . "</div></div>";
+    }
+    $notesHtml = $notes !== ''
+        ? "<div style='border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:#ffffff;font-size:12px;color:#475569;margin-bottom:18px;'><strong style='color:#0f172a;'>Notes:</strong> " . nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8')) . "</div>"
+        : '';
+    $shipHtml = $shippingAddress !== ''
+        ? "<div style='border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:#ffffff;font-size:12px;color:#475569;margin-bottom:18px;'><strong style='color:#0f172a;'>Deliver To:</strong> " . htmlspecialchars($customerName . ' — ' . $shippingAddress . ($customerPhone !== '' ? ' — ' . $customerPhone : ''), ENT_QUOTES, 'UTF-8') . "</div>"
+        : '';
+
     $emailBody = "<h3>{$docTitle}</h3>
     <p>Dear ". htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8'). ",</p>
-    <p>Please find your documentation summary from AT Specialists Australia below.</p>
+    <p>Please find your documentation summary from " . htmlspecialchars($brandCompany, ENT_QUOTES, 'UTF-8') . " below.</p>
     <div style='background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 6px; padding: 14px; margin: 16px 0;'>
         <p style='margin: 0 0 6px;'><strong>Document Reference:</strong> {$docId}</p>
         <p style='margin: 0 0 6px;'><strong>Total Amount:</strong> $". number_format($total, 2). " AUD</p>
         <p style='margin: 0;'><strong>Verification Status:</strong> Verified &bull; Australian Standards Compliant</p>
-    </div>
-    <p>You can also view and download this verified document at any time using your secure link below:</p>";
+    </div>"
+    . $itemsHtml . $bankHtml . $shipHtml . $notesHtml .
+    "<p style='font-size:12px;color:#475569;'>"
+    . htmlspecialchars($brandCompany, ENT_QUOTES, 'UTF-8') . " &bull; ABN " . htmlspecialchars($brandAbn, ENT_QUOTES, 'UTF-8')
+    . "<br>" . htmlspecialchars($brandAddress, ENT_QUOTES, 'UTF-8') . " &bull; " . htmlspecialchars($brandPhone, ENT_QUOTES, 'UTF-8')
+    . "<br>" . htmlspecialchars($brandEmail, ENT_QUOTES, 'UTF-8')
+    . "</p><p>You can also view and download this verified document at any time using your secure link below:</p>";
 
     $html = renderEmailTemplate($docTitle,
         "Verified Document #{$docId} from AT Specialists",
@@ -2707,17 +2822,62 @@ function dispatchUnifiedDocument(array $payload): array {
         $viewDocumentUrl,
         "View Verified Document Online");
 
+    // Generate + attach the real PDF (previously disabled, so live mail had "wrong format" with no attachment).
+    $needsPdf = !in_array(strtolower($templateId), ['contact', 'general', 'inquiry'], true);
+    $wantPdfRaw = $payload['attachPdf'] ?? ($payload['attach_pdf'] ?? ($payload['generatePdf'] ?? ($extraMeta['generatePdf'] ?? true)));
+    $wantPdf = $wantPdfRaw !== false && strtolower((string)$wantPdfRaw) !== 'false' && $wantPdfRaw !== 0;
+    $attachments = [];
+    if ($needsPdf && $wantPdf) {
+        try {
+            $pdfDoc = [
+                'id' => $docId,
+                'docId' => $docId,
+                'templateId' => $templateId,
+                'customerName' => $customerName,
+                'customerEmail' => $customerEmail,
+                'customerPhone' => $customerPhone,
+                'shippingAddress' => $shippingAddress,
+                'subtotal' => $subtotal,
+                'deliveryFee' => $deliveryFee,
+                'gstTotal' => $gstTotal,
+                'total' => $total,
+                'items' => $items,
+                'notes' => $notes,
+                'extraMeta' => $extraMeta,
+                'createdAt' => date('Y-m-d H:i:s'),
+            ];
+            if ($templateId === 'quote' || $templateId === 'ndis_quote') {
+                $pdfBytes = generateQuotePdfPhp($pdfDoc);
+            } else {
+                $pdfBytes = generateOrderInvoicePdfPhp($pdfDoc);
+            }
+            if ($pdfBytes !== '') {
+                $attachments[] = ['name' => $filename, 'content' => $pdfBytes, 'type' => 'application/pdf'];
+            }
+        } catch (Throwable $e) {
+            error_log("Dispatch PDF generation failed for {$docId}: " . $e->getMessage());
+        }
+    }
+
     // Send Customer copy
     $sendCust = ($payload['sendCustomerCopy'] ?? true) !== false;
     if ($sendCust && filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
         $res = sendSmtpEmail($customerEmail, "{$docTitle} — AT Specialists Australia", $html, $attachments);
         if ($res['success']) {
             $customerSent = true;
+        } else {
+            $customerError = $res['error'] ?? 'SMTP send failed';
+            error_log("Dispatch customer mail failed for {$docId} to {$customerEmail}: {$customerError}");
         }
         $planMgrEmail = trim((string)($extraMeta['planManagerEmail'] ?? ''));
         if ($planMgrEmail !== '' && filter_var($planMgrEmail, FILTER_VALIDATE_EMAIL) && $planMgrEmail !== $customerEmail) {
-            sendSmtpEmail($planMgrEmail, "{$docTitle} — AT Specialists Australia ({$customerName})", $html, $attachments);
+            $resPlan = sendSmtpEmail($planMgrEmail, "{$docTitle} — AT Specialists Australia ({$customerName})", $html, $attachments);
+            if (!($resPlan['success'] ?? false)) {
+                error_log("Dispatch plan-manager mail failed for {$docId}: " . ($resPlan['error'] ?? 'unknown'));
+            }
         }
+    } elseif ($sendCust) {
+        $customerError = 'Invalid customer email address';
     }
 
     // Send Admin copy
@@ -2729,23 +2889,39 @@ function dispatchUnifiedDocument(array $payload): array {
                 "Dispatched document #{$docId} for {$customerName}",
                 "<h3>Administrative Dispatch Notification</h3>
                  <p>An document has been dispatched to <strong>". htmlspecialchars($customerName). "</strong> ({$customerEmail}).</p>
-                 <p>Reference: <strong>{$docId}</strong> | Total: <strong>$". number_format($total, 2). " AUD</strong></p>",
+                 <p>Reference: <strong>{$docId}</strong> | Total: <strong>$". number_format($total, 2). " AUD</strong></p>"
+                 . $itemsHtml,
                 $viewDocumentUrl,
                 "Inspect Document");
             $resAdm = sendSmtpEmail($adminMailbox, "[Admin Notice] {$docTitle} Dispatched ({$customerName})", $adminHtml, $attachments);
             if ($resAdm['success']) {
                 $adminSent = true;
+            } else {
+                $adminError = $resAdm['error'] ?? 'SMTP send failed';
+                error_log("Dispatch admin mail failed for {$docId} to {$adminMailbox}: {$adminError}");
             }
+        } else {
+            $adminError = 'Invalid admin email address';
         }
     }
 
+    $overall = $customerSent || $adminSent;
+    $message = $overall
+        ? "Template '{$templateId}' dispatched successfully for {$docId}."
+        : ("Failed to dispatch '{$templateId}' for {$docId}."
+            . ($customerError ? " Customer: {$customerError}." : '')
+            . ($adminError ? " Admin: {$adminError}." : ''));
+
     return [
-        'success' => true,
+        'success' => $overall,
         'documentId' => $docId,
         'filename' => $filename,
         'customerSent' => $customerSent,
         'adminSent' => $adminSent,
-        'message' => "Template '{$templateId}' dispatched successfully for {$docId}.",
+        'customerError' => $customerError,
+        'adminError' => $adminError,
+        'hasPdfAttachment' => !empty($attachments),
+        'message' => $message,
         'viewDocumentUrl' => $viewDocumentUrl,
         'directPdfUrl' => $directPdfUrl
     ];
@@ -2776,6 +2952,29 @@ if ($endpoint === 'emails') {
         requireAdminAuth();
         $db = requireDatabase();
         $b = getRequestBody();
+
+        // Preserve the stored password when the UI sends pass:'' (unchanged).
+        $incomingPass = trim((string)($b['pass'] ?? ($b['SMTP_PASS'] ?? '')));
+        if ($incomingPass === '' || $incomingPass === '••••••••' || $incomingPass === '••••••••••••••••') {
+            try {
+                $stmtPrev = $db->prepare("SELECT setting_value FROM app_settings WHERE setting_key = 'smtp_config' LIMIT 1");
+                $stmtPrev->execute();
+                $prevRow = $stmtPrev->fetch();
+                if ($prevRow && !empty($prevRow['setting_value'])) {
+                    $prev = json_decode((string)$prevRow['setting_value'], true);
+                    $prevPass = is_array($prev) ? (string)($prev['pass'] ?? ($prev['SMTP_PASS'] ?? '')) : '';
+                    if ($prevPass !== '') {
+                        $b['pass'] = $prevPass;
+                    } else {
+                        unset($b['pass']);
+                    }
+                } else {
+                    unset($b['pass']);
+                }
+            } catch (Exception $e) {
+                unset($b['pass']);
+            }
+        }
 
         $stmt = $db->prepare("
             INSERT INTO app_settings (setting_key, setting_value, updated_at)
@@ -2843,7 +3042,7 @@ if ($endpoint === 'emails') {
         requireAdminAuth();
         $body = getRequestBody();
         $res = dispatchUnifiedDocument($body);
-        sendJson($res);
+        sendJson($res, !empty($res['success']) ? 200 : 502);
     }
 
     // POST /api/emails/send-invoice (Admin only)
@@ -2852,7 +3051,7 @@ if ($endpoint === 'emails') {
         $body = getRequestBody();
         $body['templateId'] = 'invoice';
         $res = dispatchUnifiedDocument($body);
-        sendJson($res);
+        sendJson($res, !empty($res['success']) ? 200 : 502);
     }
 
     // POST /api/emails/send-template-sample
@@ -2892,10 +3091,20 @@ if ($endpoint === 'emails') {
         ];
 
         $res = dispatchUnifiedDocument($samplePayload);
+        if (!empty($res['success'])) {
+            sendJson([
+                'success' => true,
+                'message' => "Sample preview for '{$templateId}' sent to {$to}.",
+                'documentId' => $res['documentId'] ?? null,
+                'hasPdfAttachment' => $res['hasPdfAttachment'] ?? false,
+            ]);
+        }
         sendJson([
-            'success' => true,
-            'message' => "Sample preview for '{$templateId}' sent to {$to}."
-        ]);
+            'success' => false,
+            'error' => $res['message'] ?? 'Failed to send sample email. Check SMTP settings.',
+            'customerError' => $res['customerError'] ?? null,
+            'adminError' => $res['adminError'] ?? null,
+        ], 502);
     }
 
     // GET /api/emails/document/{docId} (Admin, owning customer, or token link)
@@ -2963,12 +3172,24 @@ if ($endpoint === 'emails') {
         }
         $tmpl = $doc['templateId'] ?? 'order';
 
-        if ($tmpl === 'quote' || $tmpl === 'ndis_quote') {
-            $pdfBytes = generateQuotePdfPhp($doc);
-        } else {
-            $pdfBytes = generateOrderInvoicePdfPhp($doc);
+        try {
+            if ($tmpl === 'quote' || $tmpl === 'ndis_quote') {
+                $pdfBytes = generateQuotePdfPhp($doc);
+            } else {
+                $pdfBytes = generateOrderInvoicePdfPhp($doc);
+            }
+        } catch (Throwable $e) {
+            error_log("PDF generation failed for {$docId}: " . $e->getMessage());
+            sendJson(['error' => 'Could not generate the PDF for this document. Please try again shortly.'], 500);
+        }
+        if (!is_string($pdfBytes) || $pdfBytes === '' || strpos($pdfBytes, '%PDF') !== 0) {
+            error_log("PDF generation returned invalid bytes for {$docId}");
+            sendJson(['error' => 'Could not generate the PDF for this document. Please try again shortly.'], 500);
         }
 
+        // Drop any stray buffering/whitespace so the binary is never corrupted
+        // (a single stray byte before %PDF breaks viewers — common live-only issue).
+        while (ob_get_level() > 0) ob_end_clean();
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="'. preg_replace('/[^a-zA-Z0-9_.-]/', '', $doc['filename'] ?: "{$docId}.pdf"). '"');
         header('Cache-Control: public, max-age=86400');
@@ -3121,11 +3342,20 @@ if ($endpoint === 'pdf') {
         sendJson(['error' => 'Unauthorized to download this document.'], 403);
     }
     $tmpl = $doc['templateId'] ?? 'order';
-    if ($tmpl === 'quote' || $tmpl === 'ndis_quote') {
-        $pdfBytes = generateQuotePdfPhp($doc);
-    } else {
-        $pdfBytes = generateOrderInvoicePdfPhp($doc);
+    try {
+        if ($tmpl === 'quote' || $tmpl === 'ndis_quote') {
+            $pdfBytes = generateQuotePdfPhp($doc);
+        } else {
+            $pdfBytes = generateOrderInvoicePdfPhp($doc);
+        }
+    } catch (Throwable $e) {
+        error_log("PDF alias failed for {$docId}: " . $e->getMessage());
+        sendJson(['error' => 'Could not generate the PDF for this document. Please try again shortly.'], 500);
     }
+    if (!is_string($pdfBytes) || $pdfBytes === '' || strpos($pdfBytes, '%PDF') !== 0) {
+        sendJson(['error' => 'Could not generate the PDF for this document. Please try again shortly.'], 500);
+    }
+    while (ob_get_level() > 0) ob_end_clean();
     header('Content-Type: application/pdf');
     header('Content-Disposition: inline; filename="'. preg_replace('/[^a-zA-Z0-9_.-]/', '', $doc['filename'] ?: "{$docId}.pdf"). '"');
     header('Cache-Control: public, max-age=86400');

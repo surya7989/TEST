@@ -516,12 +516,23 @@ export function AdminEmails() {
       const res = await dispatchTemplateEmail({
         templateId: selectedTemplateId,
         recipientEmail: sampleRecipientEmail,
+        customerEmail: sampleRecipientEmail,
         customerName: 'Sarah Jenkins',
         customerPhone: '0412 345 678',
         shippingAddress: '42 Victoria Parade, Fitzroy VIC 3065 Australia',
+        items: [
+          { code: 'EQ-104', name: 'Air-Cell Pressure Relief Cushion', quantity: 1, price: 480.0, amount: 480.0 },
+          { code: 'EQ-102', name: 'Ultralight Folding Transport Wheelchair', quantity: 1, price: 800.0, amount: 800.0 },
+        ],
+        subtotal: 1280.0,
+        deliveryFee: 0,
+        gstTotal: 0,
+        total: 1280.0,
+        notes: '',
         sendCustomerCopy: sendBoth || previewRecipient === 'receiver',
         sendAdminCopy: sendBoth || previewRecipient === 'admin',
         adminEmail: sampleRecipientEmail,
+        attachPdf: true,
         customSettings: {
           companyName: emailConfig.clinicName,
           addressLine1: emailConfig.address,

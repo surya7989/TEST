@@ -325,6 +325,49 @@ class FPDF {
         $this->_out(sprintf('%.2F %.2F %.2F %.2F re %s', $x*$this->k, ($this->h-$y)*$this->k, $w*$this->k, -$h*$this->k, $op));
     }
 
+    function RoundedRect($x, $y, $w, $h, $r, $style='') {
+        if ($w <= 0 || $h <= 0) return;
+        $r = max(0, min($r, $w / 2, $h / 2));
+        if ($r == 0) {
+            $this->Rect($x, $y, $w, $h, $style);
+            return;
+        }
+        if ($style == 'F') $op = 'f';
+        elseif ($style == 'FD' || $style == 'DF') $op = 'B';
+        else $op = 'S';
+        $k = $this->k;
+        $hp = $this->h;
+        // Approximation constant for a circular arc with cubic Bezier curves.
+        $arc = 4 / 3 * (sqrt(2) - 1);
+        $this->_out(sprintf('%.2F %.2F m', ($x + $r) * $k, ($hp - $y) * $k));
+        $xc = $x + $w - $r;
+        $yc = $y + $r;
+        // Top edge + top-right corner
+        $this->_out(sprintf('%.2F %.2F l', $xc * $k, ($hp - $y) * $k));
+        $this->_Arc($xc + $r * $arc, $y, $xc + $r, $y + $r * (1 - $arc), $xc + $r, $yc);
+        $xc = $x + $w - $r;
+        $yc = $y + $h - $r;
+        // Right edge + bottom-right corner
+        $this->_out(sprintf('%.2F %.2F l', ($x + $w) * $k, ($hp - $yc) * $k));
+        $this->_Arc($x + $w, $yc + $r * $arc, $x + $w - $r * (1 - $arc), $yc + $r, $xc, $y + $h);
+        $xc = $x + $r;
+        $yc = $y + $h - $r;
+        // Bottom edge + bottom-left corner
+        $this->_out(sprintf('%.2F %.2F l', $xc * $k, ($hp - ($y + $h)) * $k));
+        $this->_Arc($xc - $r * $arc, $y + $h, $x, $y + $h - $r * (1 - $arc), $x, $yc);
+        $xc = $x + $r;
+        $yc = $y + $r;
+        // Left edge + top-left corner
+        $this->_out(sprintf('%.2F %.2F l', $x * $k, ($hp - $yc) * $k));
+        $this->_Arc($x, $yc - $r * $arc, $x + $r * (1 - $arc), $y, $xc, $y);
+        $this->_out($op);
+    }
+
+    function _Arc($x1, $y1, $x2, $y2, $x3, $y3) {
+        $h = $this->h;
+        $this->_out(sprintf('%.2F %.2F %.2F %.2F %.2F %.2F c ', $x1*$this->k, ($h-$y1)*$this->k, $x2*$this->k, ($h-$y2)*$this->k, $x3*$this->k, ($h-$y3)*$this->k));
+    }
+
     function SetFont($family, $style='', $size=0) {
         if ($family == '') $family = $this->FontFamily;
         else $family = strtolower($family);

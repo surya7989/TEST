@@ -164,6 +164,63 @@ if (!empty($db_name) && !empty($db_user)) {
 }
 
 // ----------------------------------------------------------------------------
+// 4b. Overlay admin-saved SMTP settings from DB (fixes live vs local drift).
+// The deploy ZIP intentionally excludes api/.env, so production often has no
+// .env file. Admins then save SMTP in Settings -> app_settings.smtp_config,
+// but the old code never read it back, so live mail silently used empty
+// credentials while local (with .env) worked. DB now overrides env when set.
+// Supports both frontend key styles (host/port/secure/user/pass/...) and
+// server key styles (SMTP_HOST/SMTP_PORT/...).
+// ----------------------------------------------------------------------------
+if ($pdo) {
+    try {
+        $stmtSmtp = $pdo->query("SELECT setting_value FROM app_settings WHERE setting_key = 'smtp_config' LIMIT 1");
+        $rowSmtp = $stmtSmtp ? $stmtSmtp->fetch() : false;
+        if ($rowSmtp && !empty($rowSmtp['setting_value'])) {
+            $saved = json_decode((string)$rowSmtp['setting_value'], true);
+            if (is_array($saved)) {
+                $pick = function(array $arr, array $keys, $fallback) {
+                    foreach ($keys as $k) {
+                        if (isset($arr[$k]) && $arr[$k] !== '' && $arr[$k] !== null) return $arr[$k];
+                    }
+                    return $fallback;
+                };
+                $newHost = (string)$pick($saved, ['host', 'SMTP_HOST', 'smtp_host'], $smtp_host);
+                $newPort = (int)$pick($saved, ['port', 'SMTP_PORT', 'smtp_port'], $smtp_port);
+                $newSecureRaw = $pick($saved, ['secure', 'SMTP_SECURE', 'smtp_secure'], $smtp_secure);
+                $newUser = (string)$pick($saved, ['user', 'SMTP_USER', 'smtp_user'], $smtp_user);
+                $newPass = (string)$pick($saved, ['pass', 'SMTP_PASS', 'smtp_pass', 'password'], '');
+                $newFromName = (string)$pick($saved, ['fromName', 'SMTP_FROM_NAME', 'smtp_from_name'], $smtp_from_name);
+                $newFromEmail = (string)$pick($saved, ['fromEmail', 'SMTP_FROM_EMAIL', 'smtp_from_email'], $smtp_from_email);
+                if ($newHost !== '') $smtp_host = $newHost;
+                if ($newPort > 0) $smtp_port = $newPort;
+                // Normalise secure flag: true/465/ssl => 'ssl', otherwise 'tls'
+                if (is_bool($newSecureRaw)) {
+                    $smtp_secure = ($newSecureRaw || $newPort == 465) ? 'ssl' : 'tls';
+                } elseif ($newSecureRaw !== '' && $newSecureRaw !== null) {
+                    $s = strtolower((string)$newSecureRaw);
+                    if ($s === '1' || $s === 'true' || $s === 'ssl' || $s === '465') $smtp_secure = 'ssl';
+                    elseif ($s === 'tls' || $s === '587' || $s === '0' || $s === 'false') $smtp_secure = 'tls';
+                    else $smtp_secure = (string)$newSecureRaw;
+                }
+                if ($newUser !== '') $smtp_user = $newUser;
+                // Only overwrite the password when the admin actually typed a new one.
+                // The settings UI sends pass:'' and shows passMasked bullets otherwise.
+                if ($newPass !== '' && $newPass !== '••••••••' && $newPass !== '••••••••••••••••') $smtp_pass = $newPass;
+                if ($newFromName !== '') $smtp_from_name = $newFromName;
+                if ($newFromEmail !== '' && filter_var($newFromEmail, FILTER_VALIDATE_EMAIL)) $smtp_from_email = $newFromEmail;
+                // Keep the admin notification mailbox in sync when it still holds the default.
+                if ((!isset($admin_email) || $admin_email === '' || $admin_email === 'admin@atspecialists.com.au') && filter_var($smtp_from_email, FILTER_VALIDATE_EMAIL)) {
+                    $admin_email = $smtp_from_email;
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        // Missing app_settings table on fresh installs: keep .env values.
+    }
+}
+
+// ----------------------------------------------------------------------------
 // 5. Response & Body Helpers
 // ----------------------------------------------------------------------------
 function sendJson(array $data, int $statusCode = 200): void {
