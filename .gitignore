@@ -12,6 +12,8 @@ build/
 hostinger_public_html/
 deploy.zip
 *.zip
+/index.html
+/assets/
 
 # Environment & Secrets (NEVER COMMIT)
 .env

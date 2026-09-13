@@ -11,7 +11,7 @@
     "dev:backend": "npm run dev --workspace=apps/backend",
     "start": "node apps/backend/dist/index.js",
     "serve": "npm run build && node apps/backend/dist/index.js",
-    "build": "npm run build --workspace=apps/frontend",
+    "build": "npm run build:frontend && node scripts/post-build.js",
     "build:frontend": "npm run build --workspace=apps/frontend",
     "build:backend": "npm run build --workspace=apps/backend",
     "build:deploy": "node create-deploy-zip.js",
