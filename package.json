@@ -6,19 +6,11 @@
     "apps/frontend"
   ],
   "scripts": {
-    "dev": "concurrently -n \"API,WEB\" -c \"cyan,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:frontend": "npm run dev --workspace=apps/frontend",
-    "dev:backend": "npm run dev --workspace=apps/backend",
-    "start": "node apps/backend/dist/index.js",
-    "serve": "npm run build && node apps/backend/dist/index.js",
+    "dev": "npm run dev --workspace=apps/frontend",
     "build": "npm run build:frontend && node scripts/post-build.js",
     "build:frontend": "npm run build --workspace=apps/frontend",
-    "build:backend": "npm run build --workspace=apps/backend",
     "build:deploy": "node create-deploy-zip.js",
     "deploy:zip": "node create-deploy-zip.js",
-    "test": "node test-suite.js && node security-pen-test.js",
-    "test:security": "node security-pen-test.js",
-    "verify:deploy": "node verify-deploy-zip.js",
     "lint": "npm run lint --workspace=apps/frontend"
   },
   "optionalDependencies": {
@@ -28,7 +20,6 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.69.0",
     "@typescript-eslint/parser": "^8.69.0",
-    "concurrently": "^9.1.2",
     "typescript": "^5.8.2"
   },
   "engines": {
