@@ -801,8 +801,18 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
 
       fetchAllData: async () => {
         const token = getAdminToken();
-        if (!token && !get().isAuthenticated) {
+        if (!token) {
+          if (get().isAuthenticated) {
+            get().logout();
+          }
           return;
+        }
+
+        if (!get().isAuthenticated) {
+          const authed = await get().checkAuth();
+          if (!authed) {
+            return;
+          }
         }
 
         try {

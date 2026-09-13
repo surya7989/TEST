@@ -107,6 +107,9 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
   }
 
   if (!response.ok) {
+    if (response.status === 401 && adminToken && url !== '/auth/login' && url !== '/auth/customer-login') {
+      clearAdminToken();
+    }
     const errorMsg = data.error || data.message || `Request failed with status ${response.status}`;
     const err = new Error(errorMsg);
     (err as any).status = response.status;

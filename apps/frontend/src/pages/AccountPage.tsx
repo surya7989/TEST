@@ -1186,63 +1186,63 @@ export function AccountPage() {
             </div>
 
             {/* Dashboard Tabs Bar */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 scrollbar-hide">
               <button
                 type="button"
                 onClick={() => setTab('orders')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
                   tab === 'orders'
                     ? 'bg-[#147A7A] text-white shadow-xs'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
                 }`}
               >
-                <Package className="w-4 h-4" />
+                <Package className="w-4 h-4 shrink-0" />
                 <span>My Equipment Orders ({orders.length})</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTab('quotes')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
                   tab === 'quotes'
                     ? 'bg-[#147A7A] text-white shadow-xs'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
                 }`}
               >
-                <FileText className="w-4 h-4" />
+                <FileText className="w-4 h-4 shrink-0" />
                 <span>NDIS Quotes &amp; Funding ({quotes.length})</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTab('profile')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
                   tab === 'profile'
                     ? 'bg-[#147A7A] text-white shadow-xs'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
                 }`}
               >
-                <User className="w-4 h-4" />
+                <User className="w-4 h-4 shrink-0" />
                 <span>NDIS &amp; Delivery Profile</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTab('wishlist')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
                   tab === 'wishlist'
                     ? 'bg-[#147A7A] text-white shadow-xs'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
                 }`}
               >
-                <Heart className="w-4 h-4" />
+                <Heart className="w-4 h-4 shrink-0" />
                 <span>Saved Equipment ({wishlistProducts.length})</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setTab('guest_lookup')}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
                   tab === 'guest_lookup'
                     ? 'bg-[#147A7A] text-white shadow-xs'
                     : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'

@@ -14,6 +14,12 @@ deploy.zip
 *.zip
 /index.html
 /assets/
+/images/
+/favicon.ico
+/favicon.png
+/apple-touch-icon.png
+/logo.png
+/logo-header.png
 
 # Environment & Secrets (NEVER COMMIT)
 .env

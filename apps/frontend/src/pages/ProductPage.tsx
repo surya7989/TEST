@@ -919,56 +919,56 @@ export function ProductPage() {
           {/* ========================================== */}
           <div className="mt-12 pt-8 border-t border-gray-200">
             {/* Tab Headers */}
-            <div className="flex border-b border-gray-200 gap-4 sm:gap-8 overflow-x-auto">
+            <div className="flex items-center border-b border-gray-200 gap-2 sm:gap-6 overflow-x-auto scrollbar-hide py-1 -mx-4 px-4 sm:mx-0 sm:px-0">
               <button
                 type="button"
                 onClick={() => setActiveTab('description')}
-                className={`pb-4 text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-2 ${
+                className={`shrink-0 pb-3 sm:pb-4 px-2 sm:px-3 text-xs sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-1.5 sm:gap-2 ${
                   activeTab === 'description'
                     ? 'border-[#147A7A] text-[#147A7A]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
                 }`}
               >
-                <BookOpen className="w-4 h-4" />
+                <BookOpen className="w-4 h-4 shrink-0" />
                 <span>Description</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('specifications')}
-                className={`pb-4 text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-2 ${
+                className={`shrink-0 pb-3 sm:pb-4 px-2 sm:px-3 text-xs sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-1.5 sm:gap-2 ${
                   activeTab === 'specifications'
                     ? 'border-[#147A7A] text-[#147A7A]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
                 }`}
               >
-                <Layers className="w-4 h-4" />
+                <Layers className="w-4 h-4 shrink-0" />
                 <span>Specifications & Dimensions</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('related')}
-                className={`pb-4 text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-2 ${
+                className={`shrink-0 pb-3 sm:pb-4 px-2 sm:px-3 text-xs sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-1.5 sm:gap-2 ${
                   activeTab === 'related'
                     ? 'border-[#147A7A] text-[#147A7A]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
                 }`}
               >
-                <SlidersHorizontal className="w-4 h-4" />
+                <SlidersHorizontal className="w-4 h-4 shrink-0" />
                 <span>Related Equipment</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('reviews')}
-                className={`pb-4 text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-2 ${
+                className={`shrink-0 pb-3 sm:pb-4 px-2 sm:px-3 text-xs sm:text-sm font-extrabold transition-all cursor-pointer whitespace-nowrap border-b-2 flex items-center gap-1.5 sm:gap-2 ${
                   activeTab === 'reviews'
                     ? 'border-[#147A7A] text-[#147A7A]'
                     : 'border-transparent text-gray-500 hover:text-gray-900'
                 }`}
               >
-                <Star className="w-4 h-4" />
+                <Star className="w-4 h-4 shrink-0" />
                 <span>Reviews ({displayReviewCount})</span>
               </button>
             </div>

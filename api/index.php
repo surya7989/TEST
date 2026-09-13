@@ -944,41 +944,45 @@ if ($endpoint === 'auth') {
 // 3. PRODUCTS ROUTES (`/api/products/*`)
 // ============================================================================
 function formatProductRow(array $row): array {
-    $categories = !empty($row['categories_json']) ? json_decode($row['categories_json'], true) : null;
+    $categories = !empty($row['categories_json']) ? json_decode((string)$row['categories_json'], true) : null;
     if (!is_array($categories) || empty($categories)) {
-        $categories = [$row['category'] ?? 'General'];
+        $categories = [(string)($row['category'] ?? 'General')];
     }
 
-    $galleryImages = !empty($row['gallery_images_json']) ? json_decode($row['gallery_images_json'], true) : null;
+    $galleryImages = !empty($row['gallery_images_json']) ? json_decode((string)$row['gallery_images_json'], true) : null;
     if (!is_array($galleryImages) || empty($galleryImages)) {
-        $galleryImages = !empty($row['image']) ? [$row['image']] : [];
+        $galleryImages = !empty($row['image']) ? [(string)$row['image']] : [];
     }
 
-    $attributes = !empty($row['attributes_json']) ? json_decode($row['attributes_json'], true) : [];
-    $variants = !empty($row['variants_json']) ? json_decode($row['variants_json'], true) : [];
-    $features = !empty($row['features_json']) ? json_decode($row['features_json'], true) : [];
-    $specifications = !empty($row['specs_json']) ? json_decode($row['specs_json'], true) : [];
+    $attributes = !empty($row['attributes_json']) ? json_decode((string)$row['attributes_json'], true) : [];
+    $variants = !empty($row['variants_json']) ? json_decode((string)$row['variants_json'], true) : [];
+    $features = !empty($row['features_json']) ? json_decode((string)$row['features_json'], true) : [];
+    $specifications = !empty($row['specs_json']) ? json_decode((string)$row['specs_json'], true) : [];
 
     $price = floatval($row['price'] ?? 0);
     $hirePrice = floatval($row['hire_price'] ?? 0);
+    $id = (string)($row['id'] ?? '');
+    $sku = (string)($row['sku'] ?? $id);
+    $desc = (string)($row['description'] ?? '');
+    $shortDesc = (string)($row['short_description'] ?? ($desc !== '' ? substr($desc, 0, 150) : ''));
 
     return [
-        'id' => $row['id'],
-        'name' => $row['name'],
-        'slug' => $row['slug'] ?? $row['id'],
-        'sku' => $row['sku'] ?? strtoupper($row['id']),
-        'brand' => $row['brand'] ?? 'AT Specialists',
-        'category' => $row['category'] ?? ($categories[0] ?? 'General'),
+        'id' => $id,
+        'name' => (string)($row['name'] ?? ''),
+        'slug' => (string)($row['slug'] ?? $id),
+        'sku' => $sku,
+        'brand' => (string)($row['brand'] ?? 'AT Specialists'),
+        'category' => (string)($row['category'] ?? ($categories[0] ?? 'General')),
         'categories' => $categories,
         'categoryPath' => $categories,
-        'image' => $row['image'] ?? ($galleryImages[0] ?? ''),
-        'galleryImages' => $galleryImages,
-        'images' => $galleryImages,
-        'thumbnail' => $row['image'] ?? ($galleryImages[0] ?? ''),
+        'image' => (string)($row['image'] ?? ($galleryImages[0] ?? '')),
+        'galleryImages' => is_array($galleryImages) ? $galleryImages : [],
+        'images' => is_array($galleryImages) ? $galleryImages : [],
+        'thumbnail' => (string)($row['image'] ?? ($galleryImages[0] ?? '')),
         'price' => $price,
         'buyPrice' => $price,
         'hirePrice' => $hirePrice,
-        'hirePeriod' => $row['hire_period'] ?? 'week',
+        'hirePeriod' => (string)($row['hire_period'] ?? 'week'),
         'stock' => intval($row['stock'] ?? 25),
         'lowStockThreshold' => intval($row['low_stock_threshold'] ?? 5),
         'available' => intval($row['is_active'] ?? 1) !== 0,
@@ -988,37 +992,37 @@ function formatProductRow(array $row): array {
         'featured' => intval($row['is_featured'] ?? 0) === 1,
         'is_featured' => intval($row['is_featured'] ?? 0),
         'is_active' => intval($row['is_active'] ?? 1),
-        'gstType' => $row['gst_type'] ?? 'gst-free',
-        'gst_type' => $row['gst_type'] ?? 'gst-free',
+        'gstType' => (string)($row['gst_type'] ?? 'gst-free'),
+        'gst_type' => (string)($row['gst_type'] ?? 'gst-free'),
         'gstRate' => floatval($row['gst_rate'] ?? 0),
         'gst_rate' => floatval($row['gst_rate'] ?? 0),
         'deliveryFee' => floatval($row['delivery_fee'] ?? 0),
         'delivery_fee' => floatval($row['delivery_fee'] ?? 0),
         'freeDelivery' => floatval($row['delivery_fee'] ?? 0) == 0,
-        'ndisCode' => $row['ndis_code'] ?? '',
-        'ndis_code' => $row['ndis_code'] ?? '',
-        'shortDescription' => $row['short_description'] ?? (!empty($row['description']) ? substr($row['description'], 0, 150) : ''),
-        'fullDescription' => $row['description'] ?? '',
-        'description' => $row['description'] ?? '',
+        'ndisCode' => (string)($row['ndis_code'] ?? ''),
+        'ndis_code' => (string)($row['ndis_code'] ?? ''),
+        'shortDescription' => $shortDesc,
+        'fullDescription' => $desc,
+        'description' => $desc,
         'badge' => $row['badge'] ?? ($hirePrice > 0 ? 'Hire Available' : null),
         'hasFreeSample' => intval($row['has_free_sample'] ?? 0) === 1,
-        'sampleNote' => $row['sample_note'] ?? '',
+        'sampleNote' => (string)($row['sample_note'] ?? ''),
         'rating' => floatval($row['rating'] ?? 5.0),
         'reviewCount' => intval($row['review_count'] ?? 10),
         'attributes' => is_array($attributes) ? $attributes : [],
         'variants' => is_array($variants) ? $variants : [],
         'features' => is_array($features) ? $features : [],
         'specifications' => is_array($specifications) ? $specifications : [],
-        'tags' => [strtolower($row['brand'] ?? 'at specialists'), strtolower($row['category'] ?? 'assistive-tech')],
+        'tags' => [strtolower((string)($row['brand'] ?? 'at specialists')), strtolower((string)($row['category'] ?? 'assistive-tech'))],
     ];
 }
 
 if ($endpoint === 'products') {
     $prodId = $segments[1] ?? '';
-    $db = requireDatabase();
 
     // POST /api/products/sync-catalog (Admin Sync Catalog from products.json to MySQL)
     if ($prodId === 'sync-catalog' && $method === 'POST') {
+        $db = requireDatabase();
         $syncKey = $_GET['key'] ?? ($_SERVER['HTTP_X_SYNC_KEY'] ?? '');
         $admin = getAdminFromToken();
         if (!$admin && $syncKey !== substr($jwt_secret, 0, 16)) {
@@ -1037,58 +1041,65 @@ if ($endpoint === 'products') {
     // returns the full active catalogue (legacy behaviour for the SPA bundle).
     if ($prodId === '' && $method === 'GET') {
         try {
-            $limit = isset($_GET['limit']) ? max(1, min(500, intval($_GET['limit']))) : 0;
-            $offset = isset($_GET['offset']) ? max(0, intval($_GET['offset'])) : 0;
-            $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, name ASC";
-            if ($limit > 0) {
-                $sql .= " LIMIT {$limit} OFFSET {$offset}";
-            }
-            $stmt = $db->query($sql);
-            $rows = $stmt ? $stmt->fetchAll() : [];
+            global $pdo;
+            if ($pdo) {
+                $limit = isset($_GET['limit']) ? max(1, min(500, intval($_GET['limit']))) : 0;
+                $offset = isset($_GET['offset']) ? max(0, intval($_GET['offset'])) : 0;
+                $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, name ASC";
+                if ($limit > 0) {
+                    $sql .= " LIMIT {$limit} OFFSET {$offset}";
+                }
+                $stmt = $pdo->query($sql);
+                $rows = $stmt ? $stmt->fetchAll() : [];
 
-            // If table has <= 4 products (empty or default dummy seeds), seed standard catalog
-            if (count($rows) <= 4) {
-                seedCatalogIntoDatabase($db);
-                $stmt = $db->query($sql);
-                $rows = $stmt ? $stmt->fetchAll() : $rows;
-            }
+                // If table has <= 4 products (empty or default dummy seeds), seed standard catalog
+                if (count($rows) <= 4) {
+                    seedCatalogIntoDatabase($pdo);
+                    $stmt = $pdo->query($sql);
+                    $rows = $stmt ? $stmt->fetchAll() : $rows;
+                }
 
-            $formatted = array_map('formatProductRow', $rows);
-            header('Cache-Control: public, max-age=300, stale-while-revalidate=600');
-            header('ETag: "products-' . md5($sql . count($rows)) . '"');
-            sendJson(['products' => $formatted]);
+                if (!empty($rows)) {
+                    $formatted = array_map('formatProductRow', $rows);
+                    header('Cache-Control: public, max-age=300, stale-while-revalidate=600');
+                    header('ETag: "products-' . md5($sql . count($rows)) . '"');
+                    sendJson(['products' => $formatted]);
+                }
+            }
         } catch (Throwable $e) {
-            error_log("GET /api/products error: " . $e->getMessage());
-            $catalog = getStaticCatalog();
-            if (!empty($catalog)) {
-                $slice = array_slice($catalog, 0, 500);
-                $fallbackFormatted = array_map(function($p) {
-                    $price = floatval($p['buyPrice'] ?? ($p['price'] ?? 0));
-                    $hirePrice = floatval($p['hirePrice'] ?? ($p['hire_price'] ?? 0));
-                    return [
-                        'id' => $p['id'],
-                        'name' => $p['name'],
-                        'slug' => $p['slug'] ?? $p['id'],
-                        'sku' => $p['sku'] ?? $p['id'],
-                        'brand' => $p['brand'] ?? 'AT Specialists',
-                        'category' => is_array($p['categories'] ?? null) ? ($p['categories'][0] ?? 'Mobility') : ($p['category'] ?? 'Mobility'),
-                        'categories' => $p['categories'] ?? [$p['category'] ?? 'Mobility'],
-                        'image' => $p['image'] ?? '',
-                        'galleryImages' => $p['galleryImages'] ?? [$p['image'] ?? ''],
-                        'thumbnail' => $p['image'] ?? '',
-                        'price' => $price,
-                        'buyPrice' => $price,
-                        'hirePrice' => $hirePrice,
-                        'stock' => intval($p['stock'] ?? 50),
-                        'available' => true,
-                        'is_active' => 1,
-                        'is_featured' => !empty($p['featured']) ? 1 : 0,
-                    ];
-                }, $slice);
-                sendJson(['products' => $fallbackFormatted]);
-            }
-            sendJson(['products' => []]);
+            error_log("GET /api/products query error, fallback to static catalog: " . $e->getMessage());
         }
+
+        // Resilient fallback: return static catalog from products.json
+        $catalog = getStaticCatalog();
+        if (!empty($catalog)) {
+            $slice = array_slice($catalog, 0, 500);
+            $fallbackFormatted = array_map(function($p) {
+                $price = floatval($p['buyPrice'] ?? ($p['price'] ?? 0));
+                $hirePrice = floatval($p['hirePrice'] ?? ($p['hire_price'] ?? 0));
+                return [
+                    'id' => (string)($p['id'] ?? ''),
+                    'name' => (string)($p['name'] ?? ''),
+                    'slug' => (string)($p['slug'] ?? $p['id'] ?? ''),
+                    'sku' => (string)($p['sku'] ?? $p['id'] ?? ''),
+                    'brand' => (string)($p['brand'] ?? 'AT Specialists'),
+                    'category' => is_array($p['categories'] ?? null) ? (string)($p['categories'][0] ?? 'Mobility') : (string)($p['category'] ?? 'Mobility'),
+                    'categories' => $p['categories'] ?? [$p['category'] ?? 'Mobility'],
+                    'image' => (string)($p['image'] ?? ''),
+                    'galleryImages' => $p['galleryImages'] ?? [$p['image'] ?? ''],
+                    'thumbnail' => (string)($p['image'] ?? ''),
+                    'price' => $price,
+                    'buyPrice' => $price,
+                    'hirePrice' => $hirePrice,
+                    'stock' => intval($p['stock'] ?? 50),
+                    'available' => true,
+                    'is_active' => 1,
+                    'is_featured' => !empty($p['featured']) ? 1 : 0,
+                ];
+            }, $slice);
+            sendJson(['products' => $fallbackFormatted]);
+        }
+        sendJson(['products' => []]);
     }
 
     // GET /api/products/{id}
@@ -2913,23 +2924,56 @@ if ($endpoint === 'emails') {
 if ($endpoint === 'settings') {
     $db = requireDatabase();
 
-    // GET /api/settings (Admin only — secrets are masked, never returned)
+    // GET /api/settings (Admin gets full masked settings; Public/Guests get store info & checkout state)
     if ($method === 'GET') {
-        requireAdminAuth();
-        $stmt = $db->query("SELECT * FROM app_settings");
-        $rows = $stmt->fetchAll();
-        $settings = [];
-        foreach ($rows as $r) {
-            $decoded = json_decode((string)$r['setting_value'], true);
-            $settings[$r['setting_key']] = is_array($decoded) ? $decoded : $r['setting_value'];
+        $admin = getAdminFromToken();
+        if ($admin) {
+            $stmt = $db->query("SELECT * FROM app_settings");
+            $rows = $stmt ? $stmt->fetchAll() : [];
+            $settings = [];
+            foreach ($rows as $r) {
+                $decoded = json_decode((string)$r['setting_value'], true);
+                $settings[$r['setting_key']] = is_array($decoded) ? $decoded : $r['setting_value'];
+            }
+            // Never expose the PayPal secret via the API (it lives in server env)
+            if (isset($settings['paypal_config']) && is_array($settings['paypal_config'])) {
+                $settings['paypal_config']['secretKey'] = '';
+                $settings['paypal_config']['secret'] = '';
+                $settings['paypal_config']['hasSecret'] = true;
+            }
+            sendJson(['settings' => $settings]);
         }
-        // Never expose the PayPal secret via the API (it lives in server env)
-        if (isset($settings['paypal_config']) && is_array($settings['paypal_config'])) {
-            $settings['paypal_config']['secretKey'] = '';
-            $settings['paypal_config']['secret'] = '';
-            $settings['paypal_config']['hasSecret'] = true;
-        }
-        sendJson(['settings' => $settings]);
+
+        // Public safe settings for guest storefront
+        $publicSettings = [
+            'store_info' => [
+                'tradingName' => ATS_TRADING_NAME,
+                'abn' => ATS_ABN,
+                'phone' => ATS_PHONE,
+                'email' => ATS_EMAIL,
+                'address' => ATS_ADDRESS
+            ],
+            'currency' => $currency,
+            'checkout_settings' => [
+                'enablePayment' => true,
+                'enableQuotation' => true
+            ],
+            'paypal_config' => [
+                'clientId' => $paypal_client_id,
+                'mode' => $paypal_mode
+            ]
+        ];
+        try {
+            $stmt = $db->query("SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ('checkout_settings', 'company_settings')");
+            if ($stmt) {
+                while ($r = $stmt->fetch()) {
+                    $decoded = json_decode((string)$r['setting_value'], true);
+                    $publicSettings[$r['setting_key']] = is_array($decoded) ? $decoded : $r['setting_value'];
+                }
+            }
+        } catch (Exception $e) {}
+
+        sendJson(['settings' => $publicSettings]);
     }
 
     // POST /api/settings (Admin only)

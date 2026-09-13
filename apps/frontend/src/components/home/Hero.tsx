@@ -145,21 +145,34 @@ export function Hero() {
           </div>
         </div>
 
-        {/* CAROUSEL CONTROLS: 4 Clean Dots Indicator at Bottom Center */}
-        <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-          {heroSlides.map((_, index) => (<button
+        {/* CAROUSEL CONTROLS: Clean Dots Indicator */}
+        <div className="flex items-center justify-center gap-2 pb-4 pt-2 lg:p-0 lg:absolute lg:bottom-4 lg:left-1/2 lg:-translate-x-1/2 z-20">
+          {heroSlides.map((_, index) => (
+            <button
               key={index}
+              type="button"
               onClick={() => {
                 setCurrentSlide(index);
                 setIsAutoPlaying(false);
               }}
-              className={`rounded-full transition-all duration-200 cursor-pointer p-1 -m-1 ${
+              className={`rounded-full transition-all duration-300 cursor-pointer border-0 p-0 m-0 shrink-0 ${
                 index === currentSlide
-                  ? 'w-2.5 h-2.5 bg-[#147A7A]'
-                  : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+                  ? 'bg-[#147A7A] shadow-xs'
+                  : 'bg-gray-300 hover:bg-gray-400'
               }`}
+              style={{
+                width: index === currentSlide ? '22px' : '8px',
+                height: '8px',
+                minWidth: index === currentSlide ? '22px' : '8px',
+                minHeight: '8px',
+                maxWidth: index === currentSlide ? '22px' : '8px',
+                maxHeight: '8px',
+                padding: 0,
+                border: 'none',
+              }}
               aria-label={`Go to slide ${index + 1}`}
-            />))}
+            />
+          ))}
         </div>
       </div>
     </section>);
