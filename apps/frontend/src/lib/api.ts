@@ -621,6 +621,19 @@ export async function updateInquiryStatus(id: string, status: string): Promise<{
   });
 }
 
+export async function updateInquiryNotes(id: string, notes: string): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>(`/inquiries/${id}/notes`, {
+    method: 'PATCH',
+    body: JSON.stringify({ notes }),
+  });
+}
+
+export async function deleteInquiryApi(id: string): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>(`/inquiries/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 // ============================================================================
 // 8. CUSTOMERS API
 // ============================================================================

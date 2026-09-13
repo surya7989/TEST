@@ -492,6 +492,8 @@ export function AdminInvoices() {
     products,
     ndisQuotes,
     orders,
+    inquiries,
+    fetchInquiries,
     deleteNdisQuote,
     updateNdisQuote,
     convertNdisQuoteToOrder,
@@ -722,6 +724,60 @@ export function AdminInvoices() {
     handleSetTab('workflow');
     showNotice(`Loaded quote ${q.id} into document generator.`);
   };
+
+  // Helper to pre-populate quote/invoice from an incoming contact inquiry
+  const loadInquiryIntoWorkflow = (inq: any) => {
+    setSelectedTopic('ndis_quote');
+    applyTopicDefaults('ndis_quote');
+
+    const cleanId = String(inq.id || '').replace(/^INQ-?/i, '');
+    const inqDocId = `NDIS-QT-${cleanId || Date.now().toString().slice(-5)}`;
+    setDocumentId(inqDocId);
+    setCustomerName(inq.name || '');
+    setCustomerEmail(inq.email || '');
+    setCustomerPhone(inq.phone || '');
+    if (inq.ndisNumber) setNdisNumber(inq.ndisNumber);
+    if (inq.planManager) setPlanManager(inq.planManager);
+    setDocumentNotes(`Lead Source: Website Inquiry #${inq.id} [${inq.enquiryType || 'General'}]\nCustomer Message: ${inq.message || ''}`);
+
+    if (inq.equipmentInterest || (inq.message && inq.message.includes('[Equipment Interest:'))) {
+      let equipName = inq.equipmentInterest || '';
+      if (!equipName && inq.message) {
+        const match = inq.message.match(/\[Equipment Interest:\s*([^\]]+)\]/i);
+        if (match) equipName = match[1].trim();
+      }
+      if (equipName) {
+        setItems([
+          {
+            id: 'inq-item-1',
+            code: '05_120603099_0105_1_2',
+            name: `${equipName} — Prescribed Assistive Solution`,
+            quantity: 1,
+            price: 850.0,
+            amount: 850.0,
+            detail: `Specified via contact enquiry #${inq.id}`,
+          },
+        ]);
+      }
+    }
+
+    handleSetTab('workflow');
+    showNotice(`Loaded patient inquiry #${inq.id} into quote generator.`);
+  };
+
+  useEffect(() => {
+    const inquiryId = searchParams.get('inquiryId');
+    if (inquiryId) {
+      if (inquiries.length === 0) {
+        fetchInquiries();
+      } else {
+        const foundInq = inquiries.find((i) => i.id === inquiryId);
+        if (foundInq) {
+          loadInquiryIntoWorkflow(foundInq);
+        }
+      }
+    }
+  }, [searchParams, inquiries, fetchInquiries]);
 
   const handleSaveQuoteDraft = () => {
     const existingQuote = ndisQuotes.find((q) => q.id === documentId);
@@ -1014,7 +1070,7 @@ export function AdminInvoices() {
             headline: workflowEmailHeadline,
           },
         },
-        attachPdf: false,
+        attachPdf: true,
       });
 
       if (res.success) {

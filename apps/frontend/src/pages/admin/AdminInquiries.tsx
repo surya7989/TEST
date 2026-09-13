@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAdminStore, type ContactInquiry } from '@/store/adminStore';
 import {
   MessageSquare,
@@ -23,6 +23,7 @@ import {
   Edit,
   X,
   Check,
+  RefreshCw,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -36,19 +37,33 @@ const inquiryStatusConfig: Record<ContactInquiry['status'], { label: string; col
 };
 
 export function AdminInquiries() {
-  const { inquiries, updateInquiryStatus, addInquiryNote, deleteInquiry } = useAdminStore();
+  const { inquiries, fetchInquiries, updateInquiryStatus, addInquiryNote, deleteInquiry } = useAdminStore();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(null);
   const [newNoteText, setNewNoteText] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchInquiries();
+  }, [fetchInquiries]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchInquiries();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Counts
   const totalCount = inquiries.length;
   const newCount = inquiries.filter((i) => i.status === 'new').length;
   const inProgressCount = inquiries.filter((i) => i.status === 'in_progress').length;
-  const ndisCount = inquiries.filter((i) => i.enquiryType === 'ndis' || i.ndisNumber).length;
+  const ndisCount = inquiries.filter((i) => (i.enquiryType || '').toLowerCase().includes('ndis') || Boolean(i.ndisNumber)).length;
 
   const filteredInquiries = useMemo(() => {
     return inquiries.filter((inq) => {
@@ -63,7 +78,10 @@ export function AdminInquiries() {
         (inq.message || '').toLowerCase().includes(s);
 
       const matchesStatus = statusFilter === 'all' || inq.status === statusFilter;
-      const matchesType = typeFilter === 'all' || inq.enquiryType === typeFilter;
+      const matchesType =
+        typeFilter === 'all' ||
+        (inq.enquiryType || '').toLowerCase().trim() === typeFilter.toLowerCase().trim() ||
+        (inq.enquiryType || '').toLowerCase().includes(typeFilter.toLowerCase().trim());
 
       return matchesSearch && matchesStatus && matchesType;
     });
@@ -77,7 +95,8 @@ export function AdminInquiries() {
     setNewNoteText('');
   };
 
-  return (<div className="space-y-6 pb-12 animate-fade-in">
+  return (
+    <div className="space-y-6 pb-12 animate-fade-in">
       {/* 1. TOP HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
         <div>
@@ -93,6 +112,17 @@ export function AdminInquiries() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60"
+            title="Refresh Inquiries"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#147A7A]' : ''}`} />
+            <span>{isRefreshing ? 'Syncing...' : 'Refresh'}</span>
+          </button>
+
           <span className="px-3 py-1.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
             {newCount} New Unread Inquiries

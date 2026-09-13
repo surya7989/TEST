@@ -260,50 +260,100 @@ function renderEmailTemplate(string $title, string $preheader, string $bodyConte
     if ($actionUrl !== '' && $actionText !== '') {
         $safeUrl = htmlspecialchars($actionUrl, ENT_QUOTES, 'UTF-8');
         $safeText = htmlspecialchars($actionText, ENT_QUOTES, 'UTF-8');
-        $btnHtml = "
-        <div style='text-align: center; margin: 28px 0;'>
-            <a href='{$safeUrl}' style='display: inline-block; background-color: #0F766E; color: #ffffff; padding: 13px 26px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; letter-spacing: 0.2px;'>{$safeText}</a>
-        </div>";
+        $btnHtml = '
+        <table align="center" cellpadding="0" cellspacing="0" border="0" style="margin: 28px auto; text-align: center;">
+            <tr>
+                <td align="center" style="border-radius: 8px; background-color: #0F766E;">
+                    <a href="' . $safeUrl . '" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 14px 28px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; font-weight: 700; color: #ffffff; text-decoration: none; border-radius: 8px; letter-spacing: 0.3px; background-color: #0F766E;">' . $safeText . '</a>
+                </td>
+            </tr>
+        </table>';
     }
 
     $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
     $safePreheader = htmlspecialchars($preheader, ENT_QUOTES, 'UTF-8');
 
-    return "
-<!DOCTYPE html>
-<html lang='en'>
+    return '<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
-<meta charset='UTF-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<title>{$safeTitle}</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>' . $safeTitle . '</title>
 <style>
-  body { margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; }
-  .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-  .header { background: linear-gradient(135deg, #0F766E 0%, #115E59 100%); color: #ffffff; padding: 24px; text-align: center; }
-  .header h1 { margin: 0 0 4px; font-size: 20px; font-weight: 700; }
-  .header p { margin: 0; font-size: 12px; color: #ccfbf1; }
-  .content { padding: 28px 24px; font-size: 13.5px; line-height: 1.6; }
-  .footer { background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center; font-size: 11.5px; color: #64748b; }
-  .footer p { margin: 4px 0; }
+  :root { color-scheme: light; supported-color-schemes: light; }
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+  body { margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; }
+  @media only screen and (max-width: 620px) {
+    .email-container { width: 100% !important; max-width: 100% !important; }
+    .email-content { padding: 20px 16px !important; }
+  }
 </style>
+<!--[if mso]>
+<xml>
+<o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings>
+</xml>
+<![endif]-->
 </head>
-<body>
-<span style='display:none;font-size:0;line-height:0;max-height:0;mso-hide:all;'>{$safePreheader}</span>
-<div class='container'>
-  <div class='header'>
-    <h1>AT SPECIALISTS</h1>
-    <p>Assistive Technology Specialists Australia</p>
-  </div>
-  <div class='content'>
-    {$bodyContent}
-    {$btnHtml}
-  </div>
-  <div class='footer'>
-    <p><strong>Assistive Technology Specialists Pty Ltd</strong> &bull; ABN 48 123 456 789</p>
-    <p>NDIS Provider &bull; Moonee Ponds VIC Australia</p>
-    <p>Phone: 0494 767 409 &bull; Email: admin@atspecialists.com.au</p>
-  </div>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;">
+<div style="display: none; font-size: 1px; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all; font-family: sans-serif;">
+  ' . $safePreheader . '
 </div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0; padding: 28px 12px; background-color: #f1f5f9; width: 100%;">
+  <tr>
+    <td align="center">
+      <!-- Main White Container Card -->
+      <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);">
+        <!-- Header -->
+        <tr>
+          <td align="center" style="padding: 26px 24px 20px; background-color: #ffffff; border-bottom: 3px solid #0F766E;">
+            <div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: 0.5px; text-transform: uppercase; margin: 0 0 4px;">
+              AT SPECIALISTS AUSTRALIA
+            </div>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-size: 11.5px; font-weight: 700; color: #0F766E; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 6px;">
+              Assistive Technology &amp; Healthcare Specialists &bull; NDIS Registered Provider
+            </div>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-size: 11px; color: #64748b; line-height: 1.4; margin: 0;">
+              Level 2, 88 Holmes Road, Moonee Ponds VIC 3039 &bull; Phone: 0494 767 409 &bull; ABN 48 123 456 789
+            </div>
+          </td>
+        </tr>
+        <!-- Main Body Content -->
+        <tr>
+          <td class="email-content" style="padding: 28px 26px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; font-size: 13.5px; line-height: 1.6; color: #1e293b; background-color: #ffffff;">
+            ' . $bodyContent . '
+            ' . $btnHtml . '
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td style="padding: 22px 24px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; font-size: 11px; color: #64748b; line-height: 1.6;">
+            <div style="font-weight: 700; color: #334155; margin-bottom: 4px;">
+              Assistive Technology Specialists Pty Ltd &bull; ABN 48 123 456 789
+            </div>
+            <div style="color: #64748b; margin-bottom: 6px;">
+              NDIS Registered Provider &bull; Australian Clinical Equipment Standards
+            </div>
+            <div style="font-size: 10px; color: #94a3b8; line-height: 1.5; margin-bottom: 8px;">
+              Confidentiality Notice: This medical and assistive technology communication is confidential and intended solely for the recipient. If received in error, please notify sender immediately.
+            </div>
+            <div style="font-weight: 600; color: #0F766E;">
+              <a href="https://atspecialists.com.au" target="_blank" rel="noopener noreferrer" style="color: #0F766E; text-decoration: none;">atspecialists.com.au</a> &bull;
+              <a href="mailto:admin@atspecialists.com.au" style="color: #0F766E; text-decoration: none;">admin@atspecialists.com.au</a> &bull;
+              Phone: 0494 767 409
+            </div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
-</html>";
+</html>';
 }

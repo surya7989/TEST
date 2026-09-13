@@ -22,6 +22,8 @@ import {
   updateNdisQuoteStatus as apiUpdateNdisQuoteStatus,
   getInquiries as apiGetInquiries,
   updateInquiryStatus as apiUpdateInquiryStatus,
+  updateInquiryNotes as apiUpdateInquiryNotes,
+  deleteInquiryApi as apiDeleteInquiry,
   getSettings as apiGetSettings,
   saveSettings as apiSaveSettings,
   saveSmtpConfig as apiSaveSmtpConfig,
@@ -441,6 +443,7 @@ interface AdminState {
   convertNdisQuoteToOrder: (quoteId: string, options?: { paymentMethod?: string; status?: OrderStatus }) => Order | null;
 
   // Inquiries
+  fetchInquiries: () => Promise<void>;
   addInquiry: (inquiry: any) => void;
   updateInquiryStatus: (id: string, status: any) => Promise<boolean>;
   addInquiryNote: (id: string, note: string) => void;
@@ -1539,12 +1542,38 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
         }));
       },
 
+      fetchInquiries: async () => {
+        try {
+          const inqRes = await apiGetInquiries();
+          if (inqRes && Array.isArray(inqRes.inquiries)) {
+            set({
+              inquiries: inqRes.inquiries.map((iq: any) => ({
+                id: iq.id,
+                name: iq.name,
+                email: iq.email,
+                phone: iq.phone || '',
+                enquiryType: iq.enquiry_type || 'General',
+                ndisNumber: iq.ndis_number || '',
+                subject: iq.subject,
+                message: iq.message,
+                preferredContact: (iq.preferred_contact || 'email') as any,
+                status: iq.status || 'new',
+                createdAt: iq.created_at ? iq.created_at.split('T')[0] : '',
+                notes: typeof iq.notes === 'string' ? iq.notes : '',
+              })),
+            });
+          }
+        } catch (err) {
+          console.error('Failed to fetch inquiries:', err);
+        }
+      },
+
       updateInquiryStatus: async (id: string, status: any) => {
         try {
           const res = await apiUpdateInquiryStatus(id, status);
           if (res.success) {
             set((state) => ({
-              inquiries: state.inquiries.map((inq) => (inq.id === id ? {...inq, status } : inq)),
+              inquiries: state.inquiries.map((inq) => (inq.id === id ? { ...inq, status } : inq)),
             }));
             return true;
           }
@@ -1555,18 +1584,22 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
       },
 
       addInquiryNote: (id: string, note: string) => {
-        set((state) => ({
-          inquiries: state.inquiries.map((inq) =>
-            inq.id === id
-              ? {
-                  ...inq,
-                  notes: inq.notes ? `${inq.notes}\n[${new Date().toLocaleDateString('en-AU')}] ${note}` : `[${new Date().toLocaleDateString('en-AU')}] ${note}`,
-                }
-              : inq),
-        }));
+        const timestamp = new Date().toLocaleDateString('en-AU');
+        const formattedEntry = `[${timestamp}] ${note}`;
+        set((state) => {
+          const target = state.inquiries.find((inq) => inq.id === id);
+          const updatedNotes = target?.notes ? `${target.notes}\n${formattedEntry}` : formattedEntry;
+          apiUpdateInquiryNotes(id, updatedNotes).catch((err) => console.error('Note update failed:', err));
+          return {
+            inquiries: state.inquiries.map((inq) =>
+              inq.id === id ? { ...inq, notes: updatedNotes } : inq
+            ),
+          };
+        });
       },
 
       deleteInquiry: (id: string) => {
+        apiDeleteInquiry(id).catch((err) => console.error('Inquiry delete failed:', err));
         set((state) => ({
           inquiries: state.inquiries.filter((inq) => inq.id !== id),
         }));

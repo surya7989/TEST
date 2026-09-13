@@ -1642,6 +1642,7 @@ if ($endpoint === 'paypal') {
             // 4. Generate PDF Tax Invoice in Memory & Send Emails
             $orderRecord = [
                 'id' => $orderId,
+                'orderId' => $orderId,
                 'customerName' => $custName,
                 'customerEmail' => $custEmail,
                 'customerPhone' => $custPhone,
@@ -1660,35 +1661,122 @@ if ($endpoint === 'paypal') {
 
             try {
                 $attachments = [];
+                try {
+                    $pdfBytes = generateOrderInvoicePdfPhp($orderRecord);
+                    if (is_string($pdfBytes) && strpos($pdfBytes, '%PDF') === 0) {
+                        $attachments[] = [
+                            'name' => "Tax-Invoice-{$orderId}.pdf",
+                            'data' => $pdfBytes,
+                            'type' => 'application/pdf',
+                        ];
+                    }
+                } catch (Throwable $pe) {
+                    error_log("Failed to generate order PDF: " . $pe->getMessage());
+                }
+
+                $orderItemsHtml = buildDispatchItemsTableHtml($cart['items'], (float)$cart['subtotal'], (float)$cart['deliveryFee'], (float)$cart['gstTotal'], (float)$cart['total']);
 
                 if ($custEmail !== '') {
-                    $custHtml = renderEmailTemplate("Order Confirmed - {$orderId}",
-                        "Your AT Specialists order has been confirmed!",
-                        "<h3>Thank you for your order, ". htmlspecialchars($custName). "!</h3>
-                         <p>We are pleased to confirm that your order <strong>#{$orderId}</strong> has been successfully placed and processed.</p>
-                         <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 20px 0;'>
-                            <p style='margin: 0 0 8px;'><strong>Order Number:</strong> {$orderId}</p>
-                            <p style='margin: 0 0 8px;'><strong>Total Paid:</strong> $". number_format($cart['total'], 2). " AUD</p>
-                            <p style='margin: 0 0 8px;'><strong>Payment Method:</strong> PayPal (Capture #{$captureId})</p>
-                            <p style='margin: 0 0 8px;'><strong>Tracking Reference:</strong> {$trackingNumber}</p>
-                            <p style='margin: 0;'><strong>Delivery Address:</strong> ". htmlspecialchars($shippingAddr). "</p>
-                         </div>
-                         <p>Your <strong>ATO / NDIS Tax Invoice</strong> is available online. You can view, track, or print your tax invoice anytime using the secure link below.</p>",
-                        COMPANY_WEB. "/account?lookup=". urlencode($orderId). "&token=". urlencode($accessToken),
-                        "View Order & Track Dispatch");
+                    $custBody = "
+                    <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 20px;'>
+                      <tr>
+                        <td style='padding: 14px 18px; background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 8px;'>
+                          <span style='font-size: 11px; font-weight: 800; color: #0F766E; text-transform: uppercase; letter-spacing: 0.5px;'>✓ Order Confirmed &bull; Invoice #{$orderId}</span>
+                          <h2 style='margin: 6px 0 0; font-size: 18px; font-weight: 800; color: #115E59;'>Thank you for your order, ". htmlspecialchars($custName, ENT_QUOTES, 'UTF-8') ."!</h2>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style='margin: 0 0 16px; font-size: 13.5px; color: #334155; line-height: 1.6;'>
+                      We are pleased to confirm that your assistive technology order <strong>#{$orderId}</strong> has been successfully received and processed. Your official ATO Tax Invoice is attached to this email as a PDF and also accessible online below.
+                    </p>
+
+                    {$orderItemsHtml}
+
+                    <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;'>
+                      <tr>
+                        <td style='padding: 14px 16px;'>
+                          <table width='100%' cellpadding='0' cellspacing='0' border='0' style='font-size: 12.5px; color: #334155; line-height: 1.6;'>
+                            <tr>
+                              <td style='padding: 3px 0; width: 140px; color: #64748b; font-weight: 600;'>Order Reference:</td>
+                              <td style='padding: 3px 0; font-weight: 700; color: #0f172a; font-family: monospace;'>{$orderId}</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Payment Method:</td>
+                              <td style='padding: 3px 0; font-weight: 600; color: #0f172a;'>PayPal Verified (Capture #{$captureId})</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Dispatch Tracking:</td>
+                              <td style='padding: 3px 0; font-weight: 700; color: #0F766E;'>{$trackingNumber}</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Shipping Address:</td>
+                              <td style='padding: 3px 0; color: #0f172a;'>". htmlspecialchars($shippingAddr, ENT_QUOTES, 'UTF-8') ."</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>";
+
+                    $custHtml = renderEmailTemplate(
+                        "Order Confirmed: #{$orderId} - AT Specialists Australia",
+                        "Your order #{$orderId} has been confirmed. Tax Invoice attached.",
+                        $custBody,
+                        publicBaseUrl() . "/account?lookup=" . urlencode($orderId) . "&token=" . urlencode($accessToken),
+                        "View Order & Track Dispatch"
+                    );
                     sendSmtpEmail($custEmail, "Order Confirmed: #{$orderId} - AT Specialists Australia", $custHtml, $attachments);
                 }
 
                 if ($admin_email !== '') {
-                    $adminHtml = renderEmailTemplate("New Order Received - {$orderId}",
-                        "New Order received: {$orderId}",
-                        "<h3>New Order Alert: {$orderId}</h3>
-                         <p>A new order has been received and paid via PayPal.</p>
-                         <p><strong>Customer:</strong> ". htmlspecialchars($custName). " ({$custEmail} | {$custPhone})</p>
-                         <p><strong>Total:</strong> $". number_format($cart['total'], 2). " AUD</p>
-                         <p><strong>Shipping Address:</strong> ". htmlspecialchars($shippingAddr). "</p>",
-                        COMPANY_WEB. "/at/orders",
-                        "View in Admin Dashboard");
+                    $adminBody = "
+                    <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 20px;'>
+                      <tr>
+                        <td style='padding: 14px 18px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px;'>
+                          <span style='font-size: 11px; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;'>📦 New Order Alert &bull; Invoice #{$orderId}</span>
+                          <h2 style='margin: 6px 0 0; font-size: 18px; font-weight: 800; color: #78350f;'>Order Received from ". htmlspecialchars($custName, ENT_QUOTES, 'UTF-8') ." ($". number_format($cart['total'], 2) ." AUD)</h2>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style='margin: 0 0 16px; font-size: 13.5px; color: #334155; line-height: 1.6;'>
+                      A new order has been completed and paid via PayPal. Please review logistics and prepare items for dispatch.
+                    </p>
+
+                    {$orderItemsHtml}
+
+                    <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;'>
+                      <tr>
+                        <td style='padding: 14px 16px;'>
+                          <table width='100%' cellpadding='0' cellspacing='0' border='0' style='font-size: 12.5px; color: #334155; line-height: 1.6;'>
+                            <tr>
+                              <td style='padding: 3px 0; width: 140px; color: #64748b; font-weight: 600;'>Customer Name:</td>
+                              <td style='padding: 3px 0; font-weight: 700; color: #0f172a;'>". htmlspecialchars($custName, ENT_QUOTES, 'UTF-8') ."</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Email / Phone:</td>
+                              <td style='padding: 3px 0; color: #0f172a;'>". htmlspecialchars($custEmail, ENT_QUOTES, 'UTF-8') ." &bull; ". htmlspecialchars($custPhone, ENT_QUOTES, 'UTF-8') ."</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Shipping Address:</td>
+                              <td style='padding: 3px 0; color: #0f172a;'>". htmlspecialchars($shippingAddr, ENT_QUOTES, 'UTF-8') ."</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Tracking Number:</td>
+                              <td style='padding: 3px 0; font-weight: 700; color: #0F766E;'>{$trackingNumber}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>";
+
+                    $adminHtml = renderEmailTemplate(
+                        "New Order: #{$orderId} from " . htmlspecialchars($custName, ENT_QUOTES, 'UTF-8'),
+                        "New Order #{$orderId} ($" . number_format($cart['total'], 2) . ")",
+                        $adminBody,
+                        publicBaseUrl() . "/at/orders",
+                        "View in Admin Dashboard"
+                    );
                     sendSmtpEmail($admin_email, "🔔 New Order: #{$orderId} ($". number_format($cart['total'], 2). ") - {$custName}", $adminHtml, $attachments);
                 }
             } catch (Exception $e) {
@@ -2066,33 +2154,89 @@ if ($endpoint === 'quotes') {
             // Generate Quote PDF and send dual email
             $quoteRecord = [
                 'id' => $id,
-                'customerName' => $customerName,
-                'customerEmail' => $customerEmail,
-                'customerPhone' => $customerPhone,
+                'participantName' => $customerName,
+                'participantEmail' => $customerEmail,
+                'participantPhone' => $customerPhone,
                 'shippingAddress' => $shippingAddress,
                 'ndisNumber' => $ndisNumber,
+                'planType' => $planType,
                 'planManager' => $planManager,
-                'items' => $cart['items'],
+                'planManagerEmail' => $planManagerEmail,
+                'subtotal' => $cart['subtotal'],
+                'deliveryFee' => $cart['deliveryFee'],
+                'gstTotal' => $cart['gstTotal'],
                 'total' => $cart['total'],
-                'createdAt' => date('Y-m-d H:i:s')
+                'items' => $cart['items'],
+                'createdAt' => date('Y-m-d H:i:s'),
+                'validUntil' => date('Y-m-d H:i:s', strtotime('+30 days'))
             ];
 
             try {
                 $attachments = [];
+                try {
+                    $pdfBytes = generateQuotePdfPhp($quoteRecord);
+                    if (is_string($pdfBytes) && strpos($pdfBytes, '%PDF') === 0) {
+                        $attachments[] = [
+                            'name' => "NDIS-Quotation-{$id}.pdf",
+                            'data' => $pdfBytes,
+                            'type' => 'application/pdf',
+                        ];
+                    }
+                } catch (Throwable $pe) {
+                    error_log("Failed to generate quote PDF: " . $pe->getMessage());
+                }
 
-                $html = renderEmailTemplate("NDIS Quotation #{$id} - AT Specialists",
-                    "NDIS Equipment Quotation",
-                    "<h3>NDIS Quotation #{$id}</h3>
-                     <p>Dear ". htmlspecialchars($customerName). ",</p>
-                     <p>Thank you for requesting an Assistive Technology quotation. Your quotation details are itemized below:</p>
-                     <div style='background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 6px; padding: 14px; margin: 16px 0;'>
-                        <p style='margin: 0 0 6px;'><strong>Quote Reference:</strong> {$id}</p>
-                        <p style='margin: 0 0 6px;'><strong>NDIS Number:</strong> ". htmlspecialchars($ndisNumber ?: 'On File'). "</p>
-                        <p style='margin: 0 0 6px;'><strong>Total Quotation Value:</strong> $". number_format($cart['total'], 2). " AUD</p>
-                        <p style='margin: 0;'><strong>Plan Management:</strong> ". htmlspecialchars($planManager ?: 'Self / Plan Managed'). "</p>
-                     </div>",
-                    COMPANY_WEB,
-                    "Visit AT Specialists");
+                $quoteItemsHtml = buildDispatchItemsTableHtml($cart['items'], (float)$cart['subtotal'], (float)$cart['deliveryFee'], (float)$cart['gstTotal'], (float)$cart['total']);
+
+                $custQuoteBody = "
+                <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 20px;'>
+                  <tr>
+                    <td style='padding: 14px 18px; background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 8px;'>
+                      <span style='font-size: 11px; font-weight: 800; color: #0F766E; text-transform: uppercase; letter-spacing: 0.5px;'>✓ NDIS Quotation Generated &bull; Ref #{$id}</span>
+                      <h2 style='margin: 6px 0 0; font-size: 18px; font-weight: 800; color: #115E59;'>NDIS Equipment Quotation for ". htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8') ."</h2>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style='margin: 0 0 16px; font-size: 13.5px; color: #334155; line-height: 1.6;'>
+                  Dear <strong>". htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8') ."</strong>,<br><br>
+                  Thank you for requesting an Assistive Technology quotation from AT Specialists Australia. Your official NDIS equipment quotation is attached to this email as a PDF.
+                </p>
+
+                {$quoteItemsHtml}
+
+                <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;'>
+                  <tr>
+                    <td style='padding: 14px 16px;'>
+                      <table width='100%' cellpadding='0' cellspacing='0' border='0' style='font-size: 12.5px; color: #334155; line-height: 1.6;'>
+                        <tr>
+                          <td style='padding: 3px 0; width: 140px; color: #64748b; font-weight: 600;'>Quote Reference:</td>
+                          <td style='padding: 3px 0; font-weight: 700; color: #0f172a; font-family: monospace;'>{$id}</td>
+                        </tr>
+                        <tr>
+                          <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>NDIS Number:</td>
+                          <td style='padding: 3px 0; font-weight: 700; color: #0F766E;'>". htmlspecialchars($ndisNumber ?: 'Provided on claim', ENT_QUOTES, 'UTF-8') ."</td>
+                        </tr>
+                        <tr>
+                          <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Plan Management:</td>
+                          <td style='padding: 3px 0; font-weight: 600; color: #0f172a;'>". htmlspecialchars($planManager ?: 'Plan / Self Managed', ENT_QUOTES, 'UTF-8') ."</td>
+                        </tr>
+                        <tr>
+                          <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Validity Period:</td>
+                          <td style='padding: 3px 0; color: #0f172a;'>Valid for 30 Days from issue</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>";
+
+                $html = renderEmailTemplate(
+                    "NDIS Quotation #{$id} — AT Specialists Australia",
+                    "Official NDIS Equipment Quotation #{$id} ({$customerName})",
+                    $custQuoteBody,
+                    publicBaseUrl(),
+                    "Visit Our Website"
+                );
 
                 sendSmtpEmail($customerEmail, "NDIS Quotation #{$id} — AT Specialists Australia", $html, $attachments);
                 if ($planManagerEmail !== '' && filter_var($planManagerEmail, FILTER_VALIDATE_EMAIL) && $planManagerEmail !== $customerEmail) {
@@ -2100,20 +2244,58 @@ if ($endpoint === 'quotes') {
                 }
 
                 if ($admin_email !== '') {
-                    $adminQuoteHtml = renderEmailTemplate("New NDIS Quote #{$id}",
-                        "New NDIS Quote Submitted for {$customerName}",
-                        "<h3>🔔 New NDIS Quotation Request: #{$id}</h3>
-                         <p>A customer has submitted an NDIS equipment quote request on the website.</p>
-                         <div style='background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 6px; padding: 14px; margin: 16px 0;'>
-                            <p style='margin: 0 0 6px;'><strong>Quote Reference:</strong> {$id}</p>
-                            <p style='margin: 0 0 6px;'><strong>Participant Name:</strong> ". htmlspecialchars($customerName). " ({$customerEmail} | {$customerPhone})</p>
-                            <p style='margin: 0 0 6px;'><strong>NDIS Number:</strong> ". htmlspecialchars($ndisNumber ?: 'On File'). "</p>
-                            <p style='margin: 0 0 6px;'><strong>Plan Manager:</strong> ". htmlspecialchars($planManager ?: 'Self / Plan Managed'). " ({$planManagerEmail})</p>
-                            <p style='margin: 0 0 6px;'><strong>Shipping Address:</strong> ". htmlspecialchars($shippingAddress). "</p>
-                            <p style='margin: 0;'><strong>Total Value:</strong> $". number_format($cart['total'], 2). " AUD</p>
-                         </div>",
-                        COMPANY_WEB. "/at/quotes",
-                        "View in Admin Dashboard");
+                    $adminQuoteBody = "
+                    <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 20px;'>
+                      <tr>
+                        <td style='padding: 14px 18px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px;'>
+                          <span style='font-size: 11px; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;'>🔔 New NDIS Quote Request &bull; Ref #{$id}</span>
+                          <h2 style='margin: 6px 0 0; font-size: 18px; font-weight: 800; color: #78350f;'>Quote Submitted for ". htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8') ." ($". number_format($cart['total'], 2) ." AUD)</h2>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style='margin: 0 0 16px; font-size: 13.5px; color: #334155; line-height: 1.6;'>
+                      A new NDIS equipment quote request was generated on the clinic portal.
+                    </p>
+
+                    {$quoteItemsHtml}
+
+                    <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;'>
+                      <tr>
+                        <td style='padding: 14px 16px;'>
+                          <table width='100%' cellpadding='0' cellspacing='0' border='0' style='font-size: 12.5px; color: #334155; line-height: 1.6;'>
+                            <tr>
+                              <td style='padding: 3px 0; width: 140px; color: #64748b; font-weight: 600;'>Participant Name:</td>
+                              <td style='padding: 3px 0; font-weight: 700; color: #0f172a;'>". htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8') ."</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Contact Details:</td>
+                              <td style='padding: 3px 0; color: #0f172a;'>". htmlspecialchars($customerEmail, ENT_QUOTES, 'UTF-8') ." &bull; ". htmlspecialchars($customerPhone, ENT_QUOTES, 'UTF-8') ."</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>NDIS Number:</td>
+                              <td style='padding: 3px 0; font-weight: 700; color: #0F766E;'>". htmlspecialchars($ndisNumber ?: 'On File', ENT_QUOTES, 'UTF-8') ."</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Plan Manager:</td>
+                              <td style='padding: 3px 0; color: #0f172a;'>". htmlspecialchars($planManager ?: 'Self / Plan Managed', ENT_QUOTES, 'UTF-8') ." (". htmlspecialchars($planManagerEmail, ENT_QUOTES, 'UTF-8') .")</td>
+                            </tr>
+                            <tr>
+                              <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Delivery Address:</td>
+                              <td style='padding: 3px 0; color: #0f172a;'>". htmlspecialchars($shippingAddress, ENT_QUOTES, 'UTF-8') ."</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>";
+
+                    $adminQuoteHtml = renderEmailTemplate(
+                        "New NDIS Quote #{$id} - {$customerName}",
+                        "NDIS Quote Request #{$id} ($" . number_format($cart['total'], 2) . ")",
+                        $adminQuoteBody,
+                        publicBaseUrl() . "/at/quotes",
+                        "View in Admin Dashboard"
+                    );
                     sendSmtpEmail($admin_email, "🔔 New NDIS Quote: #{$id} ($". number_format($cart['total'], 2). ") - {$customerName}", $adminQuoteHtml, $attachments);
                 }
             } catch (Exception $e) {
@@ -2200,9 +2382,38 @@ if ($endpoint === 'quotes') {
 // ============================================================================
 // 8. CONTACT & INQUIRIES ROUTES (`/api/inquiries/*` or `/api/contact`)
 // ============================================================================
+function ensureInquiriesTable(PDO $db): void {
+    static $ensured = false;
+    if ($ensured) return;
+    try {
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS `inquiries` (
+              `id` varchar(100) NOT NULL,
+              `name` varchar(255) NOT NULL,
+              `email` varchar(255) NOT NULL,
+              `phone` varchar(50) DEFAULT '',
+              `enquiry_type` varchar(100) DEFAULT 'General Inquiry',
+              `ndis_number` varchar(100) DEFAULT '',
+              `subject` varchar(255) DEFAULT '',
+              `message` text NOT NULL,
+              `status` varchar(50) DEFAULT 'new',
+              `notes` text DEFAULT NULL,
+              `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+              `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_inq_created` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $ensured = true;
+    } catch (Throwable $e) {
+        error_log('ensureInquiriesTable notice: ' . $e->getMessage());
+    }
+}
+
 if ($endpoint === 'inquiries' || $endpoint === 'contact') {
     $inqId = $segments[1] ?? '';
     $db = requireDatabase();
+    ensureInquiriesTable($db);
 
     // GET /api/inquiries (Admin only)
     if ($inqId === '' && $method === 'GET') {
@@ -2226,6 +2437,18 @@ if ($endpoint === 'inquiries' || $endpoint === 'contact') {
             sendJson(['inquiry' => $inquiry]);
         } catch (Throwable $e) {
             sendJson(['error' => 'Inquiry not found'], 404);
+        }
+    }
+
+    // DELETE /api/inquiries/{id} (Admin only)
+    if ($inqId !== '' && $method === 'DELETE') {
+        requireAdminAuth();
+        try {
+            $stmt = $db->prepare("DELETE FROM inquiries WHERE id = ?");
+            $stmt->execute([$inqId]);
+            sendJson(['success' => true, 'message' => 'Inquiry deleted successfully.']);
+        } catch (Throwable $e) {
+            sendJson(['error' => 'Failed to delete inquiry.'], 500);
         }
     }
 
@@ -2255,24 +2478,7 @@ if ($endpoint === 'inquiries' || $endpoint === 'contact') {
             $stmt->execute([$id, $name, $email, $phone, $enquiryType, $ndisNumber, $subject, $message]);
         } catch (Throwable $e) {
             try {
-                $db->exec("
-                    CREATE TABLE IF NOT EXISTS `inquiries` (
-                      `id` varchar(100) NOT NULL,
-                      `name` varchar(255) NOT NULL,
-                      `email` varchar(255) NOT NULL,
-                      `phone` varchar(50) DEFAULT '',
-                      `enquiry_type` varchar(100) DEFAULT 'General Inquiry',
-                      `ndis_number` varchar(100) DEFAULT '',
-                      `subject` varchar(255) DEFAULT '',
-                      `message` text NOT NULL,
-                      `status` varchar(50) DEFAULT 'new',
-                      `notes` text DEFAULT NULL,
-                      `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-                      `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                      PRIMARY KEY (`id`),
-                      KEY `idx_inq_created` (`created_at`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-                ");
+                ensureInquiriesTable($db);
                 $stmt = $db->prepare("
                     INSERT INTO inquiries (id, name, email, phone, enquiry_type, ndis_number, subject, message, status, created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', NOW())
@@ -2283,45 +2489,163 @@ if ($endpoint === 'inquiries' || $endpoint === 'contact') {
             }
         }
 
-        // Send confirmation to user & alert to admin
+        // Send confirmation to user & alert to admin using responsive clinic card format
         try {
-            $custHtml = renderEmailTemplate("Inquiry Received - AT Specialists Australia",
-                "Thank you for reaching out to AT Specialists",
-                "<h3>We have received your message, ". htmlspecialchars($name). "!</h3>
-                 <p>Our assistive technology team will review your inquiry and get in touch with you shortly.</p>
-                 <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; margin: 16px 0;'>
-                    <p style='margin: 0 0 6px;'><strong>Reference ID:</strong> {$id}</p>
-                    <p style='margin: 0 0 6px;'><strong>Inquiry Type:</strong> ". htmlspecialchars($enquiryType). "</p>
-                    <p style='margin: 0;'><strong>Message:</strong> ". nl2br(htmlspecialchars($message)). "</p>
-                 </div>",
-                COMPANY_WEB,
-                "Visit Our Website");
+            $custHtmlBody = "
+            <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 20px;'>
+              <tr>
+                <td style='padding: 14px 18px; background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 8px;'>
+                  <span style='font-size: 11px; font-weight: 800; color: #0F766E; text-transform: uppercase; letter-spacing: 0.5px;'>✓ Inquiry Confirmed &bull; Ref #{$id}</span>
+                  <h2 style='margin: 6px 0 0; font-size: 18px; font-weight: 800; color: #115E59;'>Thank you for reaching out, ". htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ."!</h2>
+                </td>
+              </tr>
+            </table>
+
+            <p style='margin: 0 0 16px; font-size: 13.5px; color: #334155; line-height: 1.6;'>
+              We have received your message regarding <strong>". htmlspecialchars($enquiryType ?: 'assistive technology services', ENT_QUOTES, 'UTF-8') ."</strong>. One of our clinical equipment specialists will review your requirements and get in touch with you shortly.
+            </p>
+
+            <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;'>
+              <tr>
+                <td style='padding: 14px 16px;'>
+                  <table width='100%' cellpadding='0' cellspacing='0' border='0' style='font-size: 12.5px; color: #334155; line-height: 1.6;'>
+                    <tr>
+                      <td style='padding: 3px 0; width: 130px; color: #64748b; font-weight: 600;'>Reference ID:</td>
+                      <td style='padding: 3px 0; font-weight: 700; color: #0f172a; font-family: monospace;'>{$id}</td>
+                    </tr>
+                    <tr>
+                      <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>Inquiry Topic:</td>
+                      <td style='padding: 3px 0; font-weight: 700; color: #0f172a;'>". htmlspecialchars($enquiryType, ENT_QUOTES, 'UTF-8') ."</td>
+                    </tr>
+                    ". ($ndisNumber !== '' ? "
+                    <tr>
+                      <td style='padding: 3px 0; color: #64748b; font-weight: 600;'>NDIS Number:</td>
+                      <td style='padding: 3px 0; font-weight: 700; color: #0F766E;'>". htmlspecialchars($ndisNumber, ENT_QUOTES, 'UTF-8') ."</td>
+                    </tr>" : "")."
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;'>
+              <tr>
+                <td style='padding: 10px 14px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;'>
+                  <span style='font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;'>Your Submitted Message</span>
+                </td>
+              </tr>
+              <tr>
+                <td style='padding: 14px; font-size: 13px; color: #475569; line-height: 1.6;'>
+                  ". nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) ."
+                </td>
+              </tr>
+            </table>
+
+            <p style='margin: 0 0 8px; font-size: 12px; color: #64748b;'>
+              If your inquiry is urgent or relates to hospital discharge equipment, please call our clinical team directly on <strong>0494 767 409</strong>.
+            </p>";
+
+            $custHtml = renderEmailTemplate(
+                "We've Received Your Inquiry (#{$id}) - AT Specialists Australia",
+                "Thank you for contacting AT Specialists Australia. Ref #{$id}",
+                $custHtmlBody,
+                publicBaseUrl(),
+                "Visit Our Website"
+            );
             sendSmtpEmail($email, "We've Received Your Inquiry (#{$id}) - AT Specialists Australia", $custHtml);
 
             if ($admin_email !== '') {
-                $adminInqHtml = renderEmailTemplate("New Website Inquiry #{$id}",
-                    "New customer inquiry from {$name}",
-                    "<h3>🔔 New Website Inquiry Alert: #{$id}</h3>
-                     <p>A customer has submitted a message via the website contact form.</p>
-                     <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; margin: 16px 0;'>
-                        <p style='margin: 0 0 6px;'><strong>Sender:</strong> ". htmlspecialchars($name). " ({$email} | {$phone})</p>
-                        <p style='margin: 0 0 6px;'><strong>Inquiry Topic:</strong> ". htmlspecialchars($enquiryType ?: $subject). "</p>
-                        ". ($ndisNumber ? "<p style='margin: 0 0 6px;'><strong>NDIS Number:</strong> ". htmlspecialchars($ndisNumber). "</p>" : "")."
-                        <p style='margin: 0;'><strong>Customer Message:</strong> ". nl2br(htmlspecialchars($message)). "</p>
-                     </div>",
-                    COMPANY_WEB. "/at/inquiries",
-                    "Manage Inquiries in Admin");
+                $adminInqBody = "
+                <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 20px;'>
+                  <tr>
+                    <td style='padding: 14px 18px; background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 8px;'>
+                      <span style='font-size: 11px; font-weight: 800; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px;'>🔔 New Website Inquiry &bull; Ref #{$id}</span>
+                      <h2 style='margin: 6px 0 0; font-size: 17px; font-weight: 800; color: #78350f;'>New Contact Lead from ". htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ."</h2>
+                    </td>
+                  </tr>
+                </table>
+
+                <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 18px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc; overflow: hidden;'>
+                  <tr>
+                    <td style='padding: 12px 16px; background-color: #f1f5f9; border-bottom: 1px solid #e2e8f0;'>
+                      <span style='font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;'>Contact Information &amp; Participant Profile</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 16px;'>
+                      <table width='100%' cellpadding='0' cellspacing='0' border='0' style='font-size: 13px; color: #334155; line-height: 1.6;'>
+                        <tr>
+                          <td style='padding: 4px 0; width: 140px; color: #64748b; font-weight: 600;'>Customer Name:</td>
+                          <td style='padding: 4px 0; font-weight: 700; color: #0f172a;'>". htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ."</td>
+                        </tr>
+                        <tr>
+                          <td style='padding: 4px 0; color: #64748b; font-weight: 600;'>Email Address:</td>
+                          <td style='padding: 4px 0;'><a href='mailto:". htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ."' style='color: #0F766E; font-weight: 600; text-decoration: none;'>". htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ."</a></td>
+                        </tr>
+                        ". ($phone !== '' ? "
+                        <tr>
+                          <td style='padding: 4px 0; color: #64748b; font-weight: 600;'>Phone Number:</td>
+                          <td style='padding: 4px 0;'><a href='tel:". htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ."' style='color: #0F766E; font-weight: 600; text-decoration: none;'>". htmlspecialchars($phone, ENT_QUOTES, 'UTF-8') ."</a></td>
+                        </tr>" : "")."
+                        <tr>
+                          <td style='padding: 4px 0; color: #64748b; font-weight: 600;'>Inquiry Topic:</td>
+                          <td style='padding: 4px 0; font-weight: 700; color: #0f172a;'>". htmlspecialchars($enquiryType ?: $subject, ENT_QUOTES, 'UTF-8') ."</td>
+                        </tr>
+                        ". ($ndisNumber !== '' ? "
+                        <tr>
+                          <td style='padding: 4px 0; color: #64748b; font-weight: 600;'>NDIS Number:</td>
+                          <td style='padding: 4px 0; font-weight: 700; color: #0F766E;'>". htmlspecialchars($ndisNumber, ENT_QUOTES, 'UTF-8') ."</td>
+                        </tr>" : "")."
+                        <tr>
+                          <td style='padding: 4px 0; color: #64748b; font-weight: 600;'>Submitted At:</td>
+                          <td style='padding: 4px 0; color: #64748b;'>". date('d/m/Y H:i:s') ." (AEST)</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <table width='100%' cellpadding='0' cellspacing='0' border='0' style='margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;'>
+                  <tr>
+                    <td style='padding: 12px 16px; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;'>
+                      <span style='font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;'>Customer Message</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style='padding: 16px; font-size: 13.5px; color: #1e293b; line-height: 1.6;'>
+                      ". nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8')) ."
+                    </td>
+                  </tr>
+                </table>";
+
+                $adminInqHtml = renderEmailTemplate(
+                    "New Website Inquiry #{$id} from " . htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
+                    "New Inquiry #{$id} from {$name} [{$enquiryType}]",
+                    $adminInqBody,
+                    publicBaseUrl() . "/at/inquiries",
+                    "Manage Inquiries in Admin"
+                );
                 sendSmtpEmail($admin_email, "🔔 New Inquiry #{$id} from ". htmlspecialchars($name). " [". htmlspecialchars($enquiryType ?: $subject). "]", $adminInqHtml);
             }
-        } catch (Exception $e) {}
+        } catch (Exception $e) {
+            error_log('Inquiry email notice: ' . $e->getMessage());
+        }
 
         sendJson(['success' => true, 'message' => 'Inquiry submitted successfully.', 'id' => $id]);
     }
 
-    // PATCH /api/inquiries/{id}/status (Admin only)
+    // PATCH /api/inquiries/{id} or /api/inquiries/{id}/status (Admin only)
     if ($inqId !== '' && $method === 'PATCH') {
         requireAdminAuth();
+        $subAction = $segments[2] ?? '';
         $b = getRequestBody();
+
+        if ($subAction === 'notes' || (isset($b['notes']) && !isset($b['status']))) {
+            $notes = trim((string)($b['notes'] ?? ''));
+            $stmt = $db->prepare("UPDATE inquiries SET notes = ? WHERE id = ?");
+            $stmt->execute([$notes, $inqId]);
+            sendJson(['success' => true, 'message' => 'Inquiry notes updated.']);
+        }
+
         $status = $b['status'] ?? 'new';
         $stmt = $db->prepare("UPDATE inquiries SET status = ? WHERE id = ?");
         $stmt->execute([$status, $inqId]);
@@ -2629,19 +2953,19 @@ function buildDispatchItemsTableHtml(array $items, float $subtotal, float $deliv
             . "</tr>";
     }
     if ($rows === '') return '';
-    return "<div style='border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin:18px 0;'>"
-        . "<table style='width:100%;border-collapse:collapse;font-size:12.5px;'>"
-        . "<thead><tr style='background:#f8fafc;border-bottom:1px solid #e2e8f0;color:#475569;'>"
-        . "<th style='padding:8px 12px;text-align:left;font-weight:700;'>Item Description</th>"
-        . "<th style='padding:8px 12px;text-align:center;font-weight:700;width:50px;'>Qty</th>"
-        . "<th style='padding:8px 12px;text-align:right;font-weight:700;width:90px;'>Price</th>"
+    return "<div style='border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin:18px 0;background-color:#ffffff;'>"
+        . "<table width='100%' cellpadding='0' cellspacing='0' border='0' style='width:100%;border-collapse:collapse;font-size:12.5px;'>"
+        . "<thead><tr style='background-color:#f8fafc;border-bottom:1px solid #e2e8f0;color:#475569;'>"
+        . "<th style='padding:10px 12px;text-align:left;font-weight:700;'>Item Description</th>"
+        . "<th style='padding:10px 12px;text-align:center;font-weight:700;width:50px;'>Qty</th>"
+        . "<th style='padding:10px 12px;text-align:right;font-weight:700;width:100px;'>Price</th>"
         . "</tr></thead><tbody>{$rows}</tbody></table>"
-        . "<div style='background:#ffffff;padding:12px 14px;border-top:1px solid #e2e8f0;font-size:12px;'>"
-        . "<div style='display:flex;justify-content:space-between;color:#64748b;'><span>Subtotal:</span><span>$" . number_format($subtotal, 2) . " AUD</span></div>"
-        . "<div style='display:flex;justify-content:space-between;color:#64748b;'><span>Delivery:</span><span>$" . number_format($deliveryFee, 2) . " AUD</span></div>"
-        . "<div style='display:flex;justify-content:space-between;color:#64748b;'><span>GST:</span><span>$" . number_format($gstTotal, 2) . " AUD</span></div>"
-        . "<div style='display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#0f172a;margin-top:4px;padding-top:6px;border-top:1px solid #f1f5f9;'><span>Total:</span><span>$" . number_format($total, 2) . " AUD</span></div>"
-        . "</div></div>";
+        . "<table width='100%' cellpadding='0' cellspacing='0' border='0' style='padding:12px 14px;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b;background-color:#ffffff;'>"
+        . "<tr><td style='padding:3px 0;'>Subtotal (ex GST):</td><td align='right' style='padding:3px 0;font-weight:600;color:#334155;'>$" . number_format($subtotal, 2) . " AUD</td></tr>"
+        . ($deliveryFee > 0 ? "<tr><td style='padding:3px 0;'>Freight & Handling:</td><td align='right' style='padding:3px 0;font-weight:600;color:#334155;'>$" . number_format($deliveryFee, 2) . " AUD</td></tr>" : "")
+        . ($gstTotal > 0 ? "<tr><td style='padding:3px 0;'>GST (10%):</td><td align='right' style='padding:3px 0;font-weight:600;color:#334155;'>$" . number_format($gstTotal, 2) . " AUD</td></tr>" : "")
+        . "<tr><td style='padding:6px 0 2px;border-top:1px solid #f1f5f9;font-size:14px;font-weight:800;color:#0f172a;'>Total Amount:</td><td align='right' style='padding:6px 0 2px;border-top:1px solid #f1f5f9;font-size:14px;font-weight:800;color:#0F766E;'>$" . number_format($total, 2) . " AUD</td></tr>"
+        . "</table></div>";
 }
 
 function dispatchUnifiedDocument(array $payload): array {
