@@ -1,0 +1,34 @@
+{
+  "name": "at-specialists",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/frontend",
+    "apps/backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"API,WEB\" -c \"cyan,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "dev:backend": "npm run dev --workspace=apps/backend",
+    "start": "node apps/backend/dist/index.js",
+    "serve": "npm run build && node apps/backend/dist/index.js",
+    "build": "npm run build --workspaces",
+    "build:frontend": "npm run build --workspace=apps/frontend",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "build:deploy": "node create-deploy-zip.js",
+    "deploy:zip": "node create-deploy-zip.js",
+    "test": "node test-suite.js && node security-pen-test.js",
+    "test:security": "node security-pen-test.js",
+    "verify:deploy": "node verify-deploy-zip.js",
+    "lint": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.69.0",
+    "@typescript-eslint/parser": "^8.69.0",
+    "concurrently": "^10.0.5",
+    "typescript": "^5.8.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

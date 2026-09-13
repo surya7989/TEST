@@ -1,0 +1,161 @@
+# ==============================================================================
+# AT SPECIALISTS AUSTRALIA - ROOT / HOSTINGER SECURITY & SPA CONFIG (.htaccess)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. SECURITY HEADERS (A+ Rating on SecurityHeaders.com)
+# ------------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    # 1. HTTP Strict Transport Security (HSTS)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+    # 2. Content Security Policy (CSP) - Configured for React, PayPal SDK, Google Fonts, & Images
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.paypal.com https://www.sandbox.paypal.com https://*.paypalobjects.com https://apis.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://images.unsplash.com https://*.paypalobjects.com https://*.googleusercontent.com https://*.gstatic.com https://*.rehabhire.com.au https://rehabhire.com.au; frame-src 'self' https://www.paypal.com https://www.sandbox.paypal.com; connect-src 'self' https://www.paypal.com https://www.sandbox.paypal.com https://*.paypal.com https://api.atspecialists.com.au https://atspecialists.com.au https://new.atspecialists.com.au; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests"
+
+    # 3. X-Frame-Options (Clickjacking Protection)
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # 4. X-Content-Type-Options (MIME Sniffing Prevention)
+    Header always set X-Content-Type-Options "nosniff"
+
+    # 5. Referrer-Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # 6. Permissions-Policy
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), usb=(), browsing-topics=()"
+
+    # 7. Additional Hardening Headers
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+    Header always set Cross-Origin-Resource-Policy "cross-origin"
+    Header always set X-Permitted-Cross-Domain-Policies "none"
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 2. HTTPS REDIRECTION & SPA CLIENT ROUTING
+# ------------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # CRITICAL: Pass Authorization header through mod_rewrite (Bearer JWT admin auth).
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Force HTTPS on all requests
+    RewriteCond %{HTTPS} off
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Route image proxy requests to PHP image proxy script
+    RewriteCond %{REQUEST_URI} ^/img-proxy/? [NC]
+    RewriteRule ^img-proxy/?(.*)$ api/img-proxy.php [QSA,L]
+
+    # Route API requests to PHP REST backend (handles /api, /api/, and /api/sub/paths)
+    RewriteCond %{REQUEST_URI} ^/api/? [NC]
+    RewriteRule ^api/?(.*)$ api/index.php [QSA,L]
+
+    # If an asset file doesn't exist on disk, return a clean 404
+    RewriteCond %{REQUEST_URI} ^/assets/ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ - [L,R=404]
+
+    # Do not rewrite actual files or directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Redirect all SPA routes (e.g. /shop, /admin, /checkout, /about) to index.html
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Correct MIME types for modern module scripts (LiteSpeed/Apache)
+<IfModule mod_mime.c>
+    AddType text/javascript .js
+    AddType application/javascript .js
+    AddType text/javascript .mjs
+    AddType text/css .css
+    AddType image/svg+xml .svg
+    AddType font/woff2 .woff2
+</IfModule>
+
+# HTML entry point must NEVER be cached (hashed asset names change every build)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+</IfModule>
+
+# Pass auth headers to PHP under CGI / FastCGI
+<IfModule mod_cgi.c>
+    CGIPassAuth On
+</IfModule>
+<IfModule mod_cgid.c>
+    CGIPassAuth On
+</IfModule>
+
+# ------------------------------------------------------------------------------
+# 2b. SENSITIVE FILE PROTECTION & DIRECTORY LISTING
+# ------------------------------------------------------------------------------
+Options -Indexes
+
+<FilesMatch "(\.env|\.sql|\.bak|\.log|\.swp|deploy\.zip|composer\.(json|lock)|package-lock\.json)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<LimitExcept GET POST PUT PATCH DELETE HEAD OPTIONS>
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</LimitExcept>
+
+# ------------------------------------------------------------------------------
+# 3. PERFORMANCE: BROWSER CACHING & COMPRESSION
+# ------------------------------------------------------------------------------
+# Gzip compression for text assets (major transfer-size win on shared hosting)
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE application/xml image/svg+xml font/woff2
+    <IfModule mod_headers.c>
+        Header append Vary Accept-Encoding env=!no-gzip
+    </IfModule>
+</IfModule>
+
+# Brotli where the module exists (falls back to gzip above otherwise)
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css
+    AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json
+    AddOutputFilterByType BROTLI_COMPRESS application/xml image/svg+xml
+</IfModule>
+
+# Hashed Vite build assets are content-addressed → immutable for a year
+<IfModule mod_headers.c>
+    <FilesMatch "\.[a-f0-9]{8}\.(js|css)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+</IfModule>

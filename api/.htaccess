@@ -1,0 +1,51 @@
+# ==============================================================================
+# AT SPECIALISTS AUSTRALIA - PHP REST API URL REWRITE (.htaccess)
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /api/
+
+    # CRITICAL: Pass Authorization header through mod_rewrite (Bearer JWT admin auth).
+    # Without these lines, Apache strips the Authorization header when rewriting
+    # to index.php under CGI/FastCGI, causing 401 errors on all /api/admin/* calls.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Direct all requests to index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Pass auth headers to PHP under CGI / FastCGI (Hostinger LiteSpeed & Apache)
+<IfModule mod_cgi.c>
+    CGIPassAuth On
+</IfModule>
+<IfModule mod_cgid.c>
+    CGIPassAuth On
+</IfModule>
+
+# Prevent direct access to sensitive files (modern + legacy Apache syntax).
+# Covers dotfiles plus anything that must never be web-readable if copied here.
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "(\.env|\.sql|\.bak|\.log|\.swp|deploy\.zip)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+Options -Indexes
