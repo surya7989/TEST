@@ -15,6 +15,7 @@ import {
 import { useAdminStore } from '@/store/adminStore';
 import { PRODUCTS, getEffectiveProducts, type Product } from '@/data/products';
 import { proxyImageUrl, handleImageError } from '@/lib/imageProxy';
+import { formatPriceLabel } from '@/lib/productPricing';
 
 interface LiveSearchBarProps {
   isMobile?: boolean;
@@ -390,7 +391,7 @@ export function LiveSearchBar({
                     {topProducts.map((product, idx) => {
                       const isSelected = selectedIndex === idx;
                       const hasHire = (product.hirePrice ?? 0) > 0;
-                      const buyPrice = product.buyPrice ?? product.price ?? 0;
+                      const priceLabel = formatPriceLabel(product as any);
                       const categoryDisplay =
                         product.category ||
                         (product.categories && product.categories[0]
@@ -457,14 +458,14 @@ export function LiveSearchBar({
                           {/* Pricing & Arrow */}
                           <div className="text-right flex-shrink-0 flex items-center gap-3">
                             <div>
-                              {buyPrice > 0 ? (<div className="text-[14px] sm:text-[15px] font-extrabold text-[#0F1E2E]">
-                                  ${buyPrice.toFixed(2)}
+                              {priceLabel !== '' ? (<div className="text-[14px] sm:text-[15px] font-extrabold text-[#0F1E2E]">
+                                  {priceLabel}
                                 </div>) : hasHire ? (<div className="text-[13px] font-extrabold text-[#E88D2A]">
                                   Hire ${product.hirePrice}/wk
                                 </div>) : (<div className="text-[11px] font-bold text-gray-500">
                                   Quote on Request
                                 </div>)}
-                              {hasHire && buyPrice > 0 && (<div className="text-[10px] font-bold text-[#E88D2A]">
+                              {hasHire && priceLabel !== '' && (<div className="text-[10px] font-bold text-[#E88D2A]">
                                   ${product.hirePrice}/wk
                                 </div>)}
                             </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Heart, ShoppingBag, ArrowRight, Trash2 } from 'lucide-react';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useCart } from '@/hooks/useCart';
+import { formatPriceLabel, getVariantPriceInfo } from '@/lib/productPricing';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useProducts, getProductById, getProductBySlug } from '@/data/products';
 import { Product } from '@/types/catalogue';
@@ -59,7 +60,11 @@ export function WishlistPage() {
             </Link>
           </div>) : (<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {wishlistProducts.map((product) => {
-              const displayPrice = product.buyPrice || product.price || 0;
+              // Variant-aware: never show/add the stale base price when
+              // sizes/options carry their own prices.
+              const priceInfo = getVariantPriceInfo(product as any);
+              const displayPrice = priceInfo.hasPricedVariants ? priceInfo.min : (product.buyPrice || (product as any).price || 0);
+              const priceLabel = formatPriceLabel(product as any);
               const productUrl = `/product/${product.slug || product.id}`;
 
               return (<div
@@ -111,17 +116,26 @@ export function WishlistPage() {
                     <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
                       <div>
                         <span className="text-[17px] font-black text-[#0F1E2E]">
-                          ${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {priceLabel || 'Price on request'}
                         </span>
                         {product.hirePrice > 0 && (<span className="block text-[10.5px] text-gray-500">
                             or ${product.hirePrice}/wk hire
                           </span>)}
                       </div>
 
+                      {priceInfo.needsOptions ? (
+                        <Link
+                          to={productUrl}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-[#147A7A] hover:bg-[#106262] text-white text-[12.5px] font-semibold rounded-lg transition-all cursor-pointer"
+                        >
+                          Select Options
+                        </Link>
+                      ) : (
                       <button
                         onClick={() =>
                           addItem({
                             id: product.id,
+                            sku: (product as any).sku || product.id,
                             slug: (product as any).slug,
                             name: product.name,
                             price: displayPrice,
@@ -137,6 +151,7 @@ export function WishlistPage() {
                         <ShoppingBag className="h-3.5 w-3.5" />
                         Add to Cart
                       </button>
+                      )}
                     </div>
                   </div>
                 </div>);

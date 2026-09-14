@@ -5,6 +5,7 @@ import { useWishlist } from '@/hooks/useWishlist';
 import { useCart } from '@/hooks/useCart';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { useProducts, type Product } from '@/data/products';
+import { getVariantPriceInfo, formatPriceLabel } from '@/lib/productPricing';
 
 export function PopularProducts() {
   const { isInWishlist, toggleItem } = useWishlist();
@@ -90,18 +91,12 @@ export function PopularProducts() {
             {products.map((product) => {
               const inWishlist = isInWishlist(product.id);
               const productLink = `/product/${(product as any).slug || product.id}`;
-              // Variant-aware pricing: a single base price misleads when
-              // sizes/options carry their own prices (and quick-adding the
-              // base price would mismatch the product page + checkout).
-              const variantPrices = ((product as any).variants || [])
-                .map((v: any) => Number(v.price) || 0)
-                .filter((p: number) => p > 0);
-              const hasPricedVariants = variantPrices.length > 0;
-              const minVariant = hasPricedVariants ? Math.min(...variantPrices) : 0;
-              const maxVariant = hasPricedVariants ? Math.max(...variantPrices) : 0;
-              const basePrice = (product as any).price || product.buyPrice || 0;
-              const displayPrice = hasPricedVariants ? minVariant : basePrice;
-              const showFrom = hasPricedVariants && (minVariant !== maxVariant || Math.abs(basePrice - minVariant) / Math.max(1, minVariant) > 0.02);
+              // Variant-aware pricing (shared helper): listings never
+              // contradict the product page / checkout totals.
+              const priceInfo = getVariantPriceInfo(product as any);
+              const displayPrice = priceInfo.hasPricedVariants ? priceInfo.min : priceInfo.base;
+              const priceLabel = formatPriceLabel(product as any);
+              const needsOptions = priceInfo.needsOptions;
 
               return (<div
                   key={product.id}
@@ -161,10 +156,10 @@ export function PopularProducts() {
                   <div className="p-3 sm:p-5 pt-0">
                     <div className="pt-2.5 sm:pt-3 border-t border-gray-100 flex items-center justify-between">
                       <div>
-                        <span className="text-[14px] sm:text-[17px] font-black text-[#0F1E2E]">{showFrom ? 'From ' : ''}${displayPrice.toLocaleString()}</span>
+                        <span className="text-[14px] sm:text-[17px] font-black text-[#0F1E2E]">{priceLabel}</span>
                         {product.hirePrice > 0 && (<span className="text-[9.5px] sm:text-[11px] text-gray-500 block truncate">or ${product.hirePrice}/wk</span>)}
                       </div>
-                      {hasPricedVariants ? (
+                      {needsOptions ? (
                         <Link
                           to={productLink}
                           className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 bg-[#147A7A] hover:bg-[#106262] text-white rounded-lg shadow-xs transition-all cursor-pointer"

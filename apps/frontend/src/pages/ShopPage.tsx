@@ -15,6 +15,7 @@ import { ShopSidebar } from '@/components/product/ShopSidebar';
 import { ProductToolbar } from '@/components/product/ProductToolbar';
 import { ProductGrid } from '@/components/product/ProductGrid';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { getVariantPriceInfo } from '@/lib/productPricing';
 import { Product } from '@/types/catalogue';
 import { PRODUCTS } from '@/data/products';
 import {
@@ -303,23 +304,30 @@ export function ShopPage() {
       });
     }
 
-    // 5. Price Range
+    // 5. Price Range (variant-aware: filter on the lowest buyable price,
+    // never the stale catalogue base price)
     if (priceRange[0] > 0 || priceRange[1] < 15000) {
       list = list.filter((p) => {
-        const price = p.buyPrice || 0;
+        const info = getVariantPriceInfo(p as any);
+        const price = info.hasPricedVariants ? info.min : (p.buyPrice || 0);
         return price >= priceRange[0] && price <= priceRange[1];
       });
     }
 
     // 6. Sorting (supports both snake_case and kebab-case sort values)
+    // Price sorts use the same effective (variant-aware) price as filters.
+    const effectivePrice = (p: any) => {
+      const info = getVariantPriceInfo(p as any);
+      return info.hasPricedVariants ? info.min : (p.buyPrice || 0);
+    };
     switch (sortBy) {
       case 'price_asc':
       case 'price-asc':
-        list.sort((a, b) => (a.buyPrice || 0) - (b.buyPrice || 0));
+        list.sort((a, b) => effectivePrice(a) - effectivePrice(b));
         break;
       case 'price_desc':
       case 'price-desc':
-        list.sort((a, b) => (b.buyPrice || 0) - (a.buyPrice || 0));
+        list.sort((a, b) => effectivePrice(b) - effectivePrice(a));
         break;
       case 'name_asc':
       case 'name-asc':
