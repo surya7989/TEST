@@ -44,7 +44,7 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Executive Dashboard', icon: LayoutDashboard, path: '/at', description: 'Central command, live metrics & recent activity' },
       { label: 'Analytics & Reports', icon: BarChart3, path: '/at/analytics', description: 'Financial trends, ATO tax reports & stock health' },
-      { label: 'Reports', icon: FileSpreadsheet, path: '/at/reports', description: 'Saved reports & export history' },
+      { label: 'Operations & Fleet', icon: FileSpreadsheet, path: '/at/operations', description: 'Operations overview, hire fleet & fulfilment' },
     ],
   },
   {

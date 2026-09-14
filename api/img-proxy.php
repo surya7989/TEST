@@ -16,7 +16,7 @@ $imgAllowed = [
     'https://api.atspecialists.com.au',
     'https://new.atspecialists.com.au'
 ];
-if ($imgOrigin !== '' && (in_array($imgOrigin, $imgAllowed, true) || preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#', $imgOrigin))) {
+if ($imgOrigin !== '' && in_array($imgOrigin, $imgAllowed, true)) {
     header('Access-Control-Allow-Origin: ' . $imgOrigin);
     header('Vary: Origin');
 }

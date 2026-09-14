@@ -415,9 +415,33 @@ export function AdminProducts() {
   };
 
   // Image Upload Handlers
+  // Only web-safe raster images are accepted (JPEG/PNG/WebP/GIF, max 5MB
+  // each). Anything else is rejected so oversized or executable files can
+  // never reach the catalogue payload stored in the database.
+  const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024;
+  const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+  const isAcceptedProductImage = (file: File) => {
+    if (file.size > MAX_PRODUCT_IMAGE_BYTES) {
+      alert(`"${file.name}" is too large. Product images must be under 5MB.`);
+      return false;
+    }
+    const typeOk = ACCEPTED_IMAGE_TYPES.includes(file.type);
+    const extOk = /\.(jpe?g|png|webp|gif)$/i.test(file.name);
+    if (!typeOk || !extOk) {
+      alert(`"${file.name}" is not a supported image. Please use JPG, PNG, WebP or GIF.`);
+      return false;
+    }
+    return true;
+  };
+
   const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!isAcceptedProductImage(file)) {
+        e.target.value = '';
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
@@ -436,7 +460,12 @@ export function AdminProducts() {
   const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      Array.from(files).forEach((file) => {
+      const accepted = Array.from(files).filter(isAcceptedProductImage);
+      if (accepted.length === 0) {
+        e.target.value = '';
+        return;
+      }
+      accepted.forEach((file) => {
         const reader = new FileReader();
         reader.onload = (event) => {
           const result = event.target?.result as string;
@@ -454,11 +483,17 @@ export function AdminProducts() {
 
   const handleAddGalleryUrl = () => {
     if (!customGalleryUrl.trim()) return;
+    const candidate = customGalleryUrl.trim();
+    const lower = candidate.toLowerCase();
+    if (lower.startsWith('javascript:') || lower.startsWith('vbscript:') || lower.startsWith('data:text/html') || lower.startsWith('data:application')) {
+      alert('That image URL uses an unsupported format. Please use an https:// image link.');
+      return;
+    }
     setFormData((prev) => ({
       ...prev,
-      galleryImages: prev.galleryImages.includes(customGalleryUrl.trim())
+      galleryImages: prev.galleryImages.includes(candidate)
         ? prev.galleryImages
-        : [...prev.galleryImages, customGalleryUrl.trim()],
+        : [...prev.galleryImages, candidate],
     }));
     setCustomGalleryUrl('');
   };
@@ -709,14 +744,14 @@ export function AdminProducts() {
           type="file"
           ref={mainImageInputRef}
           onChange={handleMainImageUpload}
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           className="hidden"
         />
         <input
           type="file"
           ref={galleryImageInputRef}
           onChange={handleGalleryUpload}
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           multiple
           className="hidden"
         />

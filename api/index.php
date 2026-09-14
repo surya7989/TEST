@@ -32,9 +32,13 @@ function requireDatabase(): PDO {
 }
 
 // Cached column-existence check (lets new code run on older databases that
-// have not yet picked up newer schema columns).
+// have not yet picked up newer schema columns). Table name is allowlisted
+// because identifiers cannot be bound as prepared-statement parameters.
 function tableHasColumn(PDO $db, string $table, string $column): bool {
     static $cache = [];
+    $allowedTables = ['customers', 'orders', 'ndis_quotes', 'promotions', 'products', 'reviews', 'rentals', 'inquiries', 'documents', 'app_settings', 'shipping_zones', 'order_items', 'payment_logs', 'admin_users'];
+    if (!in_array($table, $allowedTables, true)) return false;
+    if (!preg_match('/^[a-z_]+$/', $column)) return false;
     $key = $table . '.' . $column;
     if (!array_key_exists($key, $cache)) {
         try {
@@ -685,6 +689,7 @@ if ($endpoint === 'auth') {
 
     // POST /api/auth/customer-register
     if ($sub === 'customer-register' && $method === 'POST') {
+        throttle('customer_register', 10, 3600);
         $db = requireDatabase();
         $body = getRequestBody();
         $email = strtolower(trim((string)($body['email'] ?? '')));
@@ -693,6 +698,12 @@ if ($endpoint === 'auth') {
 
         if ($email === '' || $password === '' || $name === '') {
             sendJson(['success' => false, 'error' => 'Name, email, and password are required.'], 400);
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            sendJson(['success' => false, 'error' => 'A valid email address is required.'], 400);
+        }
+        if (strlen($password) < 8 || strlen($password) > 128) {
+            sendJson(['success' => false, 'error' => 'Password must be between 8 and 128 characters.'], 400);
         }
 
         $stmt = $db->prepare("SELECT id FROM customers WHERE LOWER(email) = ? LIMIT 1");
@@ -750,6 +761,7 @@ if ($endpoint === 'auth') {
     // (that would let anyone claim another customer's order history with just
     // their name+email). Existing password accounts must sign in normally.
     if ($sub === 'customer-order-session' && $method === 'POST') {
+        throttle('customer_order_session', 20, 3600);
         $db = requireDatabase();
         $body = getRequestBody();
         $email = strtolower(trim((string)($body['email'] ?? '')));
@@ -1060,11 +1072,8 @@ if ($endpoint === 'products') {
     // POST /api/products/sync-catalog (Admin Sync Catalog from products.json to MySQL)
     if ($prodId === 'sync-catalog' && $method === 'POST') {
         $db = requireDatabase();
-        $syncKey = $_GET['key'] ?? ($_SERVER['HTTP_X_SYNC_KEY'] ?? '');
-        $admin = getAdminFromToken();
-        if (!$admin && $syncKey !== substr($jwt_secret, 0, 16)) {
-            requireAdminAuth();
-        }
+        // Admin-only: a shared query-string key must never bypass JWT auth.
+        requireAdminAuth();
         $count = seedCatalogIntoDatabase($db);
         sendJson([
             'success' => true,
@@ -1150,20 +1159,34 @@ if ($endpoint === 'products') {
         if ($name === '') sendJson(['error' => 'Product name is required'], 400);
 
         $slug = $b['slug'] ?? strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
+        $slug = trim((string)$slug, '-');
+        if ($slug === '') $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name), '-'));
         $sku = $b['sku'] ?? strtoupper($id);
-        $price = floatval($b['price'] ?? ($b['buyPrice'] ?? 0));
+        $price = max(0, floatval($b['price'] ?? ($b['buyPrice'] ?? 0)));
         $category = $b['category'] ?? 'Mobility';
-        $image = $b['image'] ?? '';
+        // Image URLs: reject executable schemes (javascript:, data:text/html,
+        // vbscript:) that could become stored-XSS if ever rendered as links.
+        // Plain https/http/relative paths and image data-URLs pass through.
+        $sanitizeImageUrl = function($u) {
+            $u = trim((string)$u);
+            if ($u === '') return '';
+            if (strlen($u) > 4000) return '';
+            $low = strtolower($u);
+            if (strpos($low, 'javascript:') === 0 || strpos($low, 'vbscript:') === 0) return '';
+            if (strpos($low, 'data:text/html') === 0 || strpos($low, 'data:application') === 0) return '';
+            return $u;
+        };
+        $image = $sanitizeImageUrl($b['image'] ?? '');
         $brand = $b['brand'] ?? 'AT Specialists';
-        $stock = intval($b['stock'] ?? 100);
-        $lowStockThreshold = intval($b['lowStockThreshold'] ?? ($b['low_stock_threshold'] ?? 5));
+        $stock = max(0, min(1000000, intval($b['stock'] ?? 100)));
+        $lowStockThreshold = max(0, intval($b['lowStockThreshold'] ?? ($b['low_stock_threshold'] ?? 5)));
         $isFeatured = !empty($b['isFeatured'] ?? $b['is_featured']) ? 1 : 0;
         $isActive = isset($b['available']) ? ($b['available'] ? 1 : 0) : (isset($b['isActive']) ? (empty($b['isActive']) ? 0 : 1) : 1);
-        $hirePrice = floatval($b['hirePrice'] ?? ($b['hire_price'] ?? 0));
+        $hirePrice = max(0, floatval($b['hirePrice'] ?? ($b['hire_price'] ?? 0)));
         $hirePeriod = $b['hirePeriod'] ?? ($b['hire_period'] ?? 'week');
         $gstType = $b['gstType'] ?? ($b['gst_type'] ?? 'gst-free');
-        $gstRate = floatval($b['gstRate'] ?? ($b['gst_rate'] ?? 0));
-        $deliveryFee = floatval($b['deliveryFee'] ?? ($b['delivery_fee'] ?? 0));
+        $gstRate = max(0, min(100, floatval($b['gstRate'] ?? ($b['gst_rate'] ?? 0))));
+        $deliveryFee = max(0, floatval($b['deliveryFee'] ?? ($b['delivery_fee'] ?? 0)));
         $ndisCode = $b['ndisCode'] ?? ($b['ndis_code'] ?? '');
         $description = $b['description'] ?? ($b['fullDescription'] ?? '');
         $shortDesc = $b['shortDescription'] ?? ($b['short_description'] ?? '');
@@ -1172,7 +1195,15 @@ if ($endpoint === 'products') {
         $sampleNote = $b['sampleNote'] ?? ($b['sample_note'] ?? null);
 
         $categoriesJson = !empty($b['categories']) ? json_encode($b['categories']) : json_encode([$category]);
-        $galleryImagesJson = !empty($b['galleryImages']) ? json_encode($b['galleryImages']) : (!empty($b['images']) ? json_encode($b['images']) : json_encode([$image]));
+        $rawGallery = !empty($b['galleryImages']) ? $b['galleryImages'] : (!empty($b['images']) ? $b['images'] : [$image]);
+        if (!is_array($rawGallery)) $rawGallery = [$rawGallery];
+        $cleanGallery = [];
+        foreach (array_slice($rawGallery, 0, 10) as $g) {
+            $safe = $sanitizeImageUrl($g);
+            if ($safe !== '') $cleanGallery[] = $safe;
+        }
+        if (empty($cleanGallery) && $image !== '') $cleanGallery = [$image];
+        $galleryImagesJson = json_encode($cleanGallery);
         $attributesJson = !empty($b['attributes']) ? json_encode($b['attributes']) : null;
         $variantsJson = !empty($b['variants']) ? json_encode($b['variants']) : null;
         $featuresJson = !empty($b['features']) ? json_encode($b['features']) : null;
@@ -1208,22 +1239,38 @@ if ($endpoint === 'products') {
         if (isset($b['name'])) { $fields[] = 'name = ?'; $params[] = $b['name']; }
         if (isset($b['sku'])) { $fields[] = 'sku = ?'; $params[] = $b['sku']; }
         if (isset($b['brand'])) { $fields[] = 'brand = ?'; $params[] = $b['brand']; }
-        if (isset($b['price'])) { $fields[] = 'price = ?'; $params[] = floatval($b['price']); }
-        else if (isset($b['buyPrice'])) { $fields[] = 'price = ?'; $params[] = floatval($b['buyPrice']); }
-        if (isset($b['stock'])) { $fields[] = 'stock = ?'; $params[] = intval($b['stock']); }
-        if (isset($b['lowStockThreshold']) || isset($b['low_stock_threshold'])) { $fields[] = 'low_stock_threshold = ?'; $params[] = intval($b['lowStockThreshold'] ?? $b['low_stock_threshold']); }
+        if (isset($b['price'])) { $fields[] = 'price = ?'; $params[] = max(0, floatval($b['price'])); }
+        else if (isset($b['buyPrice'])) { $fields[] = 'price = ?'; $params[] = max(0, floatval($b['buyPrice'])); }
+        if (isset($b['stock'])) { $fields[] = 'stock = ?'; $params[] = max(0, min(1000000, intval($b['stock']))); }
+        if (isset($b['lowStockThreshold']) || isset($b['low_stock_threshold'])) { $fields[] = 'low_stock_threshold = ?'; $params[] = max(0, intval($b['lowStockThreshold'] ?? $b['low_stock_threshold'])); }
         if (isset($b['category'])) { $fields[] = 'category = ?'; $params[] = $b['category']; }
         if (isset($b['categories'])) { $fields[] = 'categories_json = ?'; $params[] = json_encode($b['categories']); }
-        if (isset($b['image'])) { $fields[] = 'image = ?'; $params[] = $b['image']; }
-        if (isset($b['galleryImages']) || isset($b['gallery_images'])) { $fields[] = 'gallery_images_json = ?'; $params[] = json_encode($b['galleryImages'] ?? $b['gallery_images']); }
-        if (isset($b['hirePrice']) || isset($b['hire_price'])) { $fields[] = 'hire_price = ?'; $params[] = floatval($b['hirePrice'] ?? $b['hire_price']); }
+        if (isset($b['image'])) {
+            $upImg = trim((string)$b['image']);
+            $upLow = strtolower($upImg);
+            if (strlen($upImg) <= 4000 && strpos($upLow, 'javascript:') !== 0 && strpos($upLow, 'vbscript:') !== 0 && strpos($upLow, 'data:text/html') !== 0 && strpos($upLow, 'data:application') !== 0) {
+                $fields[] = 'image = ?'; $params[] = $upImg;
+            }
+        }
+        if (isset($b['galleryImages']) || isset($b['gallery_images'])) {
+            $upGal = $b['galleryImages'] ?? $b['gallery_images'];
+            if (!is_array($upGal)) $upGal = [$upGal];
+            $upClean = [];
+            foreach (array_slice($upGal, 0, 10) as $g) {
+                $gs = trim((string)$g);
+                $gl = strtolower($gs);
+                if ($gs !== '' && strlen($gs) <= 4000 && strpos($gl, 'javascript:') !== 0 && strpos($gl, 'vbscript:') !== 0 && strpos($gl, 'data:text/html') !== 0 && strpos($gl, 'data:application') !== 0) $upClean[] = $gs;
+            }
+            $fields[] = 'gallery_images_json = ?'; $params[] = json_encode($upClean);
+        }
+        if (isset($b['hirePrice']) || isset($b['hire_price'])) { $fields[] = 'hire_price = ?'; $params[] = max(0, floatval($b['hirePrice'] ?? $b['hire_price'])); }
         if (isset($b['hirePeriod']) || isset($b['hire_period'])) { $fields[] = 'hire_period = ?'; $params[] = ($b['hirePeriod'] ?? $b['hire_period']); }
         if (isset($b['isFeatured']) || isset($b['is_featured'])) { $fields[] = 'is_featured = ?'; $params[] = !empty($b['isFeatured'] ?? $b['is_featured']) ? 1 : 0; }
         if (isset($b['available'])) { $fields[] = 'is_active = ?'; $params[] = $b['available'] ? 1 : 0; }
         else if (isset($b['isActive']) || isset($b['is_active'])) { $fields[] = 'is_active = ?'; $params[] = !empty($b['isActive'] ?? $b['is_active']) ? 1 : 0; }
         if (isset($b['gstType']) || isset($b['gst_type'])) { $fields[] = 'gst_type = ?'; $params[] = ($b['gstType'] ?? $b['gst_type']); }
-        if (isset($b['gstRate']) || isset($b['gst_rate'])) { $fields[] = 'gst_rate = ?'; $params[] = floatval($b['gstRate'] ?? $b['gst_rate']); }
-        if (isset($b['deliveryFee']) || isset($b['delivery_fee'])) { $fields[] = 'delivery_fee = ?'; $params[] = floatval($b['deliveryFee'] ?? $b['delivery_fee']); }
+        if (isset($b['gstRate']) || isset($b['gst_rate'])) { $fields[] = 'gst_rate = ?'; $params[] = max(0, min(100, floatval($b['gstRate'] ?? $b['gst_rate']))); }
+        if (isset($b['deliveryFee']) || isset($b['delivery_fee'])) { $fields[] = 'delivery_fee = ?'; $params[] = max(0, floatval($b['deliveryFee'] ?? $b['delivery_fee'])); }
         if (isset($b['ndisCode']) || isset($b['ndis_code'])) { $fields[] = 'ndis_code = ?'; $params[] = ($b['ndisCode'] ?? $b['ndis_code']); }
         if (isset($b['description'])) { $fields[] = 'description = ?'; $params[] = $b['description']; }
         if (isset($b['shortDescription']) || isset($b['short_description'])) { $fields[] = 'short_description = ?'; $params[] = ($b['shortDescription'] ?? $b['short_description']); }
@@ -1292,6 +1339,7 @@ if ($endpoint === 'products') {
 if ($endpoint === 'cart') {
     $sub = strtolower($segments[1] ?? '');
     if ($sub === 'calculate' && $method === 'POST') {
+        throttle('cart_calculate', 120, 60);
         $body = getRequestBody();
         $items = $body['items'] ?? [];
         $deliveryMethod = $body['deliveryMethod'] ?? 'standard';
@@ -1352,6 +1400,7 @@ if ($endpoint === 'paypal') {
 
     // POST /api/paypal/create-order
     if ($sub === 'create-order' && $method === 'POST') {
+        throttle('paypal_create', 30, 300);
         enforceCheckoutEnabled('payment');
         $body = getRequestBody();
         $rawItems = $body['items'] ?? [];
@@ -1463,6 +1512,7 @@ if ($endpoint === 'paypal') {
 
     // POST /api/paypal/capture-order
     if ($sub === 'capture-order' && $method === 'POST') {
+        throttle('paypal_capture', 30, 300);
         enforceCheckoutEnabled('payment');
         $body = getRequestBody();
         $paypalOrderId = trim((string)($body['paypalOrderId'] ?? ''));
@@ -2376,7 +2426,11 @@ if ($endpoint === 'quotes') {
     if ($quoteId !== '' && $action === 'status' && $method === 'PATCH') {
         requireAdminAuth();
         $b = getRequestBody();
-        $status = $b['status'] ?? 'pending';
+        $status = (string)($b['status'] ?? 'pending');
+        $allowedQuoteStatuses = ['draft', 'sent', 'pending', 'approved', 'expired', 'invoiced', 'cancelled', 'converted'];
+        if (!in_array($status, $allowedQuoteStatuses, true)) {
+            sendJson(['success' => false, 'error' => 'Invalid quote status.'], 400);
+        }
         $stmt = $db->prepare("UPDATE ndis_quotes SET status = ? WHERE id = ?");
         $stmt->execute([$status, $quoteId]);
         sendJson(['success' => true, 'message' => 'Quote status updated.']);
@@ -2989,7 +3043,8 @@ function dispatchUnifiedDocument(array $payload): array {
     $subtotal = floatval($payload['subtotal'] ?? 0);
     $deliveryFee = floatval($payload['deliveryFee'] ?? 0);
     $gstTotal = floatval($payload['gstTotal'] ?? 0);
-    $total = floatval($payload['total'] ?? ($subtotal + $deliveryFee + $gstTotal));
+    // GST-inclusive totals (matches pdfHelper + cart engine): total = subtotal + delivery.
+    $total = floatval($payload['total'] ?? ($subtotal + $deliveryFee));
 
     $items = is_array($payload['items'] ?? null) ? $payload['items'] : [];
     $extraMeta = is_array($payload['extraMeta'] ?? null) ? $payload['extraMeta'] : [];
@@ -3344,6 +3399,7 @@ if ($endpoint === 'emails') {
     // POST /api/emails/send-test (Admin only)
     if ($sub === 'send-test' && $method === 'POST') {
         requireAdminAuth();
+        throttle('email_send_test', 10, 3600);
         $b = getRequestBody();
         $to = trim((string)($b['to'] ?? ''));
 
@@ -3370,6 +3426,7 @@ if ($endpoint === 'emails') {
     // POST /api/emails/dispatch-template (Admin only — arbitrary template + recipient)
     if ($sub === 'dispatch-template' && $method === 'POST') {
         requireAdminAuth();
+        throttle('email_dispatch', 60, 3600);
         $body = getRequestBody();
         $res = dispatchUnifiedDocument($body);
         sendJson($res, !empty($res['success']) ? 200 : 502);
@@ -3378,6 +3435,7 @@ if ($endpoint === 'emails') {
     // POST /api/emails/send-invoice (Admin only)
     if ($sub === 'send-invoice' && $method === 'POST') {
         requireAdminAuth();
+        throttle('email_dispatch', 60, 3600);
         $body = getRequestBody();
         $body['templateId'] = 'invoice';
         $res = dispatchUnifiedDocument($body);
@@ -3554,6 +3612,16 @@ if ($endpoint === 'settings') {
                     $settings['paypal_config']['secret'] = '';
                     $settings['paypal_config']['hasSecret'] = true;
                 }
+                // Never expose the SMTP password either — the UI only needs to
+                // know whether one is already stored (passMasked pattern).
+                if (isset($settings['smtp_config']) && is_array($settings['smtp_config'])) {
+                    $settings['smtp_config']['pass'] = '';
+                    $settings['smtp_config']['password'] = '';
+                    $settings['smtp_config']['SMTP_PASS'] = '';
+                    $settings['smtp_config']['smtp_pass'] = '';
+                    $settings['smtp_config']['hasPass'] = true;
+                    $settings['smtp_config']['passMasked'] = '••••••••';
+                }
                 sendJson(['settings' => $settings]);
             } catch (Throwable $e) {}
         }
@@ -3601,6 +3669,12 @@ if ($endpoint === 'settings') {
         $val = $b['value'] ?? $b;
 
         if ($key === '') sendJson(['error' => 'Setting key is required.'], 400);
+        // Allowlist: prevents accidental/typo overwrites of security-critical
+        // keys (paypal_config, smtp_config have dedicated endpoints).
+        $allowedSettingKeys = ['store_info', 'company_settings', 'checkout_settings', 'invoice_settings', 'payment_settings', 'shipping_defaults', 'shipping_settings', 'tax_settings', 'notification_settings', 'carer_categories', 'email_templates', 'homepage_settings', 'theme_settings'];
+        if (!in_array($key, $allowedSettingKeys, true)) {
+            sendJson(['error' => 'Unknown setting key.'], 400);
+        }
 
         $stmt = $db->prepare("
             INSERT INTO app_settings (setting_key, setting_value, updated_at)
@@ -3756,15 +3830,22 @@ if ($endpoint === 'rentals') {
         $id = $b['id'] ?? ('RNT-'. date('Y'). '-'. rand(1000, 9999));
         $customerName = trim((string)($b['customerName'] ?? 'Valued Client'));
         $customerEmail = trim((string)($b['customerEmail'] ?? ''));
+        if ($customerEmail === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+            sendJson(['success' => false, 'error' => 'A valid customer email is required.'], 400);
+        }
         $customerPhone = trim((string)($b['customerPhone'] ?? ''));
         $productId = trim((string)($b['productId'] ?? ''));
         $productName = trim((string)($b['productName'] ?? 'Equipment Rental'));
-        $weeks = intval($b['weeks'] ?? 2);
-        $weeklyRate = floatval($b['weeklyRate'] ?? 0);
-        $deliveryFee = floatval($b['deliveryFee'] ?? 0);
-        $deposit = floatval($b['deposit'] ?? 0);
-        $total = floatval($b['total'] ?? (($weeklyRate * $weeks) + $deliveryFee));
-        $status = $b['status'] ?? 'active';
+        $weeks = max(1, min(520, intval($b['weeks'] ?? 2)));
+        $weeklyRate = max(0, floatval($b['weeklyRate'] ?? 0));
+        $deliveryFee = max(0, floatval($b['deliveryFee'] ?? 0));
+        $deposit = max(0, floatval($b['deposit'] ?? 0));
+        $total = isset($b['total']) ? max(0, floatval($b['total'])) : (($weeklyRate * $weeks) + $deliveryFee);
+        $allowedRentalStatuses = ['active', 'reserved', 'overdue', 'returned', 'cancelled', 'completed'];
+        $status = (string)($b['status'] ?? 'active');
+        if (!in_array($status, $allowedRentalStatuses, true)) {
+            sendJson(['success' => false, 'error' => 'Invalid rental status.'], 400);
+        }
         $notes = $b['notes'] ?? '';
 
         $stmt = $db->prepare("
@@ -3778,7 +3859,11 @@ if ($endpoint === 'rentals') {
     if (($method === 'PUT' || $method === 'PATCH') && $rentalId !== '') {
         requireAdminAuth();
         $b = getRequestBody();
-        $status = $b['status'] ?? 'active';
+        $allowedRentalStatuses = ['active', 'reserved', 'overdue', 'returned', 'cancelled', 'completed'];
+        $status = (string)($b['status'] ?? 'active');
+        if (!in_array($status, $allowedRentalStatuses, true)) {
+            sendJson(['success' => false, 'error' => 'Invalid rental status.'], 400);
+        }
         $stmt = $db->prepare("UPDATE rentals SET status = ? WHERE id = ?");
         $stmt->execute([$status, $rentalId]);
         sendJson(['success' => true, 'message' => 'Rental status updated.']);
@@ -3812,8 +3897,8 @@ if ($endpoint === 'reviews') {
                   `rating` int(1) NOT NULL DEFAULT 5,
                   `title` varchar(255) DEFAULT '',
                   `comment` longtext DEFAULT NULL,
-                  `status` varchar(50) DEFAULT 'approved',
-                  `verified_purchase` tinyint(1) DEFAULT 1,
+                  `status` varchar(50) DEFAULT 'pending',
+                  `verified_purchase` tinyint(1) DEFAULT 0,
                   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
                   PRIMARY KEY (`id`),
                   KEY `idx_reviews_product` (`product_id`),
@@ -3894,10 +3979,10 @@ if ($endpoint === 'reviews') {
 
         $stmt = $db->prepare("
             INSERT INTO reviews (id, product_id, customer_name, customer_email, rating, title, comment, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())
         ");
         $stmt->execute([$id, $prodId, $name, $email, $rating, $title, $comment]);
-        sendJson(['success' => true, 'message' => 'Review submitted successfully. Thank you!', 'id' => $id]);
+        sendJson(['success' => true, 'message' => 'Review submitted successfully and is pending moderation. Thank you!', 'id' => $id]);
     }
 }
 
@@ -3938,6 +4023,7 @@ if ($endpoint === 'promotions') {
 
     // POST /api/promotions/validate {code, subtotal} — coupon check used at checkout
     if ($promoAction === 'validate' && $method === 'POST') {
+        throttle('promo_validate', 60, 60);
         $body = getRequestBody();
         $code = strtoupper(trim((string)($body['code'] ?? '')));
         $subtotal = max(0, floatval($body['subtotal'] ?? 0));
@@ -3970,14 +4056,27 @@ if ($endpoint === 'promotions') {
         ]);
     }
 
-    // POST /api/promotions/{code}/redeem — records one redemption after an order/quote
+    // POST /api/promotions/{code}/redeem — records one redemption after an order/quote.
+    // Public (checkout calls it after payment) but throttled and guarded so a
+    // code cannot be exhausted or redeemed past expiry / max usage.
     if ($promoAction !== '' && strtolower($promoAction) !== 'validate' && $method === 'POST') {
+        throttle('promo_redeem', 30, 60);
         $code = strtoupper(trim((string)$promoAction));
         $stmt = $db->prepare("SELECT * FROM promotions WHERE UPPER(code) = ? LIMIT 1");
         $stmt->execute([$code]);
         $promo = $stmt->fetch();
         if (!$promo || intval($promo['is_active'] ?? 0) !== 1) {
             sendJson(['success' => false, 'error' => 'This code is not recognised.'], 400);
+        }
+        if (!empty($promo['valid_until']) && strtotime((string)$promo['valid_until']) < time()) {
+            sendJson(['success' => false, 'error' => 'This promotion has expired.'], 400);
+        }
+        if (isset($promo['max_usage']) && $promo['max_usage'] !== null && $promo['max_usage'] !== '') {
+            $maxUsage = intval($promo['max_usage']);
+            $usedSoFar = intval($promo['usage_count'] ?? 0);
+            if ($maxUsage >= 0 && $usedSoFar >= $maxUsage) {
+                sendJson(['success' => false, 'error' => 'This promotion has reached its usage limit.'], 400);
+            }
         }
         $usageCount = 0;
         if (tableHasColumn($db, 'promotions', 'usage_count')) {
@@ -4001,8 +4100,12 @@ if ($endpoint === 'promotions') {
         $id = $b['id'] ?? ('promo-'. strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $code)));
         $desc = trim((string)($b['description'] ?? ''));
         $type = (string)($b['type'] ?? ($b['discount_type'] ?? 'percentage'));
-        $val = floatval($b['value'] ?? ($b['discount_value'] ?? 10));
-        $minSpend = floatval($b['minOrder'] ?? ($b['min_spend'] ?? 0));
+        $allowedPromoTypes = ['percentage', 'fixed', 'free_shipping'];
+        if (!in_array($type, $allowedPromoTypes, true)) {
+            sendJson(['success' => false, 'error' => 'Invalid promotion type.'], 400);
+        }
+        $val = max(0, floatval($b['value'] ?? ($b['discount_value'] ?? 10)));
+        $minSpend = max(0, floatval($b['minOrder'] ?? ($b['min_spend'] ?? 0)));
         $maxUsage = isset($b['maxUsage']) ? intval($b['maxUsage']) : null;
         $active = isset($b['active']) ? ($b['active'] ? 1 : 0) : (isset($b['is_active']) ? ($b['is_active'] ? 1 : 0) : 1);
         $expiresAt = !empty($b['expiresAt']) ? $b['expiresAt'] : (!empty($b['valid_until']) ? $b['valid_until'] : null);

@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `brand` varchar(100) DEFAULT 'AT Specialists',
   `stock` int(11) DEFAULT 100,
   `low_stock_threshold` int(11) DEFAULT 5,
-  `is_featured` tinyint(1) DEFAULT 1,
+  `is_featured` tinyint(1) DEFAULT 0,
   `is_active` tinyint(1) DEFAULT 1,
   `hire_price` decimal(10,2) DEFAULT 0.00,
   `hire_period` varchar(50) DEFAULT 'week',
@@ -119,6 +119,9 @@ ALTER TABLE `products` ADD COLUMN IF NOT EXISTS `rating` decimal(3,2) DEFAULT 5.
 ALTER TABLE `products` ADD COLUMN IF NOT EXISTS `review_count` int(11) DEFAULT 10;
 ALTER TABLE `products` ADD COLUMN IF NOT EXISTS `attributes_json` longtext DEFAULT NULL;
 ALTER TABLE `products` ADD COLUMN IF NOT EXISTS `variants_json` longtext DEFAULT NULL;
+
+-- New products are not featured by default (existing rows keep their flags).
+ALTER TABLE `products` MODIFY `is_featured` tinyint(1) DEFAULT 0;
 
 -- Initial Core Clinical Equipment & Assistive Tech Seeds
 INSERT INTO `products` (
@@ -278,13 +281,18 @@ CREATE TABLE IF NOT EXISTS `reviews` (
   `rating` int(1) NOT NULL DEFAULT 5,
   `title` varchar(255) DEFAULT '',
   `comment` longtext DEFAULT NULL,
-  `status` varchar(50) DEFAULT 'approved',
-  `verified_purchase` tinyint(1) DEFAULT 1,
+  `status` varchar(50) DEFAULT 'pending',
+  `verified_purchase` tinyint(1) DEFAULT 0,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_reviews_product` (`product_id`),
   KEY `idx_reviews_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- New installs moderate reviews before they go live; existing databases keep
+-- their rows untouched (only the column defaults change for future inserts).
+ALTER TABLE `reviews` MODIFY `status` varchar(50) DEFAULT 'pending';
+ALTER TABLE `reviews` MODIFY `verified_purchase` tinyint(1) DEFAULT 0;
 
 -- ----------------------------------------------------------------------------
 -- 10. Table structure for `shipping_zones`
@@ -297,6 +305,14 @@ CREATE TABLE IF NOT EXISTS `shipping_zones` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Default Australian delivery zones (keeps the API response shape consistent
+-- with the database instead of the hardcoded fallback in api/index.php).
+INSERT INTO `shipping_zones` (`id`, `name`, `regions`, `methods_json`) VALUES
+('au-std', 'Standard Australian Delivery', '[\"AU\"]', '[{\"id\":\"standard\",\"name\":\"Standard Delivery\",\"rate\":0}]'),
+('au-exp', 'Priority Express Courier', '[\"AU\"]', '[{\"id\":\"express\",\"name\":\"Express Courier\",\"rate\":29}]'),
+('au-wg', 'White Glove Installation & Assembly', '[\"AU\"]', '[{\"id\":\"white_glove\",\"name\":\"White Glove Installation\",\"rate\":149}]')
+ON DUPLICATE KEY UPDATE `id` = `id`;
 
 -- ----------------------------------------------------------------------------
 -- 11. Table structure for `app_settings`

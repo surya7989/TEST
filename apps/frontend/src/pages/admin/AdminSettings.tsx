@@ -180,12 +180,15 @@ export function AdminSettings() {
   const [testConnectionStatus, setTestConnectionStatus] = useState<'idle' | 'testing' | 'success'>('idle');
   const [showSecretKey, setShowSecretKey] = useState(false);
 
-  // Local Payment Gateway State with sensible fallbacks
+  // Local Payment Gateway State with sensible fallbacks.
+  // NOTE: client ID / secret default to EMPTY — never ship placeholder
+  // credentials. Saving with empty values leaves the server env as source
+  // of truth (backend falls back to its own configuration).
   const [localPaymentSettings, setLocalPaymentSettings] = useState<PaymentGatewaySettings>(
     paymentSettings || {
       paypalMerchantEmail: 'payments@atspecialists.com.au',
-      paypalClientId: 'AU-AT-SPEC-SANDBOX-CLIENT-ID-99281',
-      paypalSecretKey: 'EM-SECRET-KEY-LIVE-SETTLEMENT-KEY-88219',
+      paypalClientId: '',
+      paypalSecretKey: '',
       paypalMode: 'sandbox',
       autoCapture: true,
       enablePayIn4: true,
@@ -220,13 +223,16 @@ export function AdminSettings() {
   const handleSavePaymentSettings = async () => {
     updatePaymentSettings(localPaymentSettings);
     
-    // Sync with backend
+    // Sync with backend — but never overwrite a working server-side PayPal
+    // configuration with empty placeholder values.
     try {
-      await savePayPalSettings({
-        clientId: localPaymentSettings.paypalClientId,
-        secretKey: localPaymentSettings.paypalSecretKey,
-        mode: localPaymentSettings.paypalMode,
-      });
+      if (localPaymentSettings.paypalClientId.trim() !== '') {
+        await savePayPalSettings({
+          clientId: localPaymentSettings.paypalClientId,
+          secretKey: localPaymentSettings.paypalSecretKey,
+          mode: localPaymentSettings.paypalMode,
+        });
+      }
     } catch (err) {
       console.warn('Backend PayPal settings sync notice:', err);
     }

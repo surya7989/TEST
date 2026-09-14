@@ -76,10 +76,15 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
   const adminToken = getAdminToken();
   const customerToken = getCustomerToken();
 
+  // Prefer the admin token, but remember which identity was actually sent so
+  // a 401 below clears the stale token instead of the wrong one.
+  let sentTokenKind: 'admin' | 'customer' | null = null;
   if (adminToken) {
     headers['Authorization'] = `Bearer ${adminToken}`;
+    sentTokenKind = 'admin';
   } else if (customerToken) {
     headers['Authorization'] = `Bearer ${customerToken}`;
+    sentTokenKind = 'customer';
   }
 
   if (options.headers) {
@@ -107,8 +112,9 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
   }
 
   if (!response.ok) {
-    if (response.status === 401 && adminToken && url !== '/auth/login' && url !== '/auth/customer-login') {
-      clearAdminToken();
+    if (response.status === 401 && sentTokenKind && url !== '/auth/login' && url !== '/auth/customer-login') {
+      if (sentTokenKind === 'admin') clearAdminToken();
+      else clearCustomerToken();
     }
     const errorMsg = data.error || data.message || `Request failed with status ${response.status}`;
     const err = new Error(errorMsg);
