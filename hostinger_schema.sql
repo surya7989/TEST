@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `variants_json` longtext DEFAULT NULL,
   `features_json` longtext DEFAULT NULL,
   `specs_json` longtext DEFAULT NULL,
+  `addons_json` longtext DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -415,6 +416,7 @@ ON DUPLICATE KEY UPDATE `code` = `code`;
 -- (kept at the end so every table above already exists on fresh imports).
 ALTER TABLE `ndis_quotes` ADD COLUMN IF NOT EXISTS `meta_json` longtext DEFAULT NULL;
 ALTER TABLE `order_items` ADD COLUMN IF NOT EXISTS `sku` varchar(100) DEFAULT NULL;
+ALTER TABLE `products` ADD COLUMN IF NOT EXISTS `addons_json` longtext DEFAULT NULL;
 
 COMMIT;
 

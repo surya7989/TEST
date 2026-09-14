@@ -310,20 +310,26 @@ function seedCatalogIntoDatabase(PDO $db): int {
     $catalog = getStaticCatalog();
     if (empty($catalog)) return 0;
 
+    // Authoritative add-on menu lives in products.addons_json (older DBs).
+    if (!tableHasColumn($db, 'products', 'addons_json')) {
+        try { $db->exec("ALTER TABLE `products` ADD COLUMN `addons_json` longtext DEFAULT NULL"); } catch (Throwable $e) {}
+    }
+
     $stmt = $db->prepare("
         INSERT INTO products (
             id, name, slug, sku, price, hire_price, hire_period, category, categories_json,
             image, gallery_images_json, brand, stock, low_stock_threshold, is_featured, is_active,
             gst_type, gst_rate, delivery_fee, ndis_code, short_description, description,
-            badge, rating, review_count, variants_json, features_json, specs_json
+            badge, rating, review_count, variants_json, features_json, specs_json, addons_json
         ) VALUES (
             ?, ?, ?, ?, ?, ?, 'week', ?, ?,
             ?, ?, ?, ?, 5, ?, 1,
             ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?
         )
         ON DUPLICATE KEY UPDATE
-            name = VALUES(name), price = VALUES(price), hire_price = VALUES(hire_price), is_active = 1
+            name = VALUES(name), price = VALUES(price), hire_price = VALUES(hire_price), is_active = 1,
+            addons_json = VALUES(addons_json)
     ");
 
     $count = 0;
@@ -336,6 +342,11 @@ function seedCatalogIntoDatabase(PDO $db): int {
             $gallery = is_array($p['galleryImages'] ?? null) ? $p['galleryImages'] : [($p['image'] ?? '')];
             $price = floatval($p['buyPrice'] ?? ($p['price'] ?? 0));
             $hirePrice = floatval($p['hirePrice'] ?? ($p['hire_price'] ?? 0));
+            // Priced add-on menu (optionalEquipment objects). Plain string
+            // accessory id-lists carry no prices and are stored as-is.
+            $addons = $p['optionalEquipment'] ?? null;
+            if (!is_array($addons)) $addons = null;
+            $addonsJson = $addons !== null ? json_encode(array_values($addons), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) : null;
 
             $stmt->execute([
                 $p['id'],
@@ -363,6 +374,7 @@ function seedCatalogIntoDatabase(PDO $db): int {
                 !empty($p['variants']) ? json_encode($p['variants']) : null,
                 !empty($p['features']) ? json_encode($p['features']) : null,
                 !empty($p['specifications']) ? json_encode($p['specifications']) : null,
+                $addonsJson,
             ]);
             $count++;
             if ($count % $batchSize === 0) {
@@ -457,6 +469,7 @@ function calculateAuthoritativeCart(array $rawItems, string $deliveryMethod = 's
                     'delivery_fee' => floatval($catalogProd['deliveryFee'] ?? 0),
                     'description' => $catalogProd['fullDescription'] ?? ($catalogProd['description'] ?? ''),
                     'variants_json' => !empty($catalogProd['variants']) ? json_encode($catalogProd['variants']) : null,
+                    'addons_json' => !empty($catalogProd['optionalEquipment']) ? json_encode($catalogProd['optionalEquipment']) : null,
                 ];
 
                 // Auto-upsert into DB so it persists for future orders
@@ -518,7 +531,55 @@ function calculateAuthoritativeCart(array $rawItems, string $deliveryMethod = 's
         $gstType = (string)($prod['gst_type'] ?? 'gst-free');
         $gstRate = floatval($prod['gst_rate'] ?? 0);
 
-        $unitPrice = ($purchaseType === 'hire') ? ($hireRate * $hireWeeks) : $basePrice;
+        // Optional extras are priced SERVER-side from the product's add-on
+        // menu (addons_json). Client-sent extra prices are never trusted;
+        // unknown extra ids are rejected loudly instead of silently dropped
+        // (which previously undercharged e.g. a $110 cushion to $0).
+        $addonsMenu = [];
+        $rawAddons = $prod['addons_json'] ?? null;
+        if (is_string($rawAddons)) $rawAddons = json_decode($rawAddons, true);
+        if (!is_array($rawAddons) && !empty($prod['optionalEquipment']) && is_array($prod['optionalEquipment'])) {
+            $rawAddons = $prod['optionalEquipment'];
+        }
+        if (is_array($rawAddons)) {
+            foreach ($rawAddons as $a) {
+                if (!is_array($a)) continue;
+                foreach (['id', 'sku'] as $ak) {
+                    $av = strtolower(trim((string)($a[$ak] ?? '')));
+                    if ($av !== '') $addonsMenu[$av] = $a;
+                }
+            }
+        }
+        $requestedExtras = is_array($it['selectedExtras'] ?? null) ? $it['selectedExtras'] : [];
+        $extrasUnit = 0.0;
+        $pricedExtras = [];
+        foreach ($requestedExtras as $re) {
+            if (!is_array($re)) continue;
+            $rid = strtolower(trim((string)($re['id'] ?? '')));
+            $rsku = strtolower(trim((string)($re['sku'] ?? '')));
+            $match = ($rid !== '' && isset($addonsMenu[$rid])) ? $addonsMenu[$rid]
+                : (($rsku !== '' && isset($addonsMenu[$rsku])) ? $addonsMenu[$rsku] : null);
+            if (!$match) {
+                $label = trim((string)($re['name'] ?? ($re['id'] ?? 'optional extra')));
+                throw new Exception("Selected optional extra '{$label}' is no longer available for '{$prod['name']}'. Please update your selection and try again.");
+            }
+            if ($purchaseType === 'hire') {
+                $xWeekly = floatval($match['hirePrice'] ?? ($match['hire_price'] ?? 0));
+                if ($xWeekly <= 0) $xWeekly = round(floatval($match['price'] ?? 0) * 0.05, 2);
+                $xp = $xWeekly * $hireWeeks;
+            } else {
+                $xp = max(0, floatval($match['price'] ?? 0));
+            }
+            $extrasUnit += $xp;
+            $pricedExtras[] = [
+                'id' => (string)($match['id'] ?? ($re['id'] ?? '')),
+                'name' => (string)($match['name'] ?? ($re['name'] ?? 'Optional extra')),
+                'sku' => (string)($match['sku'] ?? ($match['id'] ?? '')),
+                'price' => round($xp, 2),
+            ];
+        }
+
+        $unitPrice = (($purchaseType === 'hire') ? ($hireRate * $hireWeeks) : $basePrice) + $extrasUnit;
         $lineTotal = $unitPrice * $qty;
         $subtotal += $lineTotal;
         $totalProductDeliveryFees += ($prodDeliveryFee * $qty);
@@ -545,6 +606,8 @@ function calculateAuthoritativeCart(array $rawItems, string $deliveryMethod = 's
             'quantity' => $qty,
             'purchaseType' => $purchaseType,
             'hireWeeks' => $purchaseType === 'hire' ? $hireWeeks : 0,
+            'selectedExtras' => $pricedExtras,
+            'extrasTotal' => round($extrasUnit, 2),
             'gstType' => $gstType,
             'gstRate' => $gstRate,
             'deliveryFee' => $prodDeliveryFee,
@@ -1008,9 +1071,35 @@ function formatProductRow(array $row): array {
     $features = !empty($row['features_json']) 
         ? json_decode((string)$row['features_json'], true) 
         : ($row['features'] ?? []);
-    $specifications = !empty($row['specs_json']) 
-        ? json_decode((string)$row['specs_json'], true) 
+    $specifications = !empty($row['specs_json'])
+        ? json_decode((string)$row['specs_json'], true)
         : ($row['specifications'] ?? ($row['specs'] ?? []));
+
+    // Priced add-on menu (authoritative extras pricing for checkout).
+    $addons = null;
+    if (!empty($row['addons_json'])) {
+        $decodedAddons = json_decode((string)$row['addons_json'], true);
+        if (is_array($decodedAddons)) $addons = array_values($decodedAddons);
+    }
+    if ($addons === null) {
+        $candidate = $row['optionalEquipment'] ?? ($row['addons'] ?? null);
+        if (is_array($candidate)) $addons = array_values($candidate);
+    }
+    if (!is_array($addons)) $addons = [];
+    // Normalize to priced objects; plain id strings carry no price.
+    $addons = array_values(array_filter(array_map(function($a) {
+        if (!is_array($a)) return null;
+        $id = trim((string)($a['id'] ?? ($a['sku'] ?? '')));
+        if ($id === '') return null;
+        return [
+            'id' => $id,
+            'name' => (string)($a['name'] ?? $id),
+            'sku' => (string)($a['sku'] ?? $id),
+            'price' => max(0, floatval($a['price'] ?? 0)),
+            'hirePrice' => max(0, floatval($a['hirePrice'] ?? ($a['hire_price'] ?? 0))),
+            'priceType' => (string)($a['priceType'] ?? 'quantity_based'),
+        ];
+    }, $addons)));
 
     $price = floatval($row['price'] ?? ($row['buyPrice'] ?? 0));
     $hirePrice = floatval($row['hire_price'] ?? ($row['hirePrice'] ?? 0));
@@ -1066,6 +1155,8 @@ function formatProductRow(array $row): array {
         'reviewCount' => intval($row['review_count'] ?? ($row['reviewCount'] ?? 10)),
         'attributes' => is_array($attributes) ? $attributes : [],
         'variants' => is_array($variants) ? $variants : [],
+        'optionalEquipment' => $addons,
+        'addons' => $addons,
         'features' => is_array($features) ? $features : [],
         'specifications' => is_array($specifications) ? $specifications : [],
         'tags' => [strtolower((string)($row['brand'] ?? 'at specialists')), strtolower((string)($row['category'] ?? 'assistive-tech'))],

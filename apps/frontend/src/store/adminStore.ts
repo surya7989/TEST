@@ -1106,6 +1106,8 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                     sku: p.sku || dbOverrides[p.id]?.sku,
                     brand: p.brand || dbOverrides[p.id]?.brand,
                     description: p.description || dbOverrides[p.id]?.description,
+                    optionalEquipment: (p.optionalEquipment || p.addons || dbOverrides[p.id]?.optionalEquipment || []) as any,
+                    accessories: (p.accessories || dbOverrides[p.id]?.accessories || []) as any,
                   };
                 } else {
                   dbCustom.push({
@@ -1141,8 +1143,8 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                     tags: Array.isArray(p.tags) ? p.tags : [p.category || 'assistive-tech'],
                     attributes: Array.isArray(p.attributes) ? p.attributes : [],
                     variants: Array.isArray(p.variants) ? p.variants : [],
-                    optionalEquipment: [],
-                    accessories: [],
+                    optionalEquipment: (Array.isArray(p.optionalEquipment) ? p.optionalEquipment : (Array.isArray((p as any).addons) ? (p as any).addons : [])) as any,
+                    accessories: (Array.isArray(p.accessories) ? p.accessories : []) as any,
                     relatedProductIds: [],
                     documents: [],
                     stockStatus: p.stock <= 0 ? 'out_of_stock' : 'in_stock',
