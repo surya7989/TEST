@@ -44,7 +44,7 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Executive Dashboard', icon: LayoutDashboard, path: '/at', description: 'Central command, live metrics & recent activity' },
       { label: 'Analytics & Reports', icon: BarChart3, path: '/at/analytics', description: 'Financial trends, ATO tax reports & stock health' },
-      { label: 'Operations & Fleet', icon: FileSpreadsheet, path: '/at/operations', description: 'Operations overview, hire fleet & fulfilment' },
+      { label: 'Sales Dashboard', icon: FileSpreadsheet, path: '/at/sales', description: 'Revenue streams, fulfilment pipeline & recent sales' },
     ],
   },
   {
@@ -110,6 +110,29 @@ export function AdminLayout() {
     });
     return () => { active = false; };
   }, [checkAuth, navigate, fetchAllData]);
+
+  // A 401 on any admin-token API call means the session died after mount
+  // (e.g. the 12h token cap). Bounce to login instead of showing dead pages.
+  useEffect(() => {
+    const onSessionExpired = () => {
+      logout();
+      navigate('/at/login', { replace: true });
+    };
+    window.addEventListener('at:admin-session-expired', onSessionExpired);
+    return () => window.removeEventListener('at:admin-session-expired', onSessionExpired);
+  }, [logout, navigate]);
+
+  // Re-validate the session whenever the admin navigates — a token can expire
+  // while the SPA shell stays mounted, and no single page re-checks it.
+  useEffect(() => {
+    let active = true;
+    checkAuth().then((authed) => {
+      if (active && !authed) {
+        navigate('/at/login', { replace: true });
+      }
+    });
+    return () => { active = false; };
+  }, [location.pathname, checkAuth, navigate]);
 
   useEffect(() => {
     closeMobile();

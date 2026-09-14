@@ -1104,6 +1104,31 @@ if ($endpoint === 'products') {
                     $rows = $stmt ? $stmt->fetchAll() : $rows;
                 }
 
+                // Self-heal: early seed rows referenced /images/*.jpg files that
+                // were never shipped, so those product photos 422 on production.
+                // Remap the four known seed IDs to real catalogue images (no-op
+                // once healed, never touches merchant-edited rows).
+                try {
+                    $db->exec("
+                        UPDATE products SET
+                            image = CASE id
+                                WHEN 'eq-101' THEN '/images/products/atsa-aspire-vida-wheelchair-1.png'
+                                WHEN 'eq-102' THEN '/images/products/atsa-aspire-vogue-lightweight-1.png'
+                                WHEN 'eq-103' THEN '/images/products/atsa-aspire-lifestyle-bed-1.png'
+                                WHEN 'eq-104' THEN '/images/products/atsa-action-pilot-cushion-1.jpg'
+                                ELSE image END,
+                            gallery_images_json = CASE id
+                                WHEN 'eq-101' THEN '[\"/images/products/atsa-aspire-vida-wheelchair-1.png\"]'
+                                WHEN 'eq-102' THEN '[\"/images/products/atsa-aspire-vogue-lightweight-1.png\"]'
+                                WHEN 'eq-103' THEN '[\"/images/products/atsa-aspire-lifestyle-bed-1.png\"]'
+                                WHEN 'eq-104' THEN '[\"/images/products/atsa-action-pilot-cushion-1.jpg\"]'
+                                ELSE gallery_images_json END
+                        WHERE id IN ('eq-101','eq-102','eq-103','eq-104')
+                          AND (image IN ('/images/quantum_power_wheelchair.jpg','/images/ultralight_wheelchair.jpg','/images/hospital_bed.jpg','/images/pressure_cushion.jpg')
+                               OR image IS NULL OR image = '')
+                    ");
+                } catch (Throwable $e) {}
+
                 if (!empty($rows)) {
                     $formatted = array_map('formatProductRow', $rows);
                     header('Cache-Control: public, max-age=300, stale-while-revalidate=600');
@@ -2829,6 +2854,108 @@ if ($endpoint === 'customers') {
         }
 
         sendJson(['customer' => $customer, 'orders' => $orders]);
+    }
+
+    // POST /api/customers (Admin create customer profile)
+    if ($custId === '' && $method === 'POST') {
+        requireAdminAuth();
+        $b = getRequestBody();
+        $name = trim((string)($b['name'] ?? ''));
+        $email = strtolower(trim((string)($b['email'] ?? '')));
+        if ($name === '' || $email === '') {
+            sendJson(['success' => false, 'error' => 'Customer name and email are required.'], 400);
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            sendJson(['success' => false, 'error' => 'A valid email address is required.'], 400);
+        }
+        $stmtDup = $db->prepare("SELECT id FROM customers WHERE LOWER(email) = ? LIMIT 1");
+        $stmtDup->execute([$email]);
+        if ($stmtDup->fetch()) {
+            sendJson(['success' => false, 'error' => 'A customer with this email already exists.'], 409);
+        }
+        $id = 'CUST-' . substr(md5($email . microtime(true)), 0, 10);
+        $stmt = $db->prepare("
+            INSERT INTO customers (id, name, email, phone, address, city, state, postcode, ndis_number, plan_type, plan_manager, plan_manager_email, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ");
+        $stmt->execute([
+            $id,
+            substr($name, 0, 255),
+            $email,
+            substr(trim((string)($b['phone'] ?? '')), 0, 50),
+            substr(trim((string)($b['address'] ?? '')), 0, 1000),
+            substr(trim((string)($b['city'] ?? '')), 0, 100),
+            substr(trim((string)($b['state'] ?? '')), 0, 50),
+            substr(trim((string)($b['postcode'] ?? '')), 0, 20),
+            substr(trim((string)($b['ndisNumber'] ?? ($b['ndis_number'] ?? ''))), 0, 100),
+            substr(trim((string)($b['planType'] ?? ($b['plan_type'] ?? 'plan_managed'))), 0, 50),
+            substr(trim((string)($b['planManager'] ?? ($b['plan_manager'] ?? ''))), 0, 255),
+            substr(trim((string)($b['planManagerEmail'] ?? ($b['plan_manager_email'] ?? ''))), 0, 255),
+            substr(trim((string)($b['notes'] ?? ''))), 0, 2000),
+        ]);
+        sendJson(['success' => true, 'message' => 'Customer created.', 'customer' => ['id' => $id, 'name' => $name, 'email' => $email]], 201);
+    }
+
+    // PUT/PATCH /api/customers/{id} (Admin update customer profile)
+    if ($custId !== '' && ($method === 'PUT' || $method === 'PATCH')) {
+        requireAdminAuth();
+        $b = getRequestBody();
+        $stmtExists = $db->prepare("SELECT id FROM customers WHERE id = ? LIMIT 1");
+        $stmtExists->execute([$custId]);
+        if (!$stmtExists->fetch()) {
+            sendJson(['success' => false, 'error' => 'Customer not found. Only registered profiles can be edited.'], 404);
+        }
+        $map = [
+            'name' => 'name', 'email' => 'email', 'phone' => 'phone',
+            'address' => 'address', 'city' => 'city', 'state' => 'state', 'postcode' => 'postcode',
+            'ndisNumber' => 'ndis_number', 'ndis_number' => 'ndis_number',
+            'planType' => 'plan_type', 'plan_type' => 'plan_type',
+            'planManager' => 'plan_manager', 'plan_manager' => 'plan_manager',
+            'planManagerEmail' => 'plan_manager_email', 'plan_manager_email' => 'plan_manager_email',
+            'notes' => 'notes',
+        ];
+        $fields = [];
+        $params = [];
+        foreach ($map as $inKey => $col) {
+            if (array_key_exists($inKey, $b)) {
+                $fields[$col] = trim((string)$b[$inKey]);
+            }
+        }
+        if (isset($fields['email'])) {
+            $fields['email'] = strtolower($fields['email']);
+            if (!filter_var($fields['email'], FILTER_VALIDATE_EMAIL)) {
+                sendJson(['success' => false, 'error' => 'A valid email address is required.'], 400);
+            }
+            $stmtDup = $db->prepare("SELECT id FROM customers WHERE LOWER(email) = ? AND id <> ? LIMIT 1");
+            $stmtDup->execute([$fields['email'], $custId]);
+            if ($stmtDup->fetch()) {
+                sendJson(['success' => false, 'error' => 'Another customer already uses this email.'], 409);
+            }
+        }
+        if (isset($fields['name']) && $fields['name'] === '') {
+            sendJson(['success' => false, 'error' => 'Customer name cannot be empty.'], 400);
+        }
+        if (empty($fields)) {
+            sendJson(['success' => false, 'error' => 'No editable fields provided.'], 400);
+        }
+        $setParts = [];
+        $setParams = [];
+        foreach ($fields as $col => $val) {
+            $setParts[] = "`{$col}` = ?";
+            $setParams[] = $val;
+        }
+        $setParams[] = $custId;
+        $stmt = $db->prepare("UPDATE customers SET " . implode(', ', $setParts) . " WHERE id = ?");
+        $stmt->execute($setParams);
+        sendJson(['success' => true, 'message' => 'Customer updated.']);
+    }
+
+    // DELETE /api/customers/{id} (Admin only — profile row only, orders kept)
+    if ($custId !== '' && $method === 'DELETE') {
+        requireAdminAuth();
+        $stmt = $db->prepare("DELETE FROM customers WHERE id = ?");
+        $stmt->execute([$custId]);
+        sendJson(['success' => true, 'message' => 'Customer profile removed. Order history is preserved.']);
     }
 }
 

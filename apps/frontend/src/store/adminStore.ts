@@ -18,6 +18,9 @@ import {
   updateOrderStatus as apiUpdateOrderStatus,
   updateOrderTracking as apiUpdateOrderTracking,
   getCustomers as apiGetCustomers,
+  createCustomer as apiCreateCustomer,
+  updateCustomerApi as apiUpdateCustomer,
+  deleteCustomerApi as apiDeleteCustomer,
   getNdisQuotes as apiGetNdisQuotes,
   updateNdisQuoteStatus as apiUpdateNdisQuoteStatus,
   getInquiries as apiGetInquiries,
@@ -37,7 +40,7 @@ import { resolveProductBrand } from '@/lib/brandUtils';
 
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
-export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'expired' | 'invoiced' | 'pending';
+export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'expired' | 'invoiced' | 'pending' | 'cancelled' | 'converted';
 
 export interface Order {
   id: string;
@@ -1380,6 +1383,62 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
       },
 
       addCustomer: (customer: any) => {
+        // Persist to the backend first so the profile survives refetch;
+        // fall back to a local-only row if the server is unreachable.
+        apiCreateCustomer({
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone || '',
+          address: customer.address || '',
+          ndisNumber: customer.ndisNumber || '',
+          planManager: customer.planManager || '',
+          notes: customer.notes || '',
+        }).then((res) => {
+          if (res && res.success && res.customer && res.customer.id) {
+            set((state) => {
+              const exists = state.customers.some((c) => c.email.toLowerCase() === customer.email.toLowerCase());
+              if (exists) return state;
+              return {
+                customers: [
+                  {
+                    id: res.customer.id,
+                    name: customer.name,
+                    email: customer.email,
+                    phone: customer.phone || '',
+                    ordersCount: customer.ordersCount || 0,
+                    totalSpent: customer.totalSpent || 0,
+                    joinedAt: new Date().toISOString().split('T')[0],
+                    ndisNumber: customer.ndisNumber,
+                    address: customer.address,
+                  },
+                  ...state.customers,
+                ],
+              };
+            });
+          }
+        }).catch(() => {
+          set((state) => {
+            const exists = state.customers.some((c) => c.email.toLowerCase() === customer.email.toLowerCase());
+            if (exists) return state;
+            return {
+              customers: [
+                {
+                  id: `CUST-${Date.now().toString().slice(-6)}`,
+                  name: customer.name,
+                  email: customer.email,
+                  phone: customer.phone || '',
+                  ordersCount: customer.ordersCount || 1,
+                  totalSpent: customer.totalSpent || 0,
+                  joinedAt: new Date().toISOString().split('T')[0],
+                  ndisNumber: customer.ndisNumber,
+                  address: customer.address,
+                },
+                ...state.customers,
+              ],
+            };
+          });
+        });
+        // Optimistic local row so the UI reflects the add instantly.
         set((state) => {
           const exists = state.customers.some((c) => c.email.toLowerCase() === customer.email.toLowerCase());
           if (exists) {
@@ -1413,12 +1472,18 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
         set((state) => ({
           customers: state.customers.map((c) => (c.id === id ? {...c,...updates } : c)),
         }));
+        // Guest/synthesized rows have no backend profile — local only.
+        if (typeof id === 'string' && (id.startsWith('GUEST-') || id.startsWith('ORD'))) return;
+        apiUpdateCustomer(id, updates).catch(() => {});
       },
 
       deleteCustomer: (id: string) => {
         set((state) => ({
           customers: state.customers.filter((c) => c.id !== id),
         }));
+        if (typeof id === 'string' && (id.startsWith('GUEST-') || id.startsWith('ORD'))) return;
+        if (typeof id === 'string' && id.startsWith('CUST-') && id.length < 12) return;
+        apiDeleteCustomer(id).catch(() => {});
       },
 
       addNdisQuote: (quote: NdisQuote) => {

@@ -113,8 +113,14 @@ async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T>
 
   if (!response.ok) {
     if (response.status === 401 && sentTokenKind && url !== '/auth/login' && url !== '/auth/customer-login') {
-      if (sentTokenKind === 'admin') clearAdminToken();
-      else clearCustomerToken();
+      if (sentTokenKind === 'admin') {
+        clearAdminToken();
+        // Notify the admin shell so a stale/expired session bounces to the
+        // login screen instead of rendering broken pages that keep 401ing.
+        try {
+          window.dispatchEvent(new CustomEvent('at:admin-session-expired'));
+        } catch { /* non-DOM environment — ignore */ }
+      } else clearCustomerToken();
     }
     const errorMsg = data.error || data.message || `Request failed with status ${response.status}`;
     const err = new Error(errorMsg);
@@ -650,6 +656,26 @@ export async function getCustomers(): Promise<{ customers: any[] }> {
 
 export async function getCustomer(id: string): Promise<{ customer: any; orders: any[] }> {
   return apiRequest<{ customer: any; orders: any[] }>(`/customers/${id}`);
+}
+
+export async function createCustomer(data: any): Promise<{ success: boolean; message: string; customer: any }> {
+  return apiRequest<{ success: boolean; message: string; customer: any }>('/customers', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateCustomerApi(id: string, updates: any): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>(`/customers/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteCustomerApi(id: string): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>(`/customers/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
 }
 
 // ============================================================================

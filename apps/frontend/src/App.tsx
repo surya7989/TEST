@@ -45,7 +45,9 @@ const AdminReviews = lazy(() => import('@/pages/admin/AdminReviews').then((m) =>
 const AdminInvoices = lazy(() => import('@/pages/admin/AdminInvoices').then((m) => ({ default: m.AdminInvoices })));
 const AdminInquiries = lazy(() => import('@/pages/admin/AdminInquiries').then((m) => ({ default: m.AdminInquiries })));
 const AdminRentals = lazy(() => import('@/pages/admin/AdminRentals').then((m) => ({ default: m.AdminRentals })));
-const AdminOperationsDashboard = lazy(() => import('@/pages/admin/AdminOperationsDashboard').then((m) => ({ default: m.AdminOperationsDashboard })));
+const AdminSalesDashboard = lazy(() => import('@/pages/admin/AdminSalesDashboard').then((m) => ({ default: m.AdminSalesDashboard })));
+const AdminQuotes = lazy(() => import('@/pages/admin/AdminQuotes').then((m) => ({ default: m.AdminQuotes })));
+const AdminEmails = lazy(() => import('@/pages/admin/AdminEmails').then((m) => ({ default: m.AdminEmails })));
 const ViewDocumentPage = lazy(() => import('@/pages/ViewDocumentPage').then((m) => ({ default: m.ViewDocumentPage })));
 
 function AdminLoadingFallback() {
@@ -105,7 +107,7 @@ function App() {
       >
         <Route index element={<Suspense fallback={<AdminLoadingFallback />}><AdminDashboard /></Suspense>} />
         <Route path="products" element={<Suspense fallback={<AdminLoadingFallback />}><AdminProducts /></Suspense>} />
-        <Route path="sales" element={<Navigate to="/at/analytics" replace />} />
+        <Route path="sales" element={<Suspense fallback={<AdminLoadingFallback />}><AdminSalesDashboard /></Suspense>} />
         <Route path="orders" element={<Suspense fallback={<AdminLoadingFallback />}><AdminOrders /></Suspense>} />
         <Route path="rentals" element={<Suspense fallback={<AdminLoadingFallback />}><AdminRentals /></Suspense>} />
         <Route path="inquiries" element={<Suspense fallback={<AdminLoadingFallback />}><AdminInquiries /></Suspense>} />
@@ -113,14 +115,15 @@ function App() {
         <Route path="customers" element={<Suspense fallback={<AdminLoadingFallback />}><AdminCustomers /></Suspense>} />
         <Route path="customers/segments" element={<Suspense fallback={<AdminLoadingFallback />}><AdminCustomers /></Suspense>} />
         <Route path="invoices" element={<Suspense fallback={<AdminLoadingFallback />}><AdminInvoices /></Suspense>} />
-        <Route path="quotes" element={<Navigate to="/at/invoices?tab=quotes" replace />} />
+        <Route path="quotes" element={<Suspense fallback={<AdminLoadingFallback />}><AdminQuotes /></Suspense>} />
         <Route path="payments" element={<Suspense fallback={<AdminLoadingFallback />}><AdminInvoices /></Suspense>} />
-        <Route path="emails" element={<Navigate to="/at/settings?tab=email" replace />} />
+        <Route path="emails" element={<Suspense fallback={<AdminLoadingFallback />}><AdminEmails /></Suspense>} />
         <Route path="notifications" element={<Navigate to="/at/settings?tab=notifications" replace />} />
         <Route path="reviews" element={<Suspense fallback={<AdminLoadingFallback />}><AdminReviews /></Suspense>} />
         <Route path="analytics" element={<Suspense fallback={<AdminLoadingFallback />}><AdminAnalytics /></Suspense>} />
-        <Route path="operations" element={<Suspense fallback={<AdminLoadingFallback />}><AdminOperationsDashboard /></Suspense>} />
-        <Route path="operations/fleet" element={<Suspense fallback={<AdminLoadingFallback />}><AdminRentals /></Suspense>} />
+        {/* Operations hub retired — keep stale bookmarks working */}
+        <Route path="operations" element={<Navigate to="/at" replace />} />
+        <Route path="operations/*" element={<Navigate to="/at" replace />} />
         <Route path="shipping" element={<Suspense fallback={<AdminLoadingFallback />}><AdminShipping /></Suspense>} />
         <Route path="promotions" element={<Suspense fallback={<AdminLoadingFallback />}><AdminPromotions /></Suspense>} />
         <Route path="settings" element={<Suspense fallback={<AdminLoadingFallback />}><AdminSettings /></Suspense>} />
