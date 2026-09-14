@@ -3213,11 +3213,14 @@ function getDocumentRecord(string $docId): ?array {
             $orderItems = $stmtItems->fetchAll();
             $items = array_map(function($it) {
                 return [
-                    'code' => $it['product_id'],
+                    'code' => (string)(($it['sku'] ?? '') !== '' ? $it['sku'] : $it['product_id']),
+                    'sku' => (string)($it['sku'] ?? $it['product_id']),
                     'name' => $it['name'],
                     'quantity' => intval($it['quantity']),
                     'price' => floatval($it['price']),
                     'amount' => floatval($it['price']) * intval($it['quantity']),
+                    'purchaseType' => $it['purchase_type'] ?? 'buy',
+                    'hireWeeks' => intval($it['hire_weeks'] ?? 0),
                 ];
             }, $orderItems);
 
@@ -3234,6 +3237,13 @@ function getDocumentRecord(string $docId): ?array {
                 'total' => floatval($order['total']),
                 'items' => $items,
                 'notes' => $order['notes'] ?? '',
+                'extraMeta' => [
+                    'ndisNumber' => $order['ndis_number'] ?? '',
+                    'deliveryMethod' => $order['delivery_method'] ?? 'standard',
+                    'paymentStatus' => $order['payment_status'] ?? 'pending',
+                    'paymentMethod' => $order['payment_method'] ?? '',
+                    'trackingNumber' => $order['tracking_number'] ?? '',
+                ],
                 'filename' => "Tax-Invoice-{$docId}.pdf",
                 'createdAt' => $order['created_at']
             ];
@@ -3246,9 +3256,17 @@ function getDocumentRecord(string $docId): ?array {
         $stmtQ->execute([$docId]);
         $quote = $stmtQ->fetch();
         if ($quote) {
+            // Merge stored clinical/hire metadata so the document view, mail
+            // and PDF show the same schedule/prescriber detail as the editor.
+            $qmeta = [];
+            if (!empty($quote['meta_json'])) {
+                $decodedMeta = json_decode((string)$quote['meta_json'], true);
+                if (is_array($decodedMeta)) $qmeta = $decodedMeta;
+            }
+            $qType = strtolower((string)($qmeta['quoteType'] ?? 'purchase'));
             return [
                 'docId' => $docId,
-                'templateId' => 'ndis_quote',
+                'templateId' => $qType === 'hire' ? 'hire' : 'ndis_quote',
                 'customerName' => $quote['customer_name'],
                 'customerEmail' => $quote['customer_email'],
                 'customerPhone' => $quote['customer_phone'] ?? '',
@@ -3259,12 +3277,12 @@ function getDocumentRecord(string $docId): ?array {
                 'total' => floatval($quote['total']),
                 'items' => json_decode((string)($quote['items_json'] ?? '[]'), true) ?: [],
                 'notes' => $quote['notes'] ?? '',
-                'extraMeta' => [
+                'extraMeta' => array_merge([
                     'ndisNumber' => $quote['ndis_number'] ?? '',
                     'planManager' => $quote['plan_manager'] ?? '',
                     'planManagerEmail' => $quote['plan_manager_email'] ?? '',
                     'planType' => $quote['plan_type'] ?? ''
-                ],
+                ], $qmeta),
                 'filename' => "NDIS-Quotation-{$docId}.pdf",
                 'createdAt' => $quote['created_at']
             ];

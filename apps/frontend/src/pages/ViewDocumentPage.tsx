@@ -25,6 +25,7 @@ export function ViewDocumentPage() {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<boolean>(true);
   const [docData, setDocData] = useState<any>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
@@ -37,35 +38,17 @@ export function ViewDocumentPage() {
       .then((res) => {
         if (res.success && res.document) {
           setDocData(res.document);
+          setLoadError(null);
           setPdfUrl(res.pdfUrl || `/api/emails/pdf/${encodeURIComponent(docId)}`);
+        } else {
+          setDocData(null);
+          setLoadError('This document link is invalid or has expired. Please request a fresh copy from AT Specialists Australia.');
         }
       })
-      .catch((err) => {
-        console.warn('Could not fetch remote document data, generating fallback:', err);
-        const isNdis = docId.toUpperCase().includes('NDIS');
-        setDocData({
-          docId,
-          templateId: isNdis ? 'ndis_quote' : 'product_quote',
-          customerName: 'Valued Client',
-          customerPhone: '0494 767 409',
-          shippingAddress: 'Registered Delivery Destination',
-          total: 1850.00,
-          subtotal: 1850.00,
-          gstTotal: 0,
-          deliveryFee: 0,
-          items: [
-            {
-              code: isNdis ? '05_120603099_0105_1_2' : 'AT-PRD-01',
-              name: isNdis ? 'Scripted Assistive Technology Equipment' : 'Commercial Healthcare Equipment',
-              quantity: 1,
-              price: 1850.00,
-              amount: 1850.00,
-              detail: 'Clinical specification and assistive technology script',
-            },
-          ],
-          createdAt: new Date().toLocaleDateString('en-AU'),
-        });
-        setPdfUrl(`/api/emails/pdf/${encodeURIComponent(docId)}`);
+      .catch(() => {
+        // Never fabricate document figures — show an honest error instead.
+        setDocData(null);
+        setLoadError('This document could not be loaded. Check your connection or request a fresh link from AT Specialists Australia.');
       })
       .finally(() => {
         setLoading(false);
@@ -112,6 +95,20 @@ export function ViewDocumentPage() {
       </div>);
   }
 
+  if (loadError || !docData) {
+    return (<div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center space-y-3 max-w-md">
+          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+          <p className="text-base font-bold text-slate-800">Document unavailable</p>
+          <p className="text-xs text-slate-500">{loadError || 'This document could not be loaded.'}</p>
+          <p className="text-xs text-slate-400 font-mono">Ref: #{docId}</p>
+          <Link to="/" className="inline-block mt-2 px-5 py-2.5 bg-[#147A7A] text-white rounded-xl text-xs font-bold hover:bg-[#106262] transition-all">
+            Back to Website
+          </Link>
+        </div>
+      </div>);
+  }
+
   const isHire = docData?.templateId === 'hire' || docData?.templateId === 'ndis_hire' || (docId && (docId.toUpperCase().startsWith('HIR') || docId.toUpperCase().includes('HIRE')));
   const isNdis = !isHire && (docData?.templateId === 'ndis_quote' || (docId && docId.toUpperCase().includes('NDIS')));
   const isInvoice = !isHire && (docData?.templateId === 'order' || (docId && (docId.startsWith('INV') || docId.startsWith('ORD'))));
@@ -134,28 +131,16 @@ export function ViewDocumentPage() {
       : 'EQUIPMENT INVOICE'
   );
 
-  const rawItems: any[] = Array.isArray(docData?.items) && docData.items.length > 0
-    ? docData.items
-    : [
-        {
-          code: isNdis ? '05_120603099_0105_1_2' : 'AT-PRD-01',
-          sku: isNdis ? '05_120603099_0105_1_2' : 'AT-PRD-01',
-          name: isNdis ? 'NDIS Scripted Assistive Technology' : 'Assistive Equipment Item',
-          quantity: 1,
-          price: docData?.total || 1850.00,
-          amount: docData?.total || 1850.00,
-          detail: 'Clinical specifications and setup according to Australian Healthcare Standards',
-        },
-      ];
+  const rawItems: any[] = Array.isArray(docData?.items) ? docData.items : [];
 
   const items: any[] = rawItems.map((it: any) => ({
     ...it,
-    code: it.code || it.sku || it.productId || it.id || (isNdis ? '05_120603099_0105_1_2' : 'AT-PRD-01'),
-    name: it.name || (isNdis ? 'NDIS Scripted Assistive Technology' : 'Assistive Equipment Item'),
+    code: it.code || it.sku || it.productId || it.id || '',
+    name: it.name || 'Assistive Equipment Item',
   }));
 
-  const totalAmount = Number(docData?.total || 1850.00);
-  const subtotalAmount = Number(docData?.subtotal || totalAmount);
+  const totalAmount = Number(docData?.total || 0);
+  const subtotalAmount = Number(docData?.subtotal ?? totalAmount);
   const provider = {
     name: docData?.customSettings?.companyName || 'AT Specialists Australia Pty Ltd',
     abn: docData?.customSettings?.abn || '48 123 456 789',
@@ -336,7 +321,7 @@ export function ViewDocumentPage() {
                   : isNdis
                   ? docData?.extraMeta?.planManager || docData?.extraMeta?.planType || 'Self-Managed Participant'
                   : isTrial
-                  ? docData?.extraMeta?.prescribingClinician || 'Dr. Alistair Vance, Senior OT'
+                  ? docData?.extraMeta?.prescribingClinician || 'Clinical Evaluation Team'
                   : docData?.extraMeta?.customerCompany || 'Commercial Purchasing Entity'}
               </p>
               {isHire && (
@@ -375,6 +360,21 @@ export function ViewDocumentPage() {
                 <p>
                   <span className="text-slate-600">Scheduled Slot:</span>{' '}
                   <strong className="text-black">{docData?.extraMeta?.trialDate || 'Within 5 Business Days'}</strong>
+                </p>
+              )}
+              {docData?.extraMeta?.paymentStatus && (
+                <p>
+                  <span className="text-slate-600">Payment:</span>{' '}
+                  <strong className={docData.extraMeta.paymentStatus === 'paid' ? 'text-emerald-700' : 'text-amber-700'}>
+                    {String(docData.extraMeta.paymentStatus).toUpperCase()}
+                    {docData.extraMeta.paymentMethod ? ` • ${docData.extraMeta.paymentMethod}` : ''}
+                  </strong>
+                </p>
+              )}
+              {docData?.extraMeta?.trackingNumber && (
+                <p>
+                  <span className="text-slate-600">Tracking:</span>{' '}
+                  <strong className="text-black font-mono">{docData.extraMeta.trackingNumber}</strong>
                 </p>
               )}
               {isQuote && (
