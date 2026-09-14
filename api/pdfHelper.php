@@ -170,7 +170,8 @@ function generateOrderInvoicePdfPhp(array $order): string {
     $pdf->SetTextColor(255, 255, 255);
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->Cell(10, 7, fpdfSafeText('#'), 0, 0, 'C', true);
-    $pdf->Cell(88, 7, fpdfSafeText('Item Description'), 0, 0, 'L', true);
+    $pdf->Cell(64, 7, fpdfSafeText('Item Description'), 0, 0, 'L', true);
+    $pdf->Cell(24, 7, fpdfSafeText('SKU / Code'), 0, 0, 'L', true);
     $pdf->Cell(20, 7, fpdfSafeText('Type'), 0, 0, 'C', true);
     $pdf->Cell(15, 7, fpdfSafeText('Qty'), 0, 0, 'C', true);
     $pdf->Cell(24, 7, fpdfSafeText('Unit Price'), 0, 0, 'R', true);
@@ -195,6 +196,7 @@ function generateOrderInvoicePdfPhp(array $order): string {
         $pdf->SetFillColor($isEven ? 248 : 255, $isEven ? 250 : 255, $isEven ? 252 : 255);
 
         $name = (string)($item['name'] ?? 'Assistive Technology Item');
+        $skuCode = (string)($item['sku'] ?? ($item['code'] ?? ($item['productId'] ?? ($item['product_id'] ?? ($item['id'] ?? '')))));
         $qty = intval($item['quantity'] ?? 1);
         $price = floatval($item['price'] ?? 0);
         $lineTotal = $price * $qty;
@@ -203,7 +205,8 @@ function generateOrderInvoicePdfPhp(array $order): string {
         $type = ($item['purchaseType'] ?? ($item['purchase_type'] ?? 'buy')) === 'hire' ? 'Rental' : 'Purchase';
 
         $pdf->Cell(10, 6, (string)$rowIdx, 'B', 0, 'C', true);
-        $pdf->Cell(88, 6, fpdfSafeText(substr($name, 0, 50)), 'B', 0, 'L', true);
+        $pdf->Cell(64, 6, fpdfSafeText(substr($name, 0, 36)), 'B', 0, 'L', true);
+        $pdf->Cell(24, 6, fpdfSafeText(substr($skuCode, 0, 13)), 'B', 0, 'L', true);
         $pdf->Cell(20, 6, fpdfSafeText($type), 'B', 0, 'C', true);
         $pdf->Cell(15, 6, (string)$qty, 'B', 0, 'C', true);
         $pdf->Cell(24, 6, '$'. number_format($price, 2), 'B', 0, 'R', true);
@@ -216,7 +219,8 @@ function generateOrderInvoicePdfPhp(array $order): string {
         $isEven = ($rowIdx % 2 === 0);
         $pdf->SetFillColor($isEven ? 248 : 255, $isEven ? 250 : 255, $isEven ? 252 : 255);
         $pdf->Cell(10, 6, '', 'B', 0, 'C', true);
-        $pdf->Cell(88, 6, '', 'B', 0, 'L', true);
+        $pdf->Cell(64, 6, '', 'B', 0, 'L', true);
+        $pdf->Cell(24, 6, '', 'B', 0, 'L', true);
         $pdf->Cell(20, 6, '', 'B', 0, 'C', true);
         $pdf->Cell(15, 6, '', 'B', 0, 'C', true);
         $pdf->Cell(24, 6, '', 'B', 0, 'R', true);
@@ -362,7 +366,8 @@ function generateQuotePdfPhp(array $quote): string {
     $pdf->SetTextColor(255, 255, 255);
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->Cell(10, 7, fpdfSafeText('#'), 0, 0, 'C', true);
-    $pdf->Cell(90, 7, fpdfSafeText('Item / Equipment Description'), 0, 0, 'L', true);
+    $pdf->Cell(66, 7, fpdfSafeText('Item / Equipment Description'), 0, 0, 'L', true);
+    $pdf->Cell(24, 7, fpdfSafeText('SKU / Code'), 0, 0, 'L', true);
     $pdf->Cell(35, 7, fpdfSafeText('NDIS Support Category'), 0, 0, 'L', true);
     $pdf->Cell(15, 7, fpdfSafeText('Qty'), 0, 0, 'C', true);
     $pdf->Cell(27, 7, fpdfSafeText('Total (AUD)'), 0, 1, 'R', true);
@@ -384,6 +389,7 @@ function generateQuotePdfPhp(array $quote): string {
         $isEven = ($rowIdx % 2 === 0);
         $pdf->SetFillColor($isEven ? 248 : 255, $isEven ? 250 : 255, $isEven ? 252 : 255);
         $name = (string)($item['name'] ?? 'Assistive Technology Item');
+        $skuCode = (string)($item['sku'] ?? ($item['code'] ?? ($item['productId'] ?? ($item['product_id'] ?? ($item['id'] ?? '')))));
         $category = (string)($item['fundingCategory'] ?? 'Core / Capital (AT)');
         $qty = intval($item['quantity'] ?? 1);
         $price = floatval($item['price'] ?? 0);
@@ -391,7 +397,8 @@ function generateQuotePdfPhp(array $quote): string {
         $total += $lineTotal;
 
         $pdf->Cell(10, 6, (string)$rowIdx, 'B', 0, 'C', true);
-        $pdf->Cell(90, 6, fpdfSafeText(substr($name, 0, 50)), 'B', 0, 'L', true);
+        $pdf->Cell(66, 6, fpdfSafeText(substr($name, 0, 36)), 'B', 0, 'L', true);
+        $pdf->Cell(24, 6, fpdfSafeText(substr($skuCode, 0, 13)), 'B', 0, 'L', true);
         $pdf->Cell(35, 6, fpdfSafeText($category), 'B', 0, 'L', true);
         $pdf->Cell(15, 6, (string)$qty, 'B', 0, 'C', true);
         $pdf->Cell(27, 6, '$'. number_format($lineTotal, 2), 'B', 1, 'R', true);

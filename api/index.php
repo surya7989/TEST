@@ -536,6 +536,11 @@ function calculateAuthoritativeCart(array $rawItems, string $deliveryMethod = 's
         $itemsBreakdown[] = [
             'id' => $prod['id'],
             'name' => $prod['name'],
+            'sku' => (string)($prod['sku'] ?? $prod['id']),
+            'code' => (string)(($prod['ndis_code'] ?? '') !== '' ? $prod['ndis_code'] : ($prod['sku'] ?? $prod['id'])),
+            'slug' => (string)($prod['slug'] ?? ''),
+            'brand' => (string)($prod['brand'] ?? ''),
+            'category' => (string)($prod['category'] ?? ''),
             'price' => $unitPrice,
             'quantity' => $qty,
             'purchaseType' => $purchaseType,
@@ -1674,15 +1679,18 @@ if ($endpoint === 'paypal') {
             $stmtOrd->execute($orderVals);
 
             // Insert Order Items & Decrement Stock
+            try {
+                $db->exec("ALTER TABLE `order_items` ADD COLUMN IF NOT EXISTS `sku` varchar(100) DEFAULT NULL");
+            } catch (Throwable $e) {}
             $stmtItem = $db->prepare("
-                INSERT INTO order_items (order_id, product_id, name, quantity, price, purchase_type, hire_weeks, gst_type, gst_rate, delivery_fee)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO order_items (order_id, product_id, sku, name, quantity, price, purchase_type, hire_weeks, gst_type, gst_rate, delivery_fee)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmtStock = $db->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?");
 
             foreach ($cart['items'] as $it) {
                 $stmtItem->execute([
-                    $orderId, $it['id'], $it['name'], $it['quantity'], $it['price'],
+                    $orderId, $it['id'], ($it['sku'] ?? ($it['code'] ?? $it['id'])), $it['name'], $it['quantity'], $it['price'],
                     $it['purchaseType'], $it['hireWeeks'], $it['gstType'], $it['gstRate'], $it['deliveryFee']
                 ]);
                 $stmtStock->execute([$it['quantity'], $it['id']]);
@@ -1713,6 +1721,33 @@ if ($endpoint === 'paypal') {
                     $cust['city'] ?? '', $cust['state'] ?? '', $cust['postcode'] ?? '',
                     $ndisNumber, $cart['total']
                 ]);
+            }
+
+            // Auto-create Equipment Hire records for hire items so the hire
+            // fleet page reflects paid hire checkouts without manual entry.
+            $hireIdx = 0;
+            foreach ($cart['items'] as $it) {
+                if (($it['purchaseType'] ?? 'buy') !== 'hire') continue;
+                $hireIdx++;
+                $hireWeeks = max(1, intval($it['hireWeeks'] ?? 2));
+                $hireQty = max(1, intval($it['quantity'] ?? 1));
+                $weeklyRate = $hireWeeks > 0 ? round(floatval($it['price']) / $hireWeeks, 2) : floatval($it['price']);
+                try {
+                    $stmtRental = $db->prepare("
+                        INSERT INTO rentals (id, customer_name, customer_email, customer_phone, product_id, product_name, weeks, weekly_rate, delivery_fee, deposit, total, status, notes, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'active', ?, NOW())
+                    ");
+                    $stmtRental->execute([
+                        'RNT-' . $orderId . '-H' . $hireIdx,
+                        $custName, $custEmail, $custPhone,
+                        $it['id'], $it['name'], $hireWeeks, $weeklyRate,
+                        floatval($it['deliveryFee'] ?? 0),
+                        round(floatval($it['price']) * $hireQty, 2),
+                        'Auto-created from paid order ' . $orderId . ' (qty ' . $hireQty . ', ' . $hireWeeks . ' weeks). NDIS: ' . ($ndisNumber !== '' ? $ndisNumber : 'n/a')
+                    ]);
+                } catch (Throwable $re) {
+                    error_log("Auto-rental insert notice for {$orderId}: " . $re->getMessage());
+                }
             }
 
             $db->commit();
@@ -2144,6 +2179,25 @@ if ($endpoint === 'orders') {
     }
 }
 
+// Merge declarative quote metadata (stored as meta_json) plus decoded items
+// into a quote row so the admin panel sees hire/prescriber detail and lines.
+function mergeQuoteMetaRow(array $row): array {
+    $decoded = json_decode((string)($row['items_json'] ?? '[]'), true);
+    $row['items'] = is_array($decoded) ? array_values($decoded) : [];
+    if (!empty($row['meta_json'])) {
+        $meta = json_decode((string)$row['meta_json'], true);
+        if (is_array($meta)) {
+            foreach ($meta as $k => $v) {
+                if (!isset($row[$k]) || $row[$k] === '' || $row[$k] === null) {
+                    $row[$k] = $v;
+                }
+            }
+        }
+    }
+    if (!isset($row['quoteType'])) $row['quoteType'] = 'purchase';
+    return $row;
+}
+
 // ============================================================================
 // 7. NDIS QUOTES ROUTES (`/api/quotes/*`)
 // ============================================================================
@@ -2156,7 +2210,8 @@ if ($endpoint === 'quotes') {
     if ($quoteId === '' && $method === 'GET') {
         requireAdminAuth();
         $stmt = $db->query("SELECT * FROM ndis_quotes ORDER BY created_at DESC");
-        sendJson(['quotes' => $stmt->fetchAll()]);
+        $rows = $stmt ? $stmt->fetchAll() : [];
+        sendJson(['quotes' => array_map('mergeQuoteMetaRow', $rows)]);
     }
 
     // POST /api/quotes (Create NDIS Quote)
@@ -2186,7 +2241,60 @@ if ($endpoint === 'quotes') {
 
         try {
             $cart = calculateAuthoritativeCart($rawItems, $deliveryMethod, $promoCode);
-            $id = 'ATS-Q-'. date('Y'). '-'. random_int(1000, 9999);
+
+            // Preserve frontend line detail the pricing engine drops (variant
+            // detail, extras, funding category) by matching on product keys.
+            $bodyItemsByKey = [];
+            foreach ((is_array($rawItems) ? $rawItems : []) as $bi) {
+                if (!is_array($bi)) continue;
+                foreach (['id', 'productId', 'sku', 'code'] as $bk) {
+                    $bv = strtolower(trim((string)($bi[$bk] ?? '')));
+                    if ($bv !== '') $bodyItemsByKey[$bv] = $bi;
+                }
+            }
+            foreach ($cart['items'] as &$ci) {
+                $bmatch = $bodyItemsByKey[strtolower((string)($ci['id'] ?? ''))]
+                    ?? $bodyItemsByKey[strtolower((string)($ci['sku'] ?? ''))] ?? null;
+                if (is_array($bmatch)) {
+                    foreach (['detail', 'selectedSize', 'selectedColor', 'selectedExtras', 'fundingCategory'] as $ek) {
+                        if (array_key_exists($ek, $bmatch)) $ci[$ek] = $bmatch[$ek];
+                    }
+                }
+            }
+            unset($ci);
+
+            // Hire identity + clinical metadata live in meta_json (newer DBs).
+            $isHireQuote = strtolower((string)($body['quoteType'] ?? '')) === 'hire';
+            if (!$isHireQuote) {
+                foreach ($cart['items'] as $ci) {
+                    if (($ci['purchaseType'] ?? 'buy') === 'hire') { $isHireQuote = true; break; }
+                }
+            }
+            $strCap = function($v, $n) { return substr(trim((string)$v), 0, $n); };
+            $quoteMeta = [
+                'quoteType' => $isHireQuote ? 'hire' : 'purchase',
+                'prescriberName' => $strCap($body['prescriberName'] ?? '', 160),
+                'prescriberOrg' => $strCap($body['prescriberOrg'] ?? '', 160),
+                'prescriberPhone' => $strCap($body['prescriberPhone'] ?? '', 40),
+                'prescriberEmail' => $strCap($body['prescriberEmail'] ?? '', 160),
+                'clinicalRationale' => $strCap($body['clinicalRationale'] ?? '', 2000),
+                'participantDob' => $strCap($body['participantDob'] ?? '', 20),
+                'hireStartDate' => $strCap($body['hireStartDate'] ?? '', 20),
+                'hireReturnDate' => $strCap($body['hireReturnDate'] ?? '', 20),
+                'hireDurationWeeks' => max(1, min(520, intval($body['hireDurationWeeks'] ?? 4))),
+                'hireLocationType' => $strCap($body['hireLocationType'] ?? '', 40),
+                'hireFacilityName' => $strCap($body['hireFacilityName'] ?? '', 160),
+                'hireFacilityWard' => $strCap($body['hireFacilityWard'] ?? '', 60),
+                'hireFacilityRoom' => $strCap($body['hireFacilityRoom'] ?? '', 60),
+                'hireDischargeDate' => $strCap($body['hireDischargeDate'] ?? '', 20),
+                'hireTermsAccepted' => !empty($body['hireTermsAccepted']),
+            ];
+            if (!tableHasColumn($db, 'ndis_quotes', 'meta_json')) {
+                try { $db->exec("ALTER TABLE `ndis_quotes` ADD COLUMN `meta_json` longtext DEFAULT NULL"); } catch (Throwable $e) {}
+            }
+            $hasMetaCol = tableHasColumn($db, 'ndis_quotes', 'meta_json');
+
+            $id = ($isHireQuote ? 'HIR-QT-' : 'ATS-Q-'). date('Y'). '-'. random_int(1000, 9999);
             $accessToken = generateOrderAccessToken($id, $customerEmail);
 
             $quoteCols = ['id', 'customer_name', 'customer_email', 'customer_phone', 'shipping_address', 'ndis_number', 'plan_type', 'plan_manager', 'plan_manager_email', 'items_json', 'subtotal', 'delivery_fee', 'gst_total', 'total'];
@@ -2203,6 +2311,10 @@ if ($endpoint === 'quotes') {
             $quoteCols[] = 'access_token';
             $quoteVals[] = $notes;
             $quoteVals[] = $accessToken;
+            if ($hasMetaCol) {
+                $quoteCols[] = 'meta_json';
+                $quoteVals[] = json_encode($quoteMeta, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
             $placeholders = implode(', ', array_fill(0, count($quoteVals), '?'));
             $stmt = $db->prepare("
                 INSERT INTO ndis_quotes (" . implode(', ', $quoteCols) . ", status, valid_until, created_at)
@@ -2405,6 +2517,7 @@ if ($endpoint === 'quotes') {
         if (!$quote) sendJson(['error' => 'Quote not found'], 404);
 
         $quote['items'] = json_decode((string)($quote['items_json'] ?? '[]'), true) ?: [];
+        $quote = mergeQuoteMetaRow($quote);
         sendJson(['quote' => $quote]);
     }
 
@@ -3128,15 +3241,19 @@ function buildDispatchItemsTableHtml(array $items, float $subtotal, float $deliv
         if (!is_array($it)) continue;
         $idx++;
         $name = (string)($it['name'] ?? 'Assistive Technology Item');
-        $code = (string)($it['code'] ?? ($it['sku'] ?? ($it['productId'] ?? ($it['id'] ?? ''))));
+        $code = (string)($it['code'] ?? '');
+        $sku = (string)($it['sku'] ?? ($it['productId'] ?? ($it['id'] ?? '')));
         $qty = max(1, intval($it['quantity'] ?? 1));
         $price = floatval($it['price'] ?? (($it['amount'] ?? 0) / max(1, $qty)));
         if ($price <= 0 && isset($it['amount'])) $price = floatval($it['amount']) / $qty;
         $line = isset($it['amount']) ? floatval($it['amount']) : $price * $qty;
+        $codeHtml = '';
+        if ($code !== '') $codeHtml .= "<div style='font-size:11px;color:#64748b;'>Code: " . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</div>";
+        if ($sku !== '' && $sku !== $code) $codeHtml .= "<div style='font-size:11px;color:#64748b;'>SKU: " . htmlspecialchars($sku, ENT_QUOTES, 'UTF-8') . "</div>";
         $rows .= "<tr>"
             . "<td style='padding:10px 12px;border-bottom:1px solid #f1f5f9;color:#0f172a;'>"
             . "<div style='font-weight:700;'>" . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . "</div>"
-            . ($code !== '' ? "<div style='font-size:11px;color:#64748b;'>Code: " . htmlspecialchars($code, ENT_QUOTES, 'UTF-8') . "</div>" : "")
+            . $codeHtml
             . "</td>"
             . "<td style='padding:10px 12px;text-align:center;border-bottom:1px solid #f1f5f9;font-weight:700;color:#475569;'>{$qty}</td>"
             . "<td style='padding:10px 12px;text-align:right;border-bottom:1px solid #f1f5f9;font-weight:700;color:#0f172a;'>$" . number_format($line, 2) . "</td>"
@@ -3316,9 +3433,33 @@ function dispatchUnifiedDocument(array $payload): array {
         ? "<div style='border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;background:#ffffff;font-size:12px;color:#475569;margin-bottom:18px;'><strong style='color:#0f172a;'>Deliver To:</strong> " . htmlspecialchars($customerName . ' — ' . $shippingAddress . ($customerPhone !== '' ? ' — ' . $customerPhone : ''), ENT_QUOTES, 'UTF-8') . "</div>"
         : '';
 
-    $emailBody = "<h3>{$docTitle}</h3>
+    // Custom mail copy from the Invoice & Document editor (previously ignored,
+    // so the admin's subject/message never reached the mailbox).
+    $mailTpl = (isset($customSettings['mailTemplate']) && is_array($customSettings['mailTemplate'])) ? $customSettings['mailTemplate'] : [];
+    $customSubject = trim((string)($mailTpl['subject'] ?? ($extraMeta['mailSubject'] ?? '')));
+    $customBody = trim((string)($mailTpl['body'] ?? ($extraMeta['mailBody'] ?? '')));
+    $customHeadline = trim((string)($mailTpl['headline'] ?? ''));
+    $mailPlaceholders = [
+        '{{customer_name}}' => $customerName,
+        '{{customer_email}}' => $customerEmail,
+        '{{document_id}}' => $docId,
+        '{{total}}' => number_format($total, 2),
+        '{{company}}' => $brandCompany,
+    ];
+    $fillPlaceholders = function($text) use ($mailPlaceholders) {
+        return str_ireplace(array_keys($mailPlaceholders), array_values($mailPlaceholders), (string)$text);
+    };
+    if ($customBody !== '') {
+        $greetingHtml = ($customHeadline !== '' ? "<h3>" . htmlspecialchars($fillPlaceholders($customHeadline), ENT_QUOTES, 'UTF-8') . "</h3>" : "")
+            . nl2br(htmlspecialchars($fillPlaceholders($customBody), ENT_QUOTES, 'UTF-8'));
+    } else {
+        $greetingHtml = "<h3>{$docTitle}</h3>
     <p>Dear ". htmlspecialchars($customerName, ENT_QUOTES, 'UTF-8'). ",</p>
-    <p>Please find your documentation summary from " . htmlspecialchars($brandCompany, ENT_QUOTES, 'UTF-8') . " below.</p>
+    <p>Please find your documentation summary from " . htmlspecialchars($brandCompany, ENT_QUOTES, 'UTF-8') . " below.</p>";
+    }
+    $customerSubject = $customSubject !== '' ? $fillPlaceholders($customSubject) : "{$docTitle} — AT Specialists Australia";
+
+    $emailBody = $greetingHtml . "
     <div style='background-color: #f0fdfa; border: 1px solid #ccfbf1; border-radius: 6px; padding: 14px; margin: 16px 0;'>
         <p style='margin: 0 0 6px;'><strong>Document Reference:</strong> {$docId}</p>
         <p style='margin: 0 0 6px;'><strong>Total Amount:</strong> $". number_format($total, 2). " AUD</p>
@@ -3377,7 +3518,7 @@ function dispatchUnifiedDocument(array $payload): array {
     // Send Customer copy
     $sendCust = ($payload['sendCustomerCopy'] ?? true) !== false;
     if ($sendCust && filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
-        $res = sendSmtpEmail($customerEmail, "{$docTitle} — AT Specialists Australia", $html, $attachments);
+        $res = sendSmtpEmail($customerEmail, $customerSubject, $html, $attachments);
         if ($res['success']) {
             $customerSent = true;
         } else {

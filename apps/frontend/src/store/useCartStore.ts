@@ -67,6 +67,43 @@ export interface AppliedPromo {
   value: number;
 }
 
+/**
+ * Canonical line-item identity. MUST stay in sync everywhere a key is built
+ * (add + hire-weeks update) or quantity/remove actions target stale keys and
+ * cart counts corrupt. Covers the full variant configuration.
+ */
+const normKeyPart = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+export function buildCartItemKey(params: {
+  id: string;
+  purchaseType: 'buy' | 'hire';
+  hireWeeks?: number;
+  selectedSize?: string;
+  selectedColor?: string;
+  selectedAttributes?: Record<string, string>;
+  selectedExtras?: { id: string }[];
+}): string {
+  const attrEntries = Object.entries(params.selectedAttributes || {})
+    .filter(([, v]) => v !== undefined && v !== null && String(v) !== '')
+    .map(([k, v]) => `${normKeyPart(k)}=${normKeyPart(String(v))}`)
+    .sort();
+  const sizeTag =
+    params.selectedSize && !attrEntries.some((e) => e.startsWith('size='))
+      ? `-${normKeyPart(params.selectedSize)}`
+      : '';
+  const colorTag =
+    params.selectedColor && !attrEntries.some((e) => e.startsWith('colour=') || e.startsWith('color='))
+      ? `-${normKeyPart(params.selectedColor)}`
+      : '';
+  const attrsTag = attrEntries.length > 0 ? `-${attrEntries.join('_')}` : '';
+  const extrasTag =
+    params.selectedExtras && params.selectedExtras.length > 0
+      ? `-${params.selectedExtras.map((e) => e.id).sort().join('_')}`
+      : '';
+  const hireTag = params.purchaseType === 'hire' ? `-hire-${params.hireWeeks || 2}` : '-buy';
+  return `${params.id}${sizeTag}${colorTag}${attrsTag}${extrasTag}${hireTag}`;
+}
+
 export interface CartConflict {
   isOpen: boolean;
   currentType: 'buy' | 'hire';
@@ -137,20 +174,15 @@ export const useCartStore = create<CartState>()(persist((set, get) => ({
 
         // Unique identity covers the FULL variant configuration so different
         // sizes/colours/covers/extras never merge into one line item.
-        const norm = (v: string) => v.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const attrEntries = Object.entries(params.selectedAttributes || {})
-          .filter(([, v]) => v !== undefined && v !== null && String(v) !== '')
-          .map(([k, v]) => `${norm(k)}=${norm(String(v))}`)
-          .sort();
-        const sizeTag = params.selectedSize && !attrEntries.some((e) => e.startsWith('size=')) ? `-${norm(params.selectedSize)}` : '';
-        const colorTag = params.selectedColor && !attrEntries.some((e) => e.startsWith('colour=') || e.startsWith('color=')) ? `-${norm(params.selectedColor)}` : '';
-        const attrsTag = attrEntries.length > 0 ? `-${attrEntries.join('_')}` : '';
-        const extrasTag = params.selectedExtras && params.selectedExtras.length > 0
-          ? `-${params.selectedExtras.map(e => e.id).sort().join('_')}`
-          : '';
-        const hireTag = purchaseType === 'hire' ? `-hire-${hireWeeks}` : '-buy';
-
-        const cartItemId = `${params.id}${sizeTag}${colorTag}${attrsTag}${extrasTag}${hireTag}`;
+        const cartItemId = buildCartItemKey({
+          id: params.id,
+          purchaseType,
+          hireWeeks,
+          selectedSize: params.selectedSize,
+          selectedColor: params.selectedColor,
+          selectedAttributes: params.selectedAttributes,
+          selectedExtras: params.selectedExtras,
+        });
         const qtyToAdd = params.quantity && params.quantity > 0 ? params.quantity : 1;
         const gstType = params.gstType || 'gst-free';
         const gstRate = params.gstRate || 0;
@@ -247,13 +279,18 @@ export const useCartStore = create<CartState>()(persist((set, get) => ({
             if (item.cartItemId === cartItemId && item.purchaseType === 'hire') {
               const weekly = item.weeklyRate || (item.price / (item.hireWeeks || 2));
               const newUnitPrice = weekly * newWeeks;
-              const sizeTag = item.selectedSize ? `-${item.selectedSize.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : '';
-              const colorTag = item.selectedColor ? `-${item.selectedColor.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : '';
-              const extrasTag = item.selectedExtras && item.selectedExtras.length > 0 
-                ? `-${item.selectedExtras.map(e => e.id).sort().join('_')}` 
-                : '';
-              const newCartItemId = `${item.id}${sizeTag}${colorTag}${extrasTag}-hire-${newWeeks}`;
-              
+              // Rebuild the key with the SAME canonical builder so the line
+              // keeps its variant identity (attributes included).
+              const newCartItemId = buildCartItemKey({
+                id: item.id,
+                purchaseType: 'hire',
+                hireWeeks: newWeeks,
+                selectedSize: item.selectedSize,
+                selectedColor: item.selectedColor,
+                selectedAttributes: item.selectedAttributes,
+                selectedExtras: item.selectedExtras,
+              });
+
               return {
                 ...item,
                 cartItemId: newCartItemId,

@@ -45,9 +45,7 @@ const AdminReviews = lazy(() => import('@/pages/admin/AdminReviews').then((m) =>
 const AdminInvoices = lazy(() => import('@/pages/admin/AdminInvoices').then((m) => ({ default: m.AdminInvoices })));
 const AdminInquiries = lazy(() => import('@/pages/admin/AdminInquiries').then((m) => ({ default: m.AdminInquiries })));
 const AdminRentals = lazy(() => import('@/pages/admin/AdminRentals').then((m) => ({ default: m.AdminRentals })));
-const AdminSalesDashboard = lazy(() => import('@/pages/admin/AdminSalesDashboard').then((m) => ({ default: m.AdminSalesDashboard })));
 const AdminQuotes = lazy(() => import('@/pages/admin/AdminQuotes').then((m) => ({ default: m.AdminQuotes })));
-const AdminEmails = lazy(() => import('@/pages/admin/AdminEmails').then((m) => ({ default: m.AdminEmails })));
 const ViewDocumentPage = lazy(() => import('@/pages/ViewDocumentPage').then((m) => ({ default: m.ViewDocumentPage })));
 
 function AdminLoadingFallback() {
@@ -107,7 +105,7 @@ function App() {
       >
         <Route index element={<Suspense fallback={<AdminLoadingFallback />}><AdminDashboard /></Suspense>} />
         <Route path="products" element={<Suspense fallback={<AdminLoadingFallback />}><AdminProducts /></Suspense>} />
-        <Route path="sales" element={<Suspense fallback={<AdminLoadingFallback />}><AdminSalesDashboard /></Suspense>} />
+        <Route path="sales" element={<Navigate to="/at" replace />} />
         <Route path="orders" element={<Suspense fallback={<AdminLoadingFallback />}><AdminOrders /></Suspense>} />
         <Route path="rentals" element={<Suspense fallback={<AdminLoadingFallback />}><AdminRentals /></Suspense>} />
         <Route path="inquiries" element={<Suspense fallback={<AdminLoadingFallback />}><AdminInquiries /></Suspense>} />
@@ -117,7 +115,7 @@ function App() {
         <Route path="invoices" element={<Suspense fallback={<AdminLoadingFallback />}><AdminInvoices /></Suspense>} />
         <Route path="quotes" element={<Suspense fallback={<AdminLoadingFallback />}><AdminQuotes /></Suspense>} />
         <Route path="payments" element={<Suspense fallback={<AdminLoadingFallback />}><AdminInvoices /></Suspense>} />
-        <Route path="emails" element={<Suspense fallback={<AdminLoadingFallback />}><AdminEmails /></Suspense>} />
+        <Route path="emails" element={<Navigate to="/at/settings?tab=email" replace />} />
         <Route path="notifications" element={<Navigate to="/at/settings?tab=notifications" replace />} />
         <Route path="reviews" element={<Suspense fallback={<AdminLoadingFallback />}><AdminReviews /></Suspense>} />
         <Route path="analytics" element={<Suspense fallback={<AdminLoadingFallback />}><AdminAnalytics /></Suspense>} />

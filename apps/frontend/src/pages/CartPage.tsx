@@ -2,12 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Plus, Trash2, Truck, Shield, ArrowRight, ShoppingBag, CheckCircle, Phone, Clock, RotateCcw, AlertTriangle, FileText } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
+import { useAdminStore } from '@/store/adminStore';
 import { validatePromo } from '@/lib/api';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { proxyImageUrl, handleImageError } from '@/lib/imageProxy';
 
 export function CartPage() {
   const { items, buyItems, hireItems, buySubtotal, hireSubtotal, removeItem, updateQuantity, updateHireWeeks, clearCart, total, totalDeliveryFee, totalGst, appliedPromo, setPromo, itemCount, hasMixedItems, separateCart } = useCart();
+  // Live catalogue stock so quantities can never exceed availability
+  // (the server rejects oversell at capture — this stops it at the cart).
+  const catalogueProducts = useAdminStore((s) => s.products);
+  const stockFor = (productId: string): number | null => {
+    const found = catalogueProducts.find((p: any) => p.id === productId || p.sku === productId);
+    if (!found) return null;
+    const n = Number((found as any).stock);
+    return Number.isFinite(n) ? n : null;
+  };
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
   const [promoApplying, setPromoApplying] = useState(false);
@@ -304,6 +314,9 @@ export function CartPage() {
             )}
             {items.map((item) => {
               const isHire = item.purchaseType === 'hire';
+              // Buy-item stock cap (hire draws from the trial fleet, uncapped).
+              const liveStock = isHire ? null : stockFor(item.id);
+              const atStockCap = liveStock !== null && item.quantity >= liveStock;
 
               return (<div
                   key={item.cartItemId}
@@ -400,12 +413,17 @@ export function CartPage() {
                       </span>
                       <button
                         onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
-                        className="px-2.5 sm:px-3 text-gray-600 hover:bg-gray-100 h-full rounded-r-lg font-bold cursor-pointer"
+                        disabled={atStockCap}
+                        title={atStockCap ? `Only ${liveStock} in stock` : 'Increase quantity'}
+                        className="px-2.5 sm:px-3 text-gray-600 hover:bg-gray-100 h-full rounded-r-lg font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                         aria-label="Increase quantity"
                       >
                         +
                       </button>
                     </div>
+                    {atStockCap && (
+                      <span className="text-[11px] font-semibold text-amber-700">Only {liveStock} in stock</span>
+                    )}
 
                     <span className="text-[15px] sm:text-[17px] font-black text-[#0F1E2E] min-w-[70px] sm:min-w-[80px] text-right hidden sm:block">
                       ${(item.price * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

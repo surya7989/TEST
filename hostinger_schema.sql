@@ -182,6 +182,7 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `order_id` varchar(100) NOT NULL,
   `product_id` varchar(100) NOT NULL,
+  `sku` varchar(100) DEFAULT NULL,
   `name` varchar(255) NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT 1,
   `price` decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -239,6 +240,7 @@ CREATE TABLE IF NOT EXISTS `ndis_quotes` (
   `valid_until` datetime DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `access_token` varchar(64) DEFAULT NULL,
+  `meta_json` longtext DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -408,6 +410,11 @@ INSERT INTO `promotions` (`id`, `code`, `description`, `discount_type`, `discoun
 ('promo-01', 'NDIS10', '10% Assistive Equipment Rebate for Self/Plan Managed Participants', 'percentage', 10.00, 200.00, 1),
 ('promo-02', 'CLINICAL50', '$50 Clinical Equipment Credit on Orders Above $500', 'fixed', 50.00, 500.00, 1)
 ON DUPLICATE KEY UPDATE `code` = `code`;
+
+-- Non-destructive column additions for existing Hostinger databases
+-- (kept at the end so every table above already exists on fresh imports).
+ALTER TABLE `ndis_quotes` ADD COLUMN IF NOT EXISTS `meta_json` longtext DEFAULT NULL;
+ALTER TABLE `order_items` ADD COLUMN IF NOT EXISTS `sku` varchar(100) DEFAULT NULL;
 
 COMMIT;
 

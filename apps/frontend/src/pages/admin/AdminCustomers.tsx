@@ -286,8 +286,8 @@ export function AdminCustomers() {
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         address: formData.address.trim(),
-        ndisNumber: formData.isNdisParticipant ? formData.ndisNumber.trim() : undefined,
-        planManager: formData.isNdisParticipant ? formData.planManager.trim() : undefined,
+        ndisNumber: formData.isNdisParticipant ? formData.ndisNumber.trim() : '',
+        planManager: formData.isNdisParticipant ? formData.planManager.trim() : '',
         notes: formData.notes.trim(),
       });
     } else {
@@ -296,8 +296,8 @@ export function AdminCustomers() {
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         address: formData.address.trim(),
-        ndisNumber: formData.isNdisParticipant ? formData.ndisNumber.trim() : undefined,
-        planManager: formData.isNdisParticipant ? formData.planManager.trim() : undefined,
+        ndisNumber: formData.isNdisParticipant ? formData.ndisNumber.trim() : '',
+        planManager: formData.isNdisParticipant ? formData.planManager.trim() : '',
         notes: formData.notes.trim(),
         ordersCount: 0,
         totalSpent: 0,

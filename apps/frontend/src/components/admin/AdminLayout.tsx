@@ -17,8 +17,6 @@ import {
   Tag,
   Star,
   FileText,
-  Mail,
-  FileSpreadsheet,
   MessageSquare,
   Clock,
   BarChart3,
@@ -44,7 +42,6 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Executive Dashboard', icon: LayoutDashboard, path: '/at', description: 'Central command, live metrics & recent activity' },
       { label: 'Analytics & Reports', icon: BarChart3, path: '/at/analytics', description: 'Financial trends, ATO tax reports & stock health' },
-      { label: 'Sales Dashboard', icon: FileSpreadsheet, path: '/at/sales', description: 'Revenue streams, fulfilment pipeline & recent sales' },
     ],
   },
   {
@@ -69,7 +66,6 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Customer Directory', icon: Users, path: '/at/customers', description: 'Client CRM, NDIS participants & lifetime spend' },
       { label: 'Inquiries & Leads', icon: MessageSquare, path: '/at/inquiries', description: 'Contact requests, trial bookings & clinical triage' },
-      { label: 'Email Templates', icon: Mail, path: '/at/emails', description: 'Transactional email templates & dispatch log' },
       { label: 'Reviews & Ratings', icon: Star, path: '/at/reviews', description: 'Product reviews moderation & verified buyer badges' },
     ],
   },
