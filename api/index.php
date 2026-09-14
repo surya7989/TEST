@@ -42,8 +42,11 @@ function tableHasColumn(PDO $db, string $table, string $column): bool {
     $key = $table . '.' . $column;
     if (!array_key_exists($key, $cache)) {
         try {
-            $stmt = $db->prepare("SHOW COLUMNS FROM `{$table}` LIKE ?");
-            $stmt->execute([$column]);
+            // NOTE: SHOW COLUMNS ... LIKE does not accept bound placeholders
+            // on MySQL/MariaDB (1064 near '?'), so query information_schema
+            // with fully-bound parameters instead.
+            $stmt = $db->prepare("SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1");
+            $stmt->execute([$table, $column]);
             $cache[$key] = (bool)$stmt->fetch();
         } catch (Exception $e) {
             $cache[$key] = false;
@@ -2891,7 +2894,7 @@ if ($endpoint === 'customers') {
             substr(trim((string)($b['planType'] ?? ($b['plan_type'] ?? 'plan_managed'))), 0, 50),
             substr(trim((string)($b['planManager'] ?? ($b['plan_manager'] ?? ''))), 0, 255),
             substr(trim((string)($b['planManagerEmail'] ?? ($b['plan_manager_email'] ?? ''))), 0, 255),
-            substr(trim((string)($b['notes'] ?? ''))), 0, 2000),
+            substr(trim((string)($b['notes'] ?? '')), 0, 2000),
         ]);
         sendJson(['success' => true, 'message' => 'Customer created.', 'customer' => ['id' => $id, 'name' => $name, 'email' => $email]], 201);
     }
@@ -4212,7 +4215,9 @@ if ($endpoint === 'promotions') {
                 $stmtCount = $db->prepare("SELECT usage_count FROM promotions WHERE UPPER(code) = ? LIMIT 1");
                 $stmtCount->execute([$code]);
                 $usageCount = intval($stmtCount->fetch()['usage_count'] ?? 0);
-            } catch (Exception $e) {}
+            } catch (Exception $e) {
+                error_log("promotions redeem count error for {$code}: " . $e->getMessage());
+            }
         }
         sendJson(['success' => true, 'usageCount' => $usageCount]);
     }
