@@ -1666,7 +1666,7 @@ if ($endpoint === 'paypal') {
                     if (is_string($pdfBytes) && strpos($pdfBytes, '%PDF') === 0) {
                         $attachments[] = [
                             'name' => "Tax-Invoice-{$orderId}.pdf",
-                            'data' => $pdfBytes,
+                            'content' => $pdfBytes,
                             'type' => 'application/pdf',
                         ];
                     }
@@ -1777,7 +1777,9 @@ if ($endpoint === 'paypal') {
                         publicBaseUrl() . "/at/orders",
                         "View in Admin Dashboard"
                     );
-                    sendSmtpEmail($admin_email, "🔔 New Order: #{$orderId} ($". number_format($cart['total'], 2). ") - {$custName}", $adminHtml, $attachments);
+                    // Reply-To the customer so admin can respond directly from the alert mail.
+                    $orderAdminHeaders = filter_var($custEmail, FILTER_VALIDATE_EMAIL) ? ['Reply-To' => $custEmail] : [];
+                    sendSmtpEmail($admin_email, "🔔 New Order: #{$orderId} ($". number_format($cart['total'], 2). ") - {$custName}", $adminHtml, $attachments, $orderAdminHeaders);
                 }
             } catch (Exception $e) {
                 error_log("Email sending notice: ". $e->getMessage());
@@ -2178,7 +2180,7 @@ if ($endpoint === 'quotes') {
                     if (is_string($pdfBytes) && strpos($pdfBytes, '%PDF') === 0) {
                         $attachments[] = [
                             'name' => "NDIS-Quotation-{$id}.pdf",
-                            'data' => $pdfBytes,
+                            'content' => $pdfBytes,
                             'type' => 'application/pdf',
                         ];
                     }
@@ -2296,7 +2298,9 @@ if ($endpoint === 'quotes') {
                         publicBaseUrl() . "/at/quotes",
                         "View in Admin Dashboard"
                     );
-                    sendSmtpEmail($admin_email, "🔔 New NDIS Quote: #{$id} ($". number_format($cart['total'], 2). ") - {$customerName}", $adminQuoteHtml, $attachments);
+                    // Reply-To the participant so admin can respond directly from the alert mail.
+                    $quoteAdminHeaders = filter_var($customerEmail, FILTER_VALIDATE_EMAIL) ? ['Reply-To' => $customerEmail] : [];
+                    sendSmtpEmail($admin_email, "🔔 New NDIS Quote: #{$id} ($". number_format($cart['total'], 2). ") - {$customerName}", $adminQuoteHtml, $attachments, $quoteAdminHeaders);
                 }
             } catch (Exception $e) {
                 error_log("Quote email notice: ". $e->getMessage());
@@ -2624,7 +2628,9 @@ if ($endpoint === 'inquiries' || $endpoint === 'contact') {
                     publicBaseUrl() . "/at/inquiries",
                     "Manage Inquiries in Admin"
                 );
-                sendSmtpEmail($admin_email, "🔔 New Inquiry #{$id} from ". htmlspecialchars($name). " [". htmlspecialchars($enquiryType ?: $subject). "]", $adminInqHtml);
+                // Reply-To the enquirer so admin can respond directly from the alert mail.
+                $inqAdminHeaders = filter_var($email, FILTER_VALIDATE_EMAIL) ? ['Reply-To' => $email] : [];
+                sendSmtpEmail($admin_email, "🔔 New Inquiry #{$id} from ". htmlspecialchars($name). " [". htmlspecialchars($enquiryType ?: $subject). "]", $adminInqHtml, [], $inqAdminHeaders);
             }
         } catch (Exception $e) {
             error_log('Inquiry email notice: ' . $e->getMessage());
