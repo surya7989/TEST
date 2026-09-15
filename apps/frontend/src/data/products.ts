@@ -1,5 +1,6 @@
 import { Product } from '../types/catalogue';
 export type { Product };
+import { getVariantPriceInfo } from '../lib/productPricing';
 import rawProducts from './products.json';
 import { useAdminStore } from '../store/adminStore';
 
@@ -112,12 +113,14 @@ export function filterProducts(options: ProductFilterOptions): Product[] {
     }
   }
 
-  if (options.minPrice !== undefined) {
-    result = result.filter((p) => (p.buyPrice || p.price || 0) >= options.minPrice!);
-  }
-
-  if (options.maxPrice !== undefined) {
-    result = result.filter((p) => (p.buyPrice || p.price || 0) <= options.maxPrice!);
+  if (options.minPrice !== undefined || options.maxPrice !== undefined) {
+    result = result.filter((p) => {
+      const info = getVariantPriceInfo(p);
+      const effectivePrice = info.hasPricedVariants ? info.min : (p.buyPrice || p.price || 0);
+      if (options.minPrice !== undefined && effectivePrice < options.minPrice) return false;
+      if (options.maxPrice !== undefined && effectivePrice > options.maxPrice) return false;
+      return true;
+    });
   }
 
   if (options.searchQuery) {
@@ -136,12 +139,16 @@ export function filterProducts(options: ProductFilterOptions): Product[] {
       case 'name-desc':
         result.sort((a, b) => b.name.localeCompare(a.name));
         break;
-      case 'price-asc':
-        result.sort((a, b) => (a.buyPrice || a.price || 0) - (b.buyPrice || b.price || 0));
+      case 'price-asc': {
+        const ep = (p: Product) => { const i = getVariantPriceInfo(p); return i.hasPricedVariants ? i.min : (p.buyPrice || p.price || 0); };
+        result.sort((a, b) => ep(a) - ep(b));
         break;
-      case 'price-desc':
-        result.sort((a, b) => (b.buyPrice || b.price || 0) - (a.buyPrice || a.price || 0));
+      }
+      case 'price-desc': {
+        const ep = (p: Product) => { const i = getVariantPriceInfo(p); return i.hasPricedVariants ? i.min : (p.buyPrice || p.price || 0); };
+        result.sort((a, b) => ep(b) - ep(a));
         break;
+      }
       case 'popular':
       default:
         result.sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));

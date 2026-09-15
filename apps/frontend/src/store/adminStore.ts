@@ -618,7 +618,7 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         !deletedSet.has(String(p.id).toLowerCase().trim()) &&
         !deletedSet.has(String(p.sku || '').toLowerCase().trim()))
     .map((p: AdminProduct) => {
-      const o = overrides[p.id] || overrides[p.sku];
+      const o = overrides[p.id] || overrides[p.sku] || overrides[String(p.id).toLowerCase()] || (p.slug ? overrides[p.slug] : undefined);
       if (!o) return p;
       const finalPrice = o.price !== undefined ? Number(o.price) : o.buyPrice !== undefined ? Number(o.buyPrice) : p.price;
       const finalBuyPrice = o.buyPrice !== undefined ? Number(o.buyPrice) : o.price !== undefined ? Number(o.price) : p.buyPrice;
@@ -646,6 +646,8 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
       return {
         ...p,
         ...o,
+        name: o.name !== undefined ? o.name : p.name,
+        brand: o.brand !== undefined ? o.brand : p.brand,
         image: effectiveImage,
         thumbnail: effectiveImage,
         galleryImages: effectiveImages,
@@ -654,6 +656,9 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         optionalEquipment: effectiveOptionalEquipment,
         price: finalPrice,
         buyPrice: finalBuyPrice,
+        hirePrice: o.hirePrice !== undefined ? Number(o.hirePrice) : p.hirePrice,
+        hireAvailable: o.hireAvailable !== undefined ? Boolean(o.hireAvailable) : p.hireAvailable,
+        buyAvailable: o.buyAvailable !== undefined ? Boolean(o.buyAvailable) : p.buyAvailable,
       };
     });
 
@@ -1250,7 +1255,7 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
         }
 
         set((state) => {
-          const isCatalogue = CATALOGUE_IDS.has(id);
+          const canonicalId = id.trim();
           const nextOverrides = {...state.productOverrides };
           let nextCustom = [...state.customProducts];
 
@@ -1265,17 +1270,35 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
             ...(sanitizedGallery !== undefined ? { galleryImages: sanitizedGallery, images: sanitizedGallery } : {}),
           };
 
-          if (isCatalogue) {
-            nextOverrides[id] = {
-              ...(nextOverrides[id] || {}),
+          const matchedCatalogue = (initialFallbackProducts || []).find((p) =>
+            p.id === canonicalId ||
+            p.sku === canonicalId ||
+            (p.slug && p.slug === canonicalId) ||
+            p.id.toLowerCase() === canonicalId.toLowerCase()
+          );
+          const targetId = matchedCatalogue ? matchedCatalogue.id : canonicalId;
+
+          if (matchedCatalogue || CATALOGUE_IDS.has(canonicalId) || CATALOGUE_IDS.has(targetId)) {
+            nextOverrides[targetId] = {
+              ...(nextOverrides[targetId] || {}),
               ...cleanUpdates,
               price: updates.price !== undefined ? Number(updates.price) : updates.buyPrice !== undefined ? Number(updates.buyPrice) : undefined,
               buyPrice: updates.buyPrice !== undefined ? Number(updates.buyPrice) : updates.price !== undefined ? Number(updates.price) : undefined,
             };
-            if (nextOverrides[id].price === undefined) delete nextOverrides[id].price;
-            if (nextOverrides[id].buyPrice === undefined) delete nextOverrides[id].buyPrice;
+            if (nextOverrides[targetId].price === undefined) delete nextOverrides[targetId].price;
+            if (nextOverrides[targetId].buyPrice === undefined) delete nextOverrides[targetId].buyPrice;
           } else {
-            nextCustom = nextCustom.map((p) => (p.id === id ? {...p,...cleanUpdates } : p));
+            const inCustom = nextCustom.some((p) => p.id === canonicalId || p.sku === canonicalId);
+            if (inCustom) {
+              nextCustom = nextCustom.map((p) => (p.id === canonicalId || p.sku === canonicalId ? { ...p, ...cleanUpdates } : p));
+            } else {
+              nextOverrides[targetId] = {
+                ...(nextOverrides[targetId] || {}),
+                ...cleanUpdates,
+                price: updates.price !== undefined ? Number(updates.price) : updates.buyPrice !== undefined ? Number(updates.buyPrice) : undefined,
+                buyPrice: updates.buyPrice !== undefined ? Number(updates.buyPrice) : updates.price !== undefined ? Number(updates.price) : undefined,
+              };
+            }
           }
 
           const nextProducts = buildEffectiveProducts(nextOverrides, state.deletedProductIds, nextCustom);

@@ -353,7 +353,7 @@ export function AdminProducts() {
         name: p.name,
         brand: p.brand,
         category: p.category,
-        price: String(p.price),
+        price: String(p.price > 0 ? p.price : (p.buyPrice > 0 ? p.buyPrice : '')),
         gstType: p.gstType || 'standard',
         customGstRate: p.gstRate !== undefined ? String(p.gstRate) : '10',
         isFreeDelivery: p.deliveryFee === undefined || p.deliveryFee === 0,
@@ -363,7 +363,7 @@ export function AdminProducts() {
         hirePeriod: (p.hirePeriod as 'week' | 'month') || 'week',
         stock: String(p.stock),
         sku: p.sku,
-        description: p.description,
+        description: p.description || p.shortDescription || p.fullDescription || '',
         image: p.image,
         galleryImages: p.galleryImages && p.galleryImages.length > 0 ? p.galleryImages : [p.image],
         available: p.available,
@@ -435,29 +435,70 @@ export function AdminProducts() {
     return true;
   };
 
-  const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImageFile = (file: File, maxDimension = 800, quality = 0.82): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onerror = () => resolve('');
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        if (!dataUrl) {
+          resolve('');
+          return;
+        }
+        const img = new Image();
+        img.onerror = () => resolve(dataUrl);
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(dataUrl);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressed.length < dataUrl.length ? compressed : dataUrl);
+          } catch {
+            resolve(dataUrl);
+          }
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!isAcceptedProductImage(file)) {
         e.target.value = '';
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        if (result) {
-          setFormData((prev) => ({
-            ...prev,
-            image: result,
-            galleryImages: prev.galleryImages.includes(result) ? prev.galleryImages : [result,...prev.galleryImages],
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
+      const result = await compressImageFile(file);
+      if (result) {
+        setFormData((prev) => ({
+          ...prev,
+          image: result,
+          galleryImages: prev.galleryImages.includes(result) ? prev.galleryImages : [result, ...prev.galleryImages],
+        }));
+      }
     }
   };
 
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
       const accepted = Array.from(files).filter(isAcceptedProductImage);
@@ -465,19 +506,15 @@ export function AdminProducts() {
         e.target.value = '';
         return;
       }
-      accepted.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const result = event.target?.result as string;
-          if (result) {
-            setFormData((prev) => ({
-              ...prev,
-              galleryImages: prev.galleryImages.includes(result) ? prev.galleryImages : [...prev.galleryImages, result],
-            }));
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      for (const file of accepted) {
+        const result = await compressImageFile(file);
+        if (result) {
+          setFormData((prev) => ({
+            ...prev,
+            galleryImages: prev.galleryImages.includes(result) ? prev.galleryImages : [...prev.galleryImages, result],
+          }));
+        }
+      }
     }
   };
 

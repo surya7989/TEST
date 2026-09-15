@@ -40,16 +40,21 @@ export function ProductCard({
   const inWishlist = isInWishlist(product.id);
   const hasVariants = product.variants && product.variants.length > 0;
   const hireWeeklyRate = product.hirePrice && product.hirePrice > 0 ? product.hirePrice : 0;
-  const hireActive = hireOnly && hireWeeklyRate > 0;
-  const isQuoteOnly = product.quoteRequired || (product.buyPrice <= 0 && !hasVariants && !hireActive);
-  const isHireOnlyProduct = product.hireAvailable && product.buyPrice <= 0 && !product.buyAvailable;
+  const effectiveBuyPrice = product.buyPrice || (product as any).price || 0;
+  const isHireOnlyProduct =
+    (product.purchaseType === 'hire' || (product.buyAvailable === false && (product.hireAvailable || hireWeeklyRate > 0))) &&
+    effectiveBuyPrice <= 0;
+  const isHireActive = hireOnly || isHireOnlyProduct;
+  const isQuoteOnly =
+    product.quoteRequired ||
+    (!isHireActive && effectiveBuyPrice <= 0 && !hasVariants);
 
   const colorAttr = product.attributes?.find((a) => a.slug === 'colour' || a.slug === 'color' || a.type === 'color');
   const sizeAttr = product.attributes?.find((a) => a.slug === 'size');
 
   // Calculate pricing range
   const priceDisplay = React.useMemo(() => {
-    if (hireOnly) {
+    if (isHireActive) {
       if (hasVariants) {
         const hireVariants = product.variants.filter((v) => v.attributes && v.attributes['purchase-type'] === 'hire');
         const hirePrices = (hireVariants.length > 0 ? hireVariants : product.variants)
@@ -62,13 +67,13 @@ export function ProductCard({
             return {
               main: `$${minHire.toFixed(2)} – $${maxHire.toFixed(2)}`,
               period: '/wk',
-              sub: `Min. 2 wks: $${(minHire * 2).toFixed(2)}`,
+              sub: isHireOnlyProduct ? 'Equipment Hire Only • Min. 2 wks' : `Min. 2 wks: $${(minHire * 2).toFixed(2)}`,
             };
           }
           return {
             main: `$${minHire.toFixed(2)}`,
             period: '/wk',
-            sub: `Min. 2 wks: $${(minHire * 2).toFixed(2)}`,
+            sub: isHireOnlyProduct ? 'Equipment Hire Only • Min. 2 wks' : `Min. 2 wks: $${(minHire * 2).toFixed(2)}`,
           };
         }
       }
@@ -78,7 +83,7 @@ export function ProductCard({
       return {
         main: `$${hireWeeklyRate.toFixed(2)}`,
         period: '/wk',
-        sub: `Min. 2 wks: $${(hireWeeklyRate * 2).toFixed(2)}`,
+        sub: isHireOnlyProduct ? 'Equipment Hire Only • Min. 2 wks' : `Min. 2 wks: $${(hireWeeklyRate * 2).toFixed(2)}`,
       };
     }
 
@@ -89,7 +94,7 @@ export function ProductCard({
       const candidateVariants = buyVariants.length > 0 ? buyVariants : nonHireVariants;
 
       const prices = (candidateVariants.length > 0 ? candidateVariants : product.variants)
-        .map((v) => v.price || product.buyPrice)
+        .map((v) => v.price || effectiveBuyPrice)
         .filter((p) => p > 0);
       if (prices.length > 0) {
         const minPrice = Math.min(...prices);
@@ -98,22 +103,22 @@ export function ProductCard({
           return {
             main: `${formatCurrency(minPrice)} – ${formatCurrency(maxPrice)}`,
             period: '',
-            sub: product.hireAvailable ? `or from $${product.hirePrice}/wk hire` : 'Multiple sizes & options',
+            sub: product.hireAvailable && hireWeeklyRate > 0 ? `or from $${hireWeeklyRate.toFixed(2)}/wk hire` : 'Multiple sizes & options',
           };
         }
         return {
           main: formatCurrency(minPrice),
           period: '',
-          sub: product.hireAvailable ? `or from $${product.hirePrice}/wk hire` : undefined,
+          sub: product.hireAvailable && hireWeeklyRate > 0 ? `or from $${hireWeeklyRate.toFixed(2)}/wk hire` : undefined,
         };
       }
     }
 
-    if (product.buyPrice > 0) {
+    if (effectiveBuyPrice > 0) {
       return {
-        main: formatCurrency(product.buyPrice),
+        main: formatCurrency(effectiveBuyPrice),
         period: '',
-        sub: product.hireAvailable ? `or from $${product.hirePrice}/wk hire` : 'NDIS Capital & Consumables',
+        sub: product.hireAvailable && hireWeeklyRate > 0 ? `or from $${hireWeeklyRate.toFixed(2)}/wk hire` : 'NDIS Capital & Consumables',
       };
     }
 
@@ -122,28 +127,28 @@ export function ProductCard({
       period: '',
       sub: 'Clinical quote required',
     };
-  }, [product, hireOnly, hasVariants, hireWeeklyRate, isHireOnlyProduct]);
+  }, [product, isHireActive, hasVariants, hireWeeklyRate, isHireOnlyProduct, effectiveBuyPrice]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     // Guard against adding $0 items to cart
-    const effectivePrice = hireActive ? hireWeeklyRate * 2 : product.buyPrice;
+    const effectivePrice = isHireActive ? hireWeeklyRate * 2 : effectiveBuyPrice;
     if (!effectivePrice || effectivePrice <= 0) return;
 
     const added = addItem({
       id: product.id,
       code: (product as any).ndisCode || product.sku || product.id,
       sku: product.sku || product.id,
-      detail: hireActive ? '2 Wks Hire' : undefined,
+      detail: isHireActive ? '2 Wks Hire' : undefined,
       slug: product.slug,
       name: product.name,
       price: effectivePrice,
       image: product.image,
-      purchaseType: hireActive ? 'hire' : 'buy',
-      weeklyRate: hireActive ? hireWeeklyRate : undefined,
-      hireWeeks: hireActive ? 2 : undefined,
+      purchaseType: isHireActive ? 'hire' : 'buy',
+      weeklyRate: isHireActive ? hireWeeklyRate : undefined,
+      hireWeeks: isHireActive ? 2 : undefined,
       gstType: product.gstType || 'gst-free',
       gstRate: product.gstRate || 0,
       deliveryFee: product.deliveryFee || 0,
@@ -155,7 +160,7 @@ export function ProductCard({
     }
   };
 
-  const productLink = hireOnly
+  const productLink = isHireActive
     ? `/product/${product.slug || product.id}?type=hire`
     : `/product/${product.slug || product.id}`;
 
@@ -345,15 +350,21 @@ export function ProductCard({
           </Link>
 
           {/* Badge */}
-          {hireOnly ? (<span className="absolute top-3 left-3 bg-[#E88D2A] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm z-10 flex items-center gap-1">
+          {hireOnly || isHireOnlyProduct ? (
+            <span className="absolute top-3 left-3 bg-[#E88D2A] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm z-10 flex items-center gap-1">
               <RotateCcw className="w-3 h-3" />
               Equipment Hire
-            </span>) : product.badge ? (<span className="absolute top-3 left-3 bg-[#0F1E2E] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm z-10">
+            </span>
+          ) : product.badge ? (
+            <span className="absolute top-3 left-3 bg-[#0F1E2E] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm z-10">
               {product.badge}
-            </span>) : hasVariants ? (<span className="absolute top-3 left-3 bg-blue-600/90 text-white text-[9.5px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shadow-xs z-10 flex items-center gap-1">
+            </span>
+          ) : hasVariants ? (
+            <span className="absolute top-3 left-3 bg-blue-600/90 text-white text-[9.5px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shadow-xs z-10 flex items-center gap-1">
               <SlidersHorizontal className="w-2.5 h-2.5" />
               Variants
-            </span>) : null}
+            </span>
+          ) : null}
 
           {/* SWL tag */}
           {product.swl && (<span className="absolute bottom-2 left-3 bg-white/90 text-gray-700 border border-gray-200 text-[9.5px] font-bold px-2 py-0.5 rounded shadow-xs">
@@ -443,7 +454,15 @@ export function ProductCard({
           </div>
 
           {/* Action Button: SELECT OPTIONS / ADD TO CART / REQUEST A QUOTE */}
-          {hasVariants ? (
+          {isHireOnlyProduct && !hireOnly ? (
+            <Link
+              to={productLink}
+              className="flex items-center gap-1 px-3 py-2 bg-[#E88D2A] hover:bg-[#D47C1E] text-white text-[11px] font-bold rounded-xl transition-all shadow-sm flex-shrink-0 cursor-pointer hover:scale-[1.02]"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>HIRE OPTIONS</span>
+            </Link>
+          ) : hasVariants ? (
             <Link
               to={productLink}
               className="flex items-center gap-1 px-3 py-2 bg-[#147A7A] hover:bg-[#106262] text-white text-[11px] font-bold rounded-xl transition-all shadow-sm flex-shrink-0 cursor-pointer hover:scale-[1.02]"
@@ -456,16 +475,8 @@ export function ProductCard({
               to={productLink}
               className="flex items-center gap-1 px-3 py-2 bg-[#147A7A] hover:bg-[#106262] text-white text-[11px] font-bold rounded-xl transition-all shadow-sm flex-shrink-0 cursor-pointer hover:scale-[1.02]"
             >
-              <span>VIEW DETAILS</span>
+              <span>REQUEST QUOTE</span>
               <ArrowRight className="w-3 h-3" />
-            </Link>
-          ) : isHireOnlyProduct && !hireOnly ? (
-            <Link
-              to={`/product/${product.slug || product.id}?type=hire`}
-              className="flex items-center gap-1 px-3 py-2 bg-[#E88D2A] hover:bg-[#D47C1E] text-white text-[11px] font-bold rounded-xl transition-all shadow-sm flex-shrink-0 cursor-pointer hover:scale-[1.02]"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>HIRE OPTIONS</span>
             </Link>
           ) : (<button
               type="button"

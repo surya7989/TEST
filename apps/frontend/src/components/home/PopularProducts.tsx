@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Heart, ShoppingCart, Star } from 'lucide-react';
+import { ArrowRight, Heart, ShoppingCart, Star, RotateCcw } from 'lucide-react';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useCart } from '@/hooks/useCart';
 import { ProductImage } from '@/components/ui/ProductImage';
@@ -13,38 +13,53 @@ export function PopularProducts() {
   const allProducts = useProducts();
 
   // Pull premier authentic Rehab Hire clinical products directly from the dynamic catalogue
+  // Pull premier products directly from the dynamic catalogue, prioritizing admin-managed/edited products
   const products = React.useMemo(() => {
+    const source = allProducts.filter((p) => p.buyAvailable !== false && (p as any).available !== false);
+
     const flagshipKeywords = [
-      'configura® comfort',
-      'empresa long term care bed',
+      'configura',
+      'empresa',
       'aspire vogue',
       'aspire vida',
       'ocean ergo',
       'sara stedy',
-      'roho®',
+      'roho',
       'universal stand assist',
     ];
 
-    const source = allProducts.filter((p) => p.buyAvailable !== false && (p as any).available !== false);
     const flagship: Product[] = [];
+
+    // 1. Any product explicitly marked with a badge, featured, or custom-added by admin
+    source.forEach((p) => {
+      const isSpecial = (p as any).badge || (p as any).featured || (p as any).isFeatured;
+      if (isSpecial && p.image && p.image.trim().length > 0 && !flagship.some((s) => s.id === p.id)) {
+        flagship.push(p);
+      }
+    });
+
+    // 2. Match flagship products cleanly (normalized so removal of ® or minor title edits don't break them)
     flagshipKeywords.forEach((kw) => {
       const match = source.find((p) =>
-          p.image &&
-          p.image.trim().length > 0 &&
-          p.name.toLowerCase().includes(kw) &&
-          ((p.buyPrice || 0) > 0 || (p.price || 0) > 0));
+        p.image &&
+        p.image.trim().length > 0 &&
+        p.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').includes(kw) &&
+        ((p.buyPrice || 0) > 0 || (p.price || 0) > 0 || (p.hirePrice || 0) > 0)
+      );
       if (match && !flagship.some((s) => s.id === match.id)) {
         flagship.push(match);
       }
     });
 
+    // 3. Fill up to 8 with highest rated / most reviewed items
     if (flagship.length < 8) {
       const fillers = [...source]
         .filter((p) =>
-            p.image &&
-            p.image.trim().length > 0 &&
-            ((p.buyPrice || 0) > 0 || (p.price || 0) > 0) &&
-            !flagship.some((s) => s.id === p.id))
+          p.image &&
+          p.image.trim().length > 0 &&
+          ((p.buyPrice || 0) > 0 || (p.price || 0) > 0 || (p.hirePrice || 0) > 0) &&
+          !flagship.some((s) => s.id === p.id)
+        )
         .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 0) - (a.rating || 0));
 
       while (flagship.length < 8 && fillers.length > 0) {
@@ -90,10 +105,11 @@ export function PopularProducts() {
           </div>) : (<div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
             {products.map((product) => {
               const inWishlist = isInWishlist(product.id);
-              const productLink = `/product/${(product as any).slug || product.id}`;
-              // Variant-aware pricing (shared helper): listings never
-              // contradict the product page / checkout totals.
               const priceInfo = getVariantPriceInfo(product as any);
+              const isHireOnly = priceInfo.isHireOnly;
+              const productLink = isHireOnly
+                ? `/product/${(product as any).slug || product.id}?type=hire`
+                : `/product/${(product as any).slug || product.id}`;
               const displayPrice = priceInfo.hasPricedVariants ? priceInfo.min : priceInfo.base;
               const priceLabel = formatPriceLabel(product as any);
               const needsOptions = priceInfo.needsOptions;
@@ -112,9 +128,16 @@ export function PopularProducts() {
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                       </Link>
-                      {(product as any).badge && (<span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[#E88D2A] text-white text-[9.5px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md shadow-xs pointer-events-none">
+                      {isHireOnly ? (
+                        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[#E88D2A] text-white text-[9.5px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md shadow-xs pointer-events-none flex items-center gap-1">
+                          <RotateCcw className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          Equipment Hire
+                        </span>
+                      ) : (product as any).badge ? (
+                        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[#0F1E2E] text-white text-[9.5px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md shadow-xs pointer-events-none">
                           {(product as any).badge}
-                        </span>)}
+                        </span>
+                      ) : null}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -157,9 +180,23 @@ export function PopularProducts() {
                     <div className="pt-2.5 sm:pt-3 border-t border-gray-100 flex items-center justify-between">
                       <div>
                         <span className="text-[14px] sm:text-[17px] font-black text-[#0F1E2E]">{priceLabel}</span>
-                        {product.hirePrice > 0 && (<span className="text-[9.5px] sm:text-[11px] text-gray-500 block truncate">or ${product.hirePrice}/wk</span>)}
+                        {product.hirePrice > 0 && !isHireOnly && (
+                          <span className="text-[9.5px] sm:text-[11px] text-gray-500 block truncate">or ${product.hirePrice.toFixed(2)}/wk hire</span>
+                        )}
+                        {isHireOnly && (
+                          <span className="text-[9.5px] sm:text-[11px] text-[#E88D2A] font-bold block truncate">Equipment Hire Only</span>
+                        )}
                       </div>
-                      {needsOptions ? (
+                      {isHireOnly ? (
+                        <Link
+                          to={productLink}
+                          className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 bg-[#E88D2A] hover:bg-[#D47C1E] text-white rounded-lg shadow-xs transition-all cursor-pointer"
+                          aria-label="View hire options"
+                          title="View hire options"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </Link>
+                      ) : needsOptions ? (
                         <Link
                           to={productLink}
                           className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 bg-[#147A7A] hover:bg-[#106262] text-white rounded-lg shadow-xs transition-all cursor-pointer"
@@ -168,15 +205,35 @@ export function PopularProducts() {
                         >
                           <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Link>
+                      ) : displayPrice > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => addItem({
+                            id: product.id,
+                            sku: (product as any).sku || product.id,
+                            slug: (product as any).slug || product.id,
+                            name: product.name,
+                            price: displayPrice,
+                            image: product.image,
+                            purchaseType: 'buy',
+                            gstType: (product as any).gstType || 'gst-free',
+                            gstRate: (product as any).gstRate || 0,
+                            deliveryFee: (product as any).deliveryFee || 0,
+                          })}
+                          className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 bg-[#147A7A] hover:bg-[#106262] text-white rounded-lg shadow-xs transition-all cursor-pointer"
+                          aria-label="Add to cart"
+                        >
+                          <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </button>
                       ) : (
-                      <button
-                        type="button"
-                        onClick={() => addItem({ id: product.id, sku: (product as any).sku || product.id, name: product.name, price: displayPrice, image: product.image })}
-                        className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 bg-[#147A7A] hover:bg-[#106262] text-white rounded-lg shadow-xs transition-all cursor-pointer"
-                        aria-label="Add to cart"
-                      >
-                        <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      </button>
+                        <Link
+                          to={productLink}
+                          className="flex items-center justify-center w-7 h-7 sm:w-9 sm:h-9 bg-[#147A7A] hover:bg-[#106262] text-white rounded-lg shadow-xs transition-all cursor-pointer"
+                          aria-label="Request quote"
+                          title="Request quote"
+                        >
+                          <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </Link>
                       )}
                     </div>
                   </div>
