@@ -1085,6 +1085,29 @@ function formatProductRow(array $row): array {
         $candidate = $row['optionalEquipment'] ?? ($row['addons'] ?? null);
         if (is_array($candidate)) $addons = array_values($candidate);
     }
+
+    $id = (string)($row['id'] ?? '');
+
+    // Resilient fallback to canonical static catalog if MySQL lacks addons or has stale prices
+    if ($id !== '') {
+        static $staticCatalogById = null;
+        if ($staticCatalogById === null) {
+            $staticCatalogById = [];
+            foreach (getStaticCatalog() as $cp) {
+                if (!empty($cp['id'])) $staticCatalogById[$cp['id']] = $cp;
+            }
+        }
+        if (isset($staticCatalogById[$id])) {
+            $catItem = $staticCatalogById[$id];
+            if (empty($addons) && !empty($catItem['optionalEquipment']) && is_array($catItem['optionalEquipment'])) {
+                $addons = $catItem['optionalEquipment'];
+            }
+            if (empty($variants) && !empty($catItem['variants']) && is_array($catItem['variants'])) {
+                $variants = $catItem['variants'];
+            }
+        }
+    }
+
     if (!is_array($addons)) $addons = [];
     // Normalize to priced objects; plain id strings carry no price.
     $addons = array_values(array_filter(array_map(function($a) {
@@ -1103,7 +1126,18 @@ function formatProductRow(array $row): array {
 
     $price = floatval($row['price'] ?? ($row['buyPrice'] ?? 0));
     $hirePrice = floatval($row['hire_price'] ?? ($row['hirePrice'] ?? 0));
-    $id = (string)($row['id'] ?? '');
+
+    // Ensure price sync with static catalog if DB price is 0 or obsolete
+    if ($id !== '' && isset($staticCatalogById[$id])) {
+        $catBuyPrice = floatval($staticCatalogById[$id]['buyPrice'] ?? ($staticCatalogById[$id]['price'] ?? 0));
+        if ($catBuyPrice > 0 && ($price <= 0 || ($price < $catBuyPrice && abs($price - $catBuyPrice) > 1))) {
+            $price = $catBuyPrice;
+        }
+        $catHirePrice = floatval($staticCatalogById[$id]['hirePrice'] ?? ($staticCatalogById[$id]['hire_price'] ?? 0));
+        if ($hirePrice <= 0 && $catHirePrice > 0) {
+            $hirePrice = $catHirePrice;
+        }
+    }
     $sku = (string)($row['sku'] ?? $id);
     $desc = (string)($row['description'] ?? ($row['fullDescription'] ?? ''));
     $shortDesc = (string)($row['short_description'] ?? ($row['shortDescription'] ?? ($desc !== '' ? substr($desc, 0, 150) : '')));

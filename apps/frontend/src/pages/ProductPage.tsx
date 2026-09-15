@@ -942,9 +942,23 @@ export function ProductPage() {
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-[#0F1E2E] leading-snug">
                                 {addon.name}{' '}
-                                {addon.price > 0 && (<span className="font-extrabold text-[#E88D2A]">
-                                    (+ ${addon.price.toFixed(2)})
-                                  </span>)}
+                                {purchaseType === 'hire' ? (
+                                  (addon.hirePrice || estimateWeeklyHireRate(addon.price)) > 0 ? (
+                                    <span className="font-extrabold text-[#E88D2A]">
+                                      (+ ${(addon.hirePrice || estimateWeeklyHireRate(addon.price)).toFixed(2)}/wk)
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400 font-normal">(Included)</span>
+                                  )
+                                ) : (
+                                  addon.price > 0 ? (
+                                    <span className="font-extrabold text-[#E88D2A]">
+                                      (+ ${addon.price.toFixed(2)})
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400 font-normal">(Included)</span>
+                                  )
+                                )}
                               </p>
                               {addon.sku && (<span className="text-[10.5px] font-mono text-gray-400 block mt-0.5">
                                   SKU: {addon.sku}

@@ -28,6 +28,7 @@ import {
 import { getSubcategories } from '@/data/categories';
 import { PRODUCTS, useProducts, resolveProductBrand } from '@/data/products';
 import { proxyImageUrl, handleImageError } from '@/lib/imageProxy';
+import { getVariantPriceInfo } from '@/lib/productPricing';
 
 const DEPARTMENT_FEATURED_MAP: Record<string, {
   id: string;
@@ -426,13 +427,31 @@ export function MainNavigation() {
                               {/* Price & Direct Action */}
                               <div className="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between flex-shrink-0">
                                 <div>
-                                  {p.buyPrice > 0 ? (<span className="text-[12.5px] font-black text-[#0F1E2E]">
-                                      ${p.buyPrice.toFixed(2)}
-                                    </span>) : p.hirePrice > 0 ? (<span className="text-[11.5px] font-black text-[#E88D2A]">
-                                      ${p.hirePrice}/wk
-                                    </span>) : (<span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
-                                      Trial Eligible
-                                    </span>)}
+                                  {(() => {
+                                    const info = getVariantPriceInfo(p as any);
+                                    const effectiveBuyPrice = info.hasPricedVariants ? info.min : (p.buyPrice || 0);
+                                    if (effectiveBuyPrice > 0) {
+                                      return (
+                                        <span className="text-[12.5px] font-black text-[#0F1E2E]">
+                                          {info.hasPricedVariants && info.min !== info.max
+                                            ? `From $${effectiveBuyPrice.toFixed(2)}`
+                                            : `$${effectiveBuyPrice.toFixed(2)}`}
+                                        </span>
+                                      );
+                                    }
+                                    if (p.hirePrice > 0) {
+                                      return (
+                                        <span className="text-[11.5px] font-black text-[#E88D2A]">
+                                          ${p.hirePrice}/wk
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
+                                        Trial Eligible
+                                      </span>
+                                    );
+                                  })()}
                                 </div>
                                 <span className="text-[10.5px] font-bold text-[#147A7A] group-hover/pcard:translate-x-0.5 transition-transform flex items-center gap-1">
                                   <span>View</span>

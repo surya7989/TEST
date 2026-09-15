@@ -639,6 +639,10 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         };
       });
 
+      const effectiveOptionalEquipment = (o.optionalEquipment && o.optionalEquipment.length > 0)
+        ? o.optionalEquipment
+        : p.optionalEquipment;
+
       return {
         ...p,
         ...o,
@@ -647,6 +651,7 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         galleryImages: effectiveImages,
         images: effectiveImages,
         variants: effectiveVariants,
+        optionalEquipment: effectiveOptionalEquipment,
         price: finalPrice,
         buyPrice: finalBuyPrice,
       };
@@ -1092,23 +1097,32 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                 }
 
                 if (CATALOGUE_IDS.has(p.id)) {
+                  const existingOverride = dbOverrides[p.id] || {};
+                  const incomingAddons = Array.isArray(p.optionalEquipment) && p.optionalEquipment.length > 0
+                    ? p.optionalEquipment
+                    : Array.isArray(p.addons) && p.addons.length > 0
+                    ? p.addons
+                    : existingOverride.optionalEquipment;
+
                   dbOverrides[p.id] = {
-                    ...(dbOverrides[p.id] || {}),
+                    ...existingOverride,
                     name: p.name,
-                    price: parseFloat(p.price) || dbOverrides[p.id]?.price,
-                    buyPrice: parseFloat(p.buyPrice ?? p.price) || dbOverrides[p.id]?.buyPrice,
-                    stock: p.stock !== undefined ? parseInt(p.stock, 10) : dbOverrides[p.id]?.stock,
-                    category: p.category || dbOverrides[p.id]?.category,
-                    image: p.image || dbOverrides[p.id]?.image,
-                    thumbnail: p.image || dbOverrides[p.id]?.thumbnail || dbOverrides[p.id]?.image,
-                    galleryImages: p.galleryImages || p.gallery_images || dbOverrides[p.id]?.galleryImages,
-                    images: p.galleryImages || p.gallery_images || dbOverrides[p.id]?.images,
-                    sku: p.sku || dbOverrides[p.id]?.sku,
-                    brand: p.brand || dbOverrides[p.id]?.brand,
-                    description: p.description || dbOverrides[p.id]?.description,
-                    optionalEquipment: (p.optionalEquipment || p.addons || dbOverrides[p.id]?.optionalEquipment || []) as any,
-                    accessories: (p.accessories || dbOverrides[p.id]?.accessories || []) as any,
+                    stock: p.stock !== undefined ? parseInt(p.stock, 10) : existingOverride.stock,
+                    category: p.category || existingOverride.category,
+                    image: p.image || existingOverride.image,
+                    thumbnail: p.image || existingOverride.thumbnail || existingOverride.image,
+                    galleryImages: p.galleryImages || p.gallery_images || existingOverride.galleryImages,
+                    images: p.galleryImages || p.gallery_images || existingOverride.images,
+                    sku: p.sku || existingOverride.sku,
+                    brand: p.brand || existingOverride.brand,
+                    description: p.description || existingOverride.description,
+                    ...(incomingAddons && incomingAddons.length > 0 ? { optionalEquipment: incomingAddons } : {}),
+                    ...(p.accessories ? { accessories: p.accessories } : {}),
                   };
+                  const inPrice = parseFloat(p.price);
+                  const inBuyPrice = parseFloat(p.buyPrice ?? p.price);
+                  if (inPrice > 0) dbOverrides[p.id].price = inPrice;
+                  if (inBuyPrice > 0) dbOverrides[p.id].buyPrice = inBuyPrice;
                 } else {
                   dbCustom.push({
                     id: p.id,
