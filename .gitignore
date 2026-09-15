@@ -6,20 +6,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Production Build Outputs
-dist/
+# Production Build Outputs (intermediary dirs only — root-level build files ARE tracked for Hostinger Git deploy)
 build/
 hostinger_public_html/
 deploy.zip
 *.zip
-/index.html
-/assets/
-/images/
-/favicon.ico
-/favicon.png
-/apple-touch-icon.png
-/logo.png
-/logo-header.png
+
+# dist/ is a duplicate of root build output — not needed in repo
+dist/
 
 # Environment & Secrets (NEVER COMMIT)
 .env
