@@ -27,16 +27,27 @@ export interface VariantPriceInfo {
 export function getVariantPriceInfo(product: {
   buyPrice?: number;
   price?: number;
-  variants?: { price?: number }[] | null;
+  variants?: { price?: number; attributes?: Record<string, string> }[] | null;
 }): VariantPriceInfo {
   const base = Number(product.buyPrice ?? product.price ?? 0) || 0;
-  const variantPrices = ((product.variants || []) as { price?: number }[])
+  const allVariants = ((product.variants || []) as { price?: number; attributes?: Record<string, string> }[]);
+  
+  // Filter for buy variants (exclude hire fleet variants)
+  const buyVariants = allVariants.filter(
+    (v) => v.attributes && v.attributes['purchase-type'] === 'buy'
+  );
+  const nonHireVariants = allVariants.filter(
+    (v) => !v.attributes || v.attributes['purchase-type'] !== 'hire'
+  );
+  const candidateVariants = buyVariants.length > 0 ? buyVariants : nonHireVariants;
+
+  const variantPrices = candidateVariants
     .map((v) => Number(v.price) || 0)
     .filter((p) => p > 0);
   const hasPricedVariants = variantPrices.length > 0;
   const min = hasPricedVariants ? Math.min(...variantPrices) : base;
   const max = hasPricedVariants ? Math.max(...variantPrices) : base;
-  return { hasPricedVariants, min, max, base, needsOptions: hasPricedVariants };
+  return { hasPricedVariants, min, max, base, needsOptions: (allVariants.length > 1) || hasPricedVariants };
 }
 
 /** "$4,948.00" or "$276.00 – $6,160.00". Empty string when no price at all. */

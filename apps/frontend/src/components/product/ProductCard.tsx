@@ -41,7 +41,8 @@ export function ProductCard({
   const hasVariants = product.variants && product.variants.length > 0;
   const hireWeeklyRate = product.hirePrice && product.hirePrice > 0 ? product.hirePrice : 0;
   const hireActive = hireOnly && hireWeeklyRate > 0;
-  const isQuoteOnly = product.quoteRequired || (product.buyPrice <= 0 && !hasVariants);
+  const isQuoteOnly = product.quoteRequired || (product.buyPrice <= 0 && !hasVariants && !hireActive);
+  const isHireOnlyProduct = product.hireAvailable && product.buyPrice <= 0 && !product.buyAvailable;
 
   const colorAttr = product.attributes?.find((a) => a.slug === 'colour' || a.slug === 'color' || a.type === 'color');
   const sizeAttr = product.attributes?.find((a) => a.slug === 'size');
@@ -49,6 +50,28 @@ export function ProductCard({
   // Calculate pricing range
   const priceDisplay = React.useMemo(() => {
     if (hireOnly) {
+      if (hasVariants) {
+        const hireVariants = product.variants.filter((v) => v.attributes && v.attributes['purchase-type'] === 'hire');
+        const hirePrices = (hireVariants.length > 0 ? hireVariants : product.variants)
+          .map((v) => v.price || v.hirePrice || product.hirePrice || 0)
+          .filter((p) => p > 0);
+        if (hirePrices.length > 0) {
+          const minHire = Math.min(...hirePrices);
+          const maxHire = Math.max(...hirePrices);
+          if (minHire !== maxHire) {
+            return {
+              main: `$${minHire.toFixed(2)} – $${maxHire.toFixed(2)}`,
+              period: '/wk',
+              sub: `Min. 2 wks: $${(minHire * 2).toFixed(2)}`,
+            };
+          }
+          return {
+            main: `$${minHire.toFixed(2)}`,
+            period: '/wk',
+            sub: `Min. 2 wks: $${(minHire * 2).toFixed(2)}`,
+          };
+        }
+      }
       if (!hireWeeklyRate) {
         return { main: 'Price on Application', period: '', sub: 'Hire quote required' };
       }
@@ -60,7 +83,12 @@ export function ProductCard({
     }
 
     if (hasVariants) {
-      const prices = product.variants
+      // In buy mode, filter ONLY for buy variants (or variants without purchase-type: 'hire')
+      const buyVariants = product.variants.filter((v) => v.attributes && v.attributes['purchase-type'] === 'buy');
+      const nonHireVariants = product.variants.filter((v) => !v.attributes || v.attributes['purchase-type'] !== 'hire');
+      const candidateVariants = buyVariants.length > 0 ? buyVariants : nonHireVariants;
+
+      const prices = (candidateVariants.length > 0 ? candidateVariants : product.variants)
         .map((v) => v.price || product.buyPrice)
         .filter((p) => p > 0);
       if (prices.length > 0) {
@@ -94,11 +122,15 @@ export function ProductCard({
       period: '',
       sub: 'Clinical quote required',
     };
-  }, [product, hireOnly, hasVariants, hireWeeklyRate]);
+  }, [product, hireOnly, hasVariants, hireWeeklyRate, isHireOnlyProduct]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Guard against adding $0 items to cart
+    const effectivePrice = hireActive ? hireWeeklyRate * 2 : product.buyPrice;
+    if (!effectivePrice || effectivePrice <= 0) return;
 
     const added = addItem({
       id: product.id,
@@ -107,7 +139,7 @@ export function ProductCard({
       detail: hireActive ? '2 Wks Hire' : undefined,
       slug: product.slug,
       name: product.name,
-      price: hireActive ? hireWeeklyRate * 2 : product.buyPrice,
+      price: effectivePrice,
       image: product.image,
       purchaseType: hireActive ? 'hire' : 'buy',
       weeklyRate: hireActive ? hireWeeklyRate : undefined,
@@ -257,6 +289,14 @@ export function ProductCard({
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span>VIEW DETAILS</span>
+              </Link>
+            ) : isHireOnlyProduct && !hireOnly ? (
+              <Link
+                to={`/product/${product.slug || product.id}?type=hire`}
+                className="px-4 py-2.5 bg-[#E88D2A] hover:bg-[#D47C1E] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover:scale-[1.02]"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>VIEW HIRE OPTIONS</span>
               </Link>
             ) : (<button
                 type="button"
@@ -418,6 +458,14 @@ export function ProductCard({
             >
               <span>VIEW DETAILS</span>
               <ArrowRight className="w-3 h-3" />
+            </Link>
+          ) : isHireOnlyProduct && !hireOnly ? (
+            <Link
+              to={`/product/${product.slug || product.id}?type=hire`}
+              className="flex items-center gap-1 px-3 py-2 bg-[#E88D2A] hover:bg-[#D47C1E] text-white text-[11px] font-bold rounded-xl transition-all shadow-sm flex-shrink-0 cursor-pointer hover:scale-[1.02]"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>HIRE OPTIONS</span>
             </Link>
           ) : (<button
               type="button"

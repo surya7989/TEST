@@ -134,24 +134,81 @@ export function ProductPage() {
 
     if (searchParams.get('type') === 'hire' && product.hireAvailable) {
       setPurchaseType('hire');
+    } else if (product.hireAvailable && (product.buyPrice <= 0) && !product.buyAvailable) {
+      // Hire-only product: auto-select hire mode
+      setPurchaseType('hire');
     } else if (searchParams.get('type') === 'buy' || !product.hireAvailable) {
       setPurchaseType('buy');
     }
   }, [product.id, searchParams]);
 
   // Find the exact matching variant based on currently selected attributes
+  // Purchase-type-aware: prefer variants matching the current buy/hire mode
   // (case-insensitive, consistent with isOptionAvailable below)
   const currentVariant: ProductVariant | undefined = useMemo(() => {
     if (!product.variants || product.variants.length === 0) return undefined;
 
-    return product.variants.find((v) => {
+    // Try to find a variant matching both the selected attributes AND the current purchase mode
+    const matchMode = (v: ProductVariant) => {
+      const vPurchaseType = v.attributes['purchase-type'];
+      if (!vPurchaseType) return true; // no purchase-type attr = universal variant
+      return vPurchaseType === purchaseType;
+    };
+
+    const matchAttrs = (v: ProductVariant) => {
       return Object.entries(selectedAttributes).every(([attrSlug, attrVal]) => {
+        if (attrSlug === 'purchase-type') return true; // handled separately
         const variantVal = v.attributes[attrSlug];
         if (!variantVal) return true; // wildcard
         return String(variantVal).toLowerCase() === String(attrVal).toLowerCase();
       });
-    }) || product.variants[0];
-  }, [product.variants, selectedAttributes]);
+    };
+
+    // 1. Best match: correct purchase-type AND matching attributes
+    const bestMatch = product.variants.find((v) => matchMode(v) && matchAttrs(v));
+    if (bestMatch) return bestMatch;
+
+    // 2. Fallback: first variant of matching purchase-type
+    const modeMatch = product.variants.find((v) => matchMode(v));
+    if (modeMatch) return modeMatch;
+
+    // 3. Last resort: matching attributes regardless of purchase-type
+    const attrMatch = product.variants.find((v) => matchAttrs(v));
+    if (attrMatch) return attrMatch;
+
+    return product.variants[0];
+  }, [product.variants, selectedAttributes, purchaseType]);
+
+  // When purchaseType changes, ensure selectedAttributes has a valid variant in the new purchase mode
+  useEffect(() => {
+    if (!product.variants || product.variants.length === 0) return;
+
+    const hasMatch = product.variants.some((v) => {
+      const vType = v.attributes['purchase-type'];
+      if (vType && vType !== purchaseType) return false;
+      return Object.entries(selectedAttributes).every(([slug, val]) => {
+        if (slug === 'purchase-type') return true;
+        const vv = v.attributes[slug];
+        return !vv || String(vv).toLowerCase() === String(val).toLowerCase();
+      });
+    });
+
+    if (!hasMatch) {
+      const matchingVariant = product.variants.find((v) => {
+        const vType = v.attributes['purchase-type'];
+        return !vType || vType === purchaseType;
+      });
+      if (matchingVariant) {
+        setSelectedAttributes((prev) => {
+          const next = { ...prev };
+          for (const [k, v] of Object.entries(matchingVariant.attributes)) {
+            if (k !== 'purchase-type') next[k] = v;
+          }
+          return next;
+        });
+      }
+    }
+  }, [purchaseType, product.variants]);
 
   // Dynamic image switching when variant changes (restart gallery at the new variant photo)
   useEffect(() => {
@@ -172,7 +229,11 @@ export function ProductPage() {
     const hypothetical = {...selectedAttributes, [attrSlug]: value };
 
     return product.variants.some((v) => {
+      const vPurchaseType = v.attributes['purchase-type'];
+      if (vPurchaseType && vPurchaseType !== purchaseType) return false;
+
       const matches = Object.entries(hypothetical).every(([slug, val]) => {
+        if (slug === 'purchase-type') return true;
         const vv = v.attributes[slug];
         if (slug === attrSlug) return vv === val || !vv;
         return !vv || String(vv).toLowerCase() === String(val).toLowerCase();
@@ -189,9 +250,9 @@ export function ProductPage() {
     }));
   };
 
-  // ==========================================
+  // ===========================================
   // DYNAMIC OPTIONAL EQUIPMENT / ADDONS ENGINE
-  // ==========================================
+  // ===========================================
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
 
   const toggleAddon = (addonId: string) => {
@@ -209,16 +270,71 @@ export function ProductPage() {
   const addonsTotalHirePrice = checkedAddonsList.reduce((sum, e) => sum + (e.hirePrice || estimateWeeklyHireRate(e.price)),
     0);
 
-  // Base Prices (from variant if available, else product)
-  const baseBuyPrice = currentVariant?.price !== undefined ? currentVariant.price : (product.buyPrice || 0);
-  const baseHirePrice = currentVariant?.hirePrice !== undefined
-    ? currentVariant.hirePrice
-    : (product.hirePrice || estimateWeeklyHireRate(baseBuyPrice));
+  // Base Prices — purchase-type-aware variant resolution
+  // If the current variant is a hire variant, don't use its price as the buy price
+  const baseBuyPrice: number = useMemo(() => {
+    if (!product.variants || product.variants.length === 0) return product.buyPrice || 0;
+    // Find the best buy variant price
+    const buyVariants = product.variants.filter((v) => v.attributes['purchase-type'] === 'buy');
+    if (currentVariant && currentVariant.attributes['purchase-type'] !== 'hire' && typeof currentVariant.price === 'number') {
+      return currentVariant.price;
+    }
+    if (buyVariants.length > 0) {
+      // Use the buy variant that matches selected attributes
+      const matchingBuyVar = buyVariants.find((v) =>
+        Object.entries(selectedAttributes).every(([slug, val]) => {
+          if (slug === 'purchase-type') return true;
+          const vv = v.attributes[slug];
+          return !vv || String(vv).toLowerCase() === String(val).toLowerCase();
+        })
+      );
+      if (matchingBuyVar && typeof matchingBuyVar.price === 'number' && matchingBuyVar.price > 0) {
+        return matchingBuyVar.price;
+      }
+      // Fallback to first buy variant with a valid price
+      const firstPriced = buyVariants.find((v) => typeof v.price === 'number' && v.price > 0);
+      if (firstPriced && typeof firstPriced.price === 'number') return firstPriced.price;
+    }
+    // No purchase-type attribute on variants — use current variant or product base
+    if (typeof currentVariant?.price === 'number') return currentVariant.price;
+    return product.buyPrice || 0;
+  }, [product.variants, product.buyPrice, currentVariant, selectedAttributes]);
+
+  const baseHirePrice: number = useMemo(() => {
+    if (!product.variants || product.variants.length === 0) {
+      return product.hirePrice || estimateWeeklyHireRate(baseBuyPrice);
+    }
+    const hireVariants = product.variants.filter((v) => v.attributes['purchase-type'] === 'hire');
+    if (currentVariant && currentVariant.attributes['purchase-type'] === 'hire' && typeof currentVariant.price === 'number') {
+      return currentVariant.price;
+    }
+    if (hireVariants.length > 0) {
+      const matchingHireVar = hireVariants.find((v) =>
+        Object.entries(selectedAttributes).every(([slug, val]) => {
+          if (slug === 'purchase-type') return true;
+          const vv = v.attributes[slug];
+          return !vv || String(vv).toLowerCase() === String(val).toLowerCase();
+        })
+      );
+      if (matchingHireVar && typeof matchingHireVar.price === 'number' && matchingHireVar.price > 0) {
+        return matchingHireVar.price;
+      }
+      const firstPriced = hireVariants.find((v) => typeof v.price === 'number' && v.price > 0);
+      if (firstPriced && typeof firstPriced.price === 'number') return firstPriced.price;
+    }
+    if (typeof currentVariant?.hirePrice === 'number') return currentVariant.hirePrice;
+    return product.hirePrice || estimateWeeklyHireRate(baseBuyPrice);
+  }, [product.variants, product.hirePrice, currentVariant, selectedAttributes, baseBuyPrice]);
 
   // Final Effective Prices
   const unitBuyPrice = baseBuyPrice + addonsTotalBuyPrice;
   const unitWeeklyHirePrice = baseHirePrice + addonsTotalHirePrice;
   const hirePeriodPrice = unitWeeklyHirePrice * hireWeeks;
+
+  // Derived pricing flags — defensive guards against bad data showing $0 prices
+  const isQuoteOnly = product.quoteRequired && baseBuyPrice <= 0 && !product.hireAvailable;
+  const isHireOnly = product.hireAvailable && baseBuyPrice <= 0 && !product.buyAvailable;
+  const canBuy = product.buyAvailable !== false && unitBuyPrice > 0;
 
   // Active SKU (dynamic variant SKU if selected)
   const activeSku = currentVariant?.sku || product.sku;
@@ -255,6 +371,9 @@ export function ProductPage() {
 
   // Add to Cart
   const handleAddToCart = () => {
+    const finalPrice = purchaseType === 'buy' ? unitBuyPrice : hirePeriodPrice;
+    if (finalPrice <= 0) return;
+
     const codeVal = (product as any).ndisCode || activeSku || product.sku || product.id;
     const skuVal = activeSku || product.sku || product.id;
     const detailParts = [
@@ -270,7 +389,7 @@ export function ProductPage() {
       detail: detailParts.join(' • '),
       slug: product.slug,
       name: product.name,
-      price: purchaseType === 'buy' ? unitBuyPrice : hirePeriodPrice,
+      price: finalPrice,
       image: activeDisplayImage,
       purchaseType,
       selectedSize: selectedAttributes['size'] || selectedAttributes['sizes'],
@@ -583,26 +702,67 @@ export function ProductPage() {
                 </p>
 
                 {/* Buy vs Hire Mode Dual Cards */}
-                {product.hireAvailable ? (<div className="grid grid-cols-2 gap-3 mb-6">
-                    <button
-                      type="button"
-                      onClick={() => setPurchaseType('buy')}
-                      className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
-                        purchaseType === 'buy'
-                          ? 'border-[#147A7A] bg-[#147A7A]/5 shadow-sm ring-2 ring-[#147A7A]/20'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <span className="block text-[11px] font-bold text-gray-500 uppercase">
-                        Buy Outright
-                      </span>
-                      <span className="block text-xl font-black text-[#0F1E2E]">
-                        ${unitBuyPrice.toFixed(2)}
-                      </span>
-                      <span className="block text-[11px] text-gray-500 mt-0.5">
-                        NDIS Capital / Self & Plan Managed
-                      </span>
-                    </button>
+                {isQuoteOnly ? (
+                  /* Quote-only product: no price available */
+                  <div className="p-4 rounded-2xl border border-amber-200 bg-[#FFFBEB] mb-6">
+                    <span className="block text-[11px] font-bold text-amber-600 uppercase">
+                      Clinical Equipment — Custom Quote
+                    </span>
+                    <span className="block text-xl font-black text-[#0F1E2E] mt-1">
+                      Price on Application
+                    </span>
+                    <span className="block text-[11px] text-gray-500 mt-1">
+                      Contact our clinical team for a personalised quote. NDIS funding available.
+                    </span>
+                  </div>
+                ) : isHireOnly ? (
+                  /* Hire-only product: show only hire card */
+                  <div className="p-4 rounded-2xl border-2 border-[#E88D2A] bg-[#FFF8ED] shadow-sm ring-2 ring-[#E88D2A]/20 mb-6">
+                    <span className="block text-[11px] font-bold text-[#E88D2A] uppercase">
+                      Equipment Hire Only
+                    </span>
+                    <span className="block text-xl font-black text-[#0F1E2E]">
+                      ${unitWeeklyHirePrice.toFixed(2)}
+                      <span className="text-xs font-normal text-gray-500">/wk</span>
+                    </span>
+                    <span className="block text-[11px] text-[#E88D2A] font-semibold mt-0.5">
+                      Min. 2 weeks • 100% credited toward purchase
+                    </span>
+                  </div>
+                ) : product.hireAvailable ? (<div className="grid grid-cols-2 gap-3 mb-6">
+                    {canBuy ? (
+                      <button
+                        type="button"
+                        onClick={() => setPurchaseType('buy')}
+                        className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                          purchaseType === 'buy'
+                            ? 'border-[#147A7A] bg-[#147A7A]/5 shadow-sm ring-2 ring-[#147A7A]/20'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className="block text-[11px] font-bold text-gray-500 uppercase">
+                          Buy Outright
+                        </span>
+                        <span className="block text-xl font-black text-[#0F1E2E]">
+                          ${unitBuyPrice.toFixed(2)}
+                        </span>
+                        <span className="block text-[11px] text-gray-500 mt-0.5">
+                          NDIS Capital / Self & Plan Managed
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="p-4 rounded-2xl border-2 border-gray-100 bg-gray-50 text-left">
+                        <span className="block text-[11px] font-bold text-gray-400 uppercase">
+                          Buy Outright
+                        </span>
+                        <span className="block text-lg font-black text-gray-400">
+                          Price on Application
+                        </span>
+                        <span className="block text-[11px] text-gray-400 mt-0.5">
+                          Contact us for buy pricing
+                        </span>
+                      </div>
+                    )}
 
                     <button
                       type="button"
@@ -624,7 +784,7 @@ export function ProductPage() {
                         Min. 2 weeks • 100% credited to buy
                       </span>
                     </button>
-                  </div>) : (<div className="p-4 rounded-2xl border border-gray-200 bg-[#F8FAFC] mb-6 flex items-center justify-between">
+                  </div>) : unitBuyPrice > 0 ? (<div className="p-4 rounded-2xl border border-gray-200 bg-[#F8FAFC] mb-6 flex items-center justify-between">
                     <div>
                       <span className="block text-[11px] font-bold text-gray-500 uppercase">
                         Buy Outright (AUD)
@@ -637,7 +797,20 @@ export function ProductPage() {
                       <Check className="w-3.5 h-3.5" />
                       NDIS Consumables Approved
                     </span>
-                  </div>)}
+                  </div>) : (
+                  /* Fallback: no valid price at all */
+                  <div className="p-4 rounded-2xl border border-amber-200 bg-[#FFFBEB] mb-6">
+                    <span className="block text-[11px] font-bold text-amber-600 uppercase">
+                      Pricing
+                    </span>
+                    <span className="block text-xl font-black text-[#0F1E2E] mt-1">
+                      Price on Application
+                    </span>
+                    <span className="block text-[11px] text-gray-500 mt-1">
+                      Contact our team for current pricing and availability.
+                    </span>
+                  </div>
+                )}
 
                 {/* ========================================== */}
                 {/* DYNAMIC ATTRIBUTE DROPDOWNS & SELECTORS */}
@@ -849,27 +1022,45 @@ export function ProductPage() {
                     </button>
                   </div>
 
-                  {/* ADD TO CART Button */}
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    className={`flex-1 py-3.5 px-6 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99] ${
-                      purchaseType === 'hire'
-                        ? 'bg-[#E88D2A] hover:bg-[#D47C1E]'
-                        : 'bg-[#147A7A] hover:bg-[#106262]'
-                    }`}
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>
-                      {purchaseType === 'hire'
-                        ? `Add ${quantity}x Hire (${hireWeeks} Wks) • $${(hirePeriodPrice * quantity).toFixed(2)}`
-                        : `Add ${quantity} to Cart • $${(unitBuyPrice * quantity).toFixed(2)}`}
-                    </span>
-                  </button>
+                  {/* ADD TO CART / REQUEST QUOTE Button */}
+                  {isQuoteOnly ? (
+                    <Link
+                      to="/contact"
+                      className="flex-1 py-3.5 px-6 bg-[#147A7A] hover:bg-[#106262] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Request a Clinical Quote</span>
+                    </Link>
+                  ) : (purchaseType === 'buy' && unitBuyPrice <= 0) ? (
+                    <Link
+                      to="/contact"
+                      className="flex-1 py-3.5 px-6 bg-[#147A7A] hover:bg-[#106262] text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Request Pricing</span>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      className={`flex-1 py-3.5 px-6 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99] ${
+                        purchaseType === 'hire'
+                          ? 'bg-[#E88D2A] hover:bg-[#D47C1E]'
+                          : 'bg-[#147A7A] hover:bg-[#106262]'
+                      }`}
+                    >
+                      <ShoppingBag className="w-4 h-4" />
+                      <span>
+                        {purchaseType === 'hire'
+                          ? `Add ${quantity}x Hire (${hireWeeks} Wks) • $${(hirePeriodPrice * quantity).toFixed(2)}`
+                          : `Add ${quantity} to Cart • $${(unitBuyPrice * quantity).toFixed(2)}`}
+                      </span>
+                    </button>
+                  )}
                 </div>
 
-                {/* Request $0 NDIS Quote secondary button */}
-                {product.buyAvailable !== false && purchaseType === 'buy' && (
+                {/* Request $0 NDIS Quote secondary button — only show when buy price is valid */}
+                {canBuy && purchaseType === 'buy' && !isQuoteOnly && (
                   <button
                     type="button"
                     onClick={() => {

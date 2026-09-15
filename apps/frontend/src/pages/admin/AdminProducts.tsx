@@ -161,7 +161,7 @@ export function AdminProducts() {
       if (sortKey === 'name') return mul * a.name.localeCompare(b.name);
       if (sortKey === 'brand') return mul * a.brand.localeCompare(b.brand);
       if (sortKey === 'category') return mul * a.category.localeCompare(b.category);
-      if (sortKey === 'price') return mul * (a.price - b.price);
+      if (sortKey === 'price') return mul * ((a.price || a.hirePrice || 0) - (b.price || b.hirePrice || 0));
       if (sortKey === 'stock') return mul * (a.stock - b.stock);
       return 0;
     });
@@ -2218,7 +2218,21 @@ export function AdminProducts() {
                       </td>
 
                       <td className="px-4 py-3.5 whitespace-nowrap">
-                        <p className="font-semibold font-mono text-slate-900">{formatCurrency(p.price)}</p>
+                        {p.price > 0 ? (
+                          <p className="font-semibold font-mono text-slate-900">{formatCurrency(p.price)}</p>
+                        ) : p.hirePrice && p.hirePrice > 0 ? (
+                          <div>
+                            <p className="font-semibold font-mono text-slate-900">{formatCurrency(p.hirePrice)}<span className="text-[10px] text-gray-500 font-normal">/wk</span></p>
+                            <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-700 border border-orange-200 mt-0.5">Hire Only</span>
+                          </div>
+                        ) : p.quoteRequired ? (
+                          <div>
+                            <p className="text-xs font-semibold text-amber-700">Quote Only</p>
+                            <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-600 border border-amber-200 mt-0.5">POA</span>
+                          </div>
+                        ) : (
+                          <p className="font-semibold font-mono text-gray-400">$0.00</p>
+                        )}
                         <div className="flex items-center gap-1 mt-0.5">
                           {p.gstType === 'gst-free' ? (<span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
                               GST-Free
