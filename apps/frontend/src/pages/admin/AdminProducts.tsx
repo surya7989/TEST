@@ -596,7 +596,7 @@ export function AdminProducts() {
     setIsAddingCategory(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.price) {
       alert('Please enter product title and buy price.');
@@ -689,7 +689,7 @@ export function AdminProducts() {
         : 10;
 
     if (editingProductId) {
-      updateProduct(editingProductId, {
+      await updateProduct(editingProductId, {
         name: formData.name.trim(),
         brand: formData.brand.trim() || 'AT Specialists',
         category: formData.category,
@@ -726,7 +726,7 @@ export function AdminProducts() {
         sampleNote: formData.hasFreeSample ? (formData.sampleNote.trim() || 'Complimentary trial sample kit') : undefined,
       });
     } else {
-      addProduct({
+      await addProduct({
         name: formData.name.trim(),
         slug: uniqueSlugFor(formData.name.trim()),
         brand: formData.brand.trim() || 'AT Specialists',

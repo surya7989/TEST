@@ -301,14 +301,14 @@ export async function createProduct(data: any): Promise<{ success: boolean; prod
 }
 
 export async function updateProduct(id: string, data: any): Promise<{ success: boolean; message: string }> {
-  return apiRequest<{ success: boolean; message: string }>(`/products/${id}`, {
+  return apiRequest<{ success: boolean; message: string }>(`/products/${encodeURIComponent(id)}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteProduct(id: string): Promise<{ success: boolean; message: string }> {
-  return apiRequest<{ success: boolean; message: string }>(`/products/${id}`, {
+  return apiRequest<{ success: boolean; message: string }>(`/products/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
 }

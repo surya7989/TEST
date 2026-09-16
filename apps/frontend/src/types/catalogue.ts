@@ -119,7 +119,7 @@ export interface Product {
   reviewCount: number;
   badge?: string;
   createdAt?: string;
-  updatedAt?: string;
+  updatedAt?: string | number;
 }
 
 export interface CategoryHierarchyTree {

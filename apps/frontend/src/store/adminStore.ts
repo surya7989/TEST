@@ -168,6 +168,8 @@ export interface AdminProduct extends Product {
   featured?: boolean;
   onSale?: boolean;
   status?: string;
+  updatedAt?: number | string;
+  updated_at?: string;
 }
 
 export interface ContactInquiry {
@@ -925,6 +927,8 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
               freeDelivery: p.free_delivery === 1 || p.freeDelivery === true || Boolean(p.freeDelivery),
               hasFreeSample: p.has_free_sample === 1 || p.hasFreeSample === true || Boolean(p.hasFreeSample),
               sampleNote: p.sample_note || p.sampleNote || 'Available for OT clinical evaluation upon request',
+              updatedAt: p.updatedAt || p.updated_at || undefined,
+              updated_at: p.updated_at || p.updatedAt || undefined,
             }));
 
             // Merge MySQL products with catalogue and active overrides
@@ -938,15 +942,18 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                 return;
               }
               if (CATALOGUE_IDS.has(p.id)) {
-                dbOverrides[p.id] = {
-                  ...(dbOverrides[p.id] || {}),
+                const existingOverride = dbOverrides[p.id] || {};
+                const serverTime = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
+                const localTime = Number(existingOverride?.updatedAt) || 0;
+
+                const baseServerProps = {
                   name: p.name,
                   price: p.price,
                   buyPrice: p.buyPrice,
-                  hirePrice: p.hirePrice > 0 ? p.hirePrice : (dbOverrides[p.id]?.hirePrice),
-                  hireAvailable: p.hireAvailable ?? (dbOverrides[p.id]?.hireAvailable),
-                  buyAvailable: p.buyAvailable ?? (dbOverrides[p.id]?.buyAvailable),
-                  purchaseType: p.purchaseType || (dbOverrides[p.id]?.purchaseType),
+                  hirePrice: p.hirePrice > 0 ? p.hirePrice : (existingOverride?.hirePrice),
+                  hireAvailable: p.hireAvailable ?? (existingOverride?.hireAvailable),
+                  buyAvailable: p.buyAvailable ?? (existingOverride?.buyAvailable),
+                  purchaseType: p.purchaseType || (existingOverride?.purchaseType),
                   stock: p.stock,
                   category: p.category,
                   image: p.image,
@@ -964,10 +971,35 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                   features: p.features,
                   specifications: p.specifications,
                 };
+
+                if (serverTime > localTime) {
+                  // Server has newer authenticated update
+                  dbOverrides[p.id] = {
+                    ...existingOverride,
+                    ...baseServerProps,
+                    updatedAt: serverTime,
+                  };
+                } else {
+                  // Local admin changes are newer or static catalogue fallback served: preserve admin overrides
+                  dbOverrides[p.id] = {
+                    ...baseServerProps,
+                    ...existingOverride,
+                  };
+                }
               } else {
                 const idx = dbCustom.findIndex((c) => c.id === p.id);
-                if (idx >= 0) dbCustom[idx] = p;
-                else dbCustom.push(p);
+                if (idx >= 0) {
+                  const existing = dbCustom[idx];
+                  const serverTime = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
+                  const localTime = Number((existing as any)?.updatedAt) || 0;
+                  if (serverTime > localTime) {
+                    dbCustom[idx] = { ...existing, ...p, updatedAt: serverTime };
+                  } else {
+                    dbCustom[idx] = { ...p, ...existing };
+                  }
+                } else {
+                  dbCustom.push(p);
+                }
               }
             });
 
@@ -1186,37 +1218,52 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                         })
                       : existingOverride.variants;
 
-                    dbOverrides[p.id] = {
-                      ...existingOverride,
-                      name: p.name,
-                      stock: p.stock !== undefined ? parseInt(p.stock, 10) : existingOverride.stock,
-                      category: p.category || existingOverride.category,
-                      image: p.image || existingOverride.image,
-                      thumbnail: p.image || existingOverride.thumbnail || existingOverride.image,
-                      galleryImages: p.galleryImages || p.gallery_images || existingOverride.galleryImages,
-                      images: p.galleryImages || p.gallery_images || existingOverride.images,
-                      sku: resolvedSku,
-                      brand: p.brand || existingOverride.brand,
-                      description: p.description || existingOverride.description,
-                      shortDescription: cleanShortDesc,
-                      fullDescription: p.fullDescription || p.description || existingOverride.fullDescription,
-                      badge: p.badge !== undefined ? p.badge : existingOverride.badge,
-                      attributes: Array.isArray(p.attributes) && p.attributes.length > 0 ? p.attributes : existingOverride.attributes,
-                      variants: normalizedVariants,
-                      features: Array.isArray(p.features) ? p.features : existingOverride.features,
-                      specifications: Array.isArray(p.specifications) ? p.specifications : existingOverride.specifications,
-                      // Sync pricing and availability so admin edits propagate
-                      hirePrice: p.hirePrice !== undefined ? parseFloat(p.hirePrice) : (p.hire_price !== undefined ? parseFloat(p.hire_price) : existingOverride.hirePrice),
-                      hireAvailable: p.hireAvailable ?? existingOverride.hireAvailable,
-                      buyAvailable: p.buyAvailable ?? existingOverride.buyAvailable,
-                      purchaseType: p.purchaseType || existingOverride.purchaseType,
-                      ...(incomingAddons && incomingAddons.length > 0 ? { optionalEquipment: incomingAddons } : {}),
-                      ...(p.accessories ? { accessories: p.accessories } : {}),
-                    };
+                  const baseServerProps: any = {
+                    name: p.name,
+                    stock: p.stock !== undefined ? parseInt(p.stock, 10) : existingOverride.stock,
+                    category: p.category || existingOverride.category,
+                    image: p.image || existingOverride.image,
+                    thumbnail: p.image || existingOverride.thumbnail || existingOverride.image,
+                    galleryImages: p.galleryImages || p.gallery_images || existingOverride.galleryImages,
+                    images: p.galleryImages || p.gallery_images || existingOverride.images,
+                    sku: resolvedSku,
+                    brand: p.brand || existingOverride.brand,
+                    description: p.description || existingOverride.description,
+                    shortDescription: cleanShortDesc,
+                    fullDescription: p.fullDescription || p.description || existingOverride.fullDescription,
+                    badge: p.badge !== undefined ? p.badge : existingOverride.badge,
+                    attributes: Array.isArray(p.attributes) && p.attributes.length > 0 ? p.attributes : existingOverride.attributes,
+                    variants: normalizedVariants,
+                    features: Array.isArray(p.features) ? p.features : existingOverride.features,
+                    specifications: Array.isArray(p.specifications) ? p.specifications : existingOverride.specifications,
+                    // Sync pricing and availability so admin edits propagate
+                    hirePrice: p.hirePrice !== undefined ? parseFloat(p.hirePrice) : (p.hire_price !== undefined ? parseFloat(p.hire_price) : existingOverride.hirePrice),
+                    hireAvailable: p.hireAvailable ?? existingOverride.hireAvailable,
+                    buyAvailable: p.buyAvailable ?? existingOverride.buyAvailable,
+                    purchaseType: p.purchaseType || existingOverride.purchaseType,
+                    ...(incomingAddons && incomingAddons.length > 0 ? { optionalEquipment: incomingAddons } : {}),
+                    ...(p.accessories ? { accessories: p.accessories } : {}),
+                  };
                   const inPrice = parseFloat(p.price);
                   const inBuyPrice = parseFloat(p.buyPrice ?? p.price);
-                  if (inPrice > 0) dbOverrides[p.id].price = inPrice;
-                  if (inBuyPrice > 0) dbOverrides[p.id].buyPrice = inBuyPrice;
+                  if (inPrice > 0) baseServerProps.price = inPrice;
+                  if (inBuyPrice > 0) baseServerProps.buyPrice = inBuyPrice;
+
+                  const serverTime = (p.updatedAt || p.updated_at) ? new Date(p.updatedAt || p.updated_at).getTime() : 0;
+                  const localTime = Number(existingOverride?.updatedAt) || 0;
+
+                  if (serverTime > localTime) {
+                    dbOverrides[p.id] = {
+                      ...existingOverride,
+                      ...baseServerProps,
+                      updatedAt: serverTime,
+                    };
+                  } else {
+                    dbOverrides[p.id] = {
+                      ...baseServerProps,
+                      ...existingOverride,
+                    };
+                  }
                 } else {
                   dbCustom.push({
                     id: p.id,
@@ -1263,6 +1310,8 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                     freeDelivery: Boolean(p.free_delivery),
                     hasFreeSample: Boolean(p.has_free_sample),
                     sampleNote: p.sample_note || '',
+                    updatedAt: p.updatedAt || p.updated_at || undefined,
+                    updated_at: p.updated_at || p.updatedAt || undefined,
                   });
                 }
               });
@@ -1271,8 +1320,18 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
               const mergedCustom = [...state.customProducts];
               dbCustom.forEach((dc) => {
                 const idx = mergedCustom.findIndex((c) => c.id === dc.id);
-                if (idx >= 0) mergedCustom[idx] = dc;
-                else mergedCustom.push(dc);
+                if (idx >= 0) {
+                  const existing = mergedCustom[idx];
+                  const serverTime = (dc.updatedAt || (dc as any).updated_at) ? new Date(dc.updatedAt || (dc as any).updated_at).getTime() : 0;
+                  const localTime = Number((existing as any)?.updatedAt) || 0;
+                  if (serverTime > localTime) {
+                    mergedCustom[idx] = { ...existing, ...dc, updatedAt: serverTime };
+                  } else {
+                    mergedCustom[idx] = { ...dc, ...existing };
+                  }
+                } else {
+                  mergedCustom.push(dc);
+                }
               });
 
               const nextProducts = buildEffectiveProducts(dbOverrides, nextDeleted, mergedCustom);
@@ -1357,6 +1416,7 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
             ...updates,
             ...(sanitizedImage !== undefined ? { image: sanitizedImage, thumbnail: sanitizedImage } : {}),
             ...(sanitizedGallery !== undefined ? { galleryImages: sanitizedGallery, images: sanitizedGallery } : {}),
+            updatedAt: Date.now(),
           };
 
           const matchedCatalogue = (initialFallbackProducts || []).find((p) =>
