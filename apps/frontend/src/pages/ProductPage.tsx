@@ -118,7 +118,6 @@ export function ProductPage() {
   useEffect(() => {
     setSelectedImageIndex(0);
     setActiveVariantImage(null);
-    setSelectedAddons([]);
 
     if (product.attributes && product.attributes.length > 0) {
       const initial: Record<string, string> = {};
@@ -250,26 +249,6 @@ export function ProductPage() {
     }));
   };
 
-  // ===========================================
-  // DYNAMIC OPTIONAL EQUIPMENT / ADDONS ENGINE
-  // ===========================================
-  const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
-
-  const toggleAddon = (addonId: string) => {
-    setSelectedAddons((prev) =>
-      prev.includes(addonId) ? prev.filter((id) => id !== addonId) : [...prev, addonId]);
-  };
-
-  const checkedAddonsList = useMemo(() => {
-    if (!product.optionalEquipment || product.optionalEquipment.length === 0) return [];
-    return product.optionalEquipment.filter((e) => selectedAddons.includes(e.id));
-  }, [product.optionalEquipment, selectedAddons]);
-
-  // Total additions from addons
-  const addonsTotalBuyPrice = checkedAddonsList.reduce((sum, e) => sum + (e.price || 0), 0);
-  const addonsTotalHirePrice = checkedAddonsList.reduce((sum, e) => sum + (e.hirePrice || estimateWeeklyHireRate(e.price)),
-    0);
-
   // Base Prices — purchase-type-aware variant resolution
   // If the current variant is a hire variant, don't use its price as the buy price
   const baseBuyPrice: number = useMemo(() => {
@@ -327,8 +306,8 @@ export function ProductPage() {
   }, [product.variants, product.hirePrice, currentVariant, selectedAttributes, baseBuyPrice]);
 
   // Final Effective Prices
-  const unitBuyPrice = baseBuyPrice + addonsTotalBuyPrice;
-  const unitWeeklyHirePrice = baseHirePrice + addonsTotalHirePrice;
+  const unitBuyPrice = baseBuyPrice;
+  const unitWeeklyHirePrice = baseHirePrice;
   const hirePeriodPrice = unitWeeklyHirePrice * hireWeeks;
 
   // Derived pricing flags — defensive guards against bad data showing $0 prices
@@ -395,11 +374,7 @@ export function ProductPage() {
       selectedSize: selectedAttributes['size'] || selectedAttributes['sizes'],
       selectedColor: selectedAttributes['colour'] || selectedAttributes['color'],
       selectedAttributes,
-      selectedExtras: checkedAddonsList.map((e) => ({
-        id: e.id,
-        name: e.name,
-        price: e.price,
-      })),
+      selectedExtras: [],
       weeklyRate: purchaseType === 'hire' ? unitWeeklyHirePrice : undefined,
       hireWeeks: purchaseType === 'hire' ? hireWeeks : undefined,
       quantity,
@@ -908,66 +883,6 @@ export function ProductPage() {
                     })}
                   </div>)}
 
-                {/* ========================================== */}
-                {/* DYNAMIC OPTIONAL EQUIPMENT CHECKBOXES */}
-                {/* ========================================== */}
-                {product.optionalEquipment && product.optionalEquipment.length > 0 && (<div className="mb-6 p-4 bg-[#F8FAFC] border border-gray-200 rounded-2xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-extrabold text-[#0F1E2E] uppercase tracking-wider flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-[#E88D2A]" />
-                        <span>Optional Equipment :</span>
-                      </span>
-                      {addonsTotalBuyPrice > 0 && (<span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                          +${addonsTotalBuyPrice.toFixed(2)} added
-                        </span>)}
-                    </div>
-
-                    <div className="space-y-2">
-                      {product.optionalEquipment.map((addon) => {
-                        const isChecked = selectedAddons.includes(addon.id);
-                        return (<label
-                            key={addon.id}
-                            className={`flex items-start gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none ${
-                              isChecked
-                                ? 'bg-white border-[#147A7A] shadow-xs'
-                                : 'bg-white/60 border-gray-200 hover:bg-white hover:border-gray-300'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => toggleAddon(addon.id)}
-                              className="mt-1 h-4 w-4 rounded border-gray-300 text-[#147A7A] focus:ring-[#147A7A] cursor-pointer"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-[#0F1E2E] leading-snug">
-                                {addon.name}{' '}
-                                {purchaseType === 'hire' ? (
-                                  (addon.hirePrice || estimateWeeklyHireRate(addon.price)) > 0 ? (
-                                    <span className="font-extrabold text-[#E88D2A]">
-                                      (+ ${(addon.hirePrice || estimateWeeklyHireRate(addon.price)).toFixed(2)}/wk)
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400 font-normal">(Included)</span>
-                                  )
-                                ) : (
-                                  addon.price > 0 ? (
-                                    <span className="font-extrabold text-[#E88D2A]">
-                                      (+ ${addon.price.toFixed(2)})
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-400 font-normal">(Included)</span>
-                                  )
-                                )}
-                              </p>
-                              {addon.sku && (<span className="text-[10.5px] font-mono text-gray-400 block mt-0.5">
-                                  SKU: {addon.sku}
-                                </span>)}
-                            </div>
-                          </label>);
-                      })}
-                    </div>
-                  </div>)}
 
                 {/* Hire Period Selector (When Hire mode is active) */}
                 {product.hireAvailable && purchaseType === 'hire' && (<div className="bg-[#FFF8ED] border border-[#FDE5CC] rounded-2xl p-4 mb-6 animate-fade-in">

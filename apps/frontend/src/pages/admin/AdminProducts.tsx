@@ -2256,7 +2256,14 @@ export function AdminProducts() {
 
                       <td className="px-4 py-3.5 whitespace-nowrap">
                         {p.price > 0 ? (
-                          <p className="font-semibold font-mono text-slate-900">{formatCurrency(p.price)}</p>
+                          <div>
+                            <p className="font-semibold font-mono text-slate-900">{formatCurrency(p.price)}</p>
+                            {p.hirePrice && p.hirePrice > 0 ? (
+                              <p className="text-[11px] font-mono text-[#E88D2A] font-bold">
+                                Hire: {formatCurrency(p.hirePrice)}/wk
+                              </p>
+                            ) : null}
+                          </div>
                         ) : p.hirePrice && p.hirePrice > 0 ? (
                           <div>
                             <p className="font-semibold font-mono text-slate-900">{formatCurrency(p.hirePrice)}<span className="text-[10px] text-gray-500 font-normal">/wk</span></p>

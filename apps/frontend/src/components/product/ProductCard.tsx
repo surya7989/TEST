@@ -235,9 +235,7 @@ export function ProductCard({
                   <SlidersHorizontal className="w-3 h-3" />
                   {product.variants.length} Variants Available
                 </span>)}
-              {product.optionalEquipment && product.optionalEquipment.length > 0 && (<span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[10.5px] font-semibold">
-                  {product.optionalEquipment.length} Clinical Addons
-                </span>)}
+
               {product.hireAvailable && !hireOnly && (<span className="px-2 py-0.5 bg-[#FFF8ED] text-[#E88D2A] border border-[#FDE5CC] rounded text-[10.5px] font-bold">
                   Hire Available
                 </span>)}
