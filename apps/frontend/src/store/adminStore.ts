@@ -907,6 +907,10 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                   name: p.name,
                   price: p.price,
                   buyPrice: p.buyPrice,
+                  hirePrice: p.hirePrice > 0 ? p.hirePrice : (dbOverrides[p.id]?.hirePrice),
+                  hireAvailable: p.hireAvailable ?? (dbOverrides[p.id]?.hireAvailable),
+                  buyAvailable: p.buyAvailable ?? (dbOverrides[p.id]?.buyAvailable),
+                  purchaseType: p.purchaseType || (dbOverrides[p.id]?.purchaseType),
                   stock: p.stock,
                   category: p.category,
                   image: p.image,
@@ -1121,6 +1125,11 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                     sku: p.sku || existingOverride.sku,
                     brand: p.brand || existingOverride.brand,
                     description: p.description || existingOverride.description,
+                    // Sync pricing and availability so admin edits propagate
+                    hirePrice: (p.hirePrice > 0 ? p.hirePrice : existingOverride.hirePrice),
+                    hireAvailable: p.hireAvailable ?? existingOverride.hireAvailable,
+                    buyAvailable: p.buyAvailable ?? existingOverride.buyAvailable,
+                    purchaseType: p.purchaseType || existingOverride.purchaseType,
                     ...(incomingAddons && incomingAddons.length > 0 ? { optionalEquipment: incomingAddons } : {}),
                     ...(p.accessories ? { accessories: p.accessories } : {}),
                   };

@@ -1099,9 +1099,8 @@ function formatProductRow(array $row): array {
         }
         if (isset($staticCatalogById[$id])) {
             $catItem = $staticCatalogById[$id];
-            if (empty($addons) && !empty($catItem['optionalEquipment']) && is_array($catItem['optionalEquipment'])) {
-                $addons = $catItem['optionalEquipment'];
-            }
+            // Only backfill variants (critical for sizing/pricing), NOT addons.
+            // Addons were deliberately removed by admin request.
             if (empty($variants) && !empty($catItem['variants']) && is_array($catItem['variants'])) {
                 $variants = $catItem['variants'];
             }
@@ -1127,10 +1126,11 @@ function formatProductRow(array $row): array {
     $price = floatval($row['price'] ?? ($row['buyPrice'] ?? 0));
     $hirePrice = floatval($row['hire_price'] ?? ($row['hirePrice'] ?? 0));
 
-    // Ensure price sync with static catalog if DB price is 0 or obsolete
+    // Fallback to static catalog price ONLY when DB price is exactly 0 (never seeded).
+    // Never override a positive admin-set price — that would undo legitimate edits.
     if ($id !== '' && isset($staticCatalogById[$id])) {
         $catBuyPrice = floatval($staticCatalogById[$id]['buyPrice'] ?? ($staticCatalogById[$id]['price'] ?? 0));
-        if ($catBuyPrice > 0 && ($price <= 0 || ($price < $catBuyPrice && abs($price - $catBuyPrice) > 1))) {
+        if ($price <= 0 && $catBuyPrice > 0) {
             $price = $catBuyPrice;
         }
         $catHirePrice = floatval($staticCatalogById[$id]['hirePrice'] ?? ($staticCatalogById[$id]['hire_price'] ?? 0));
