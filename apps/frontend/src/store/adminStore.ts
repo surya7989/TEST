@@ -631,10 +631,16 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         ? effectiveGallery
         : (effectiveImage ? [effectiveImage] : []);
 
-      const effectiveVariants = (o.variants || p.variants || []).map((v: any) => {
+      const rawVariants = o.variants && o.variants.length > 0 ? o.variants : (p.variants || []);
+      const effectiveVariants = rawVariants.map((v: any) => {
         const vImgValid = v.image && effectiveImages.includes(v.image);
+        const vPrice = v.price !== undefined && v.price !== null && v.price !== '' ? Number(v.price) : finalBuyPrice;
+        const vHirePrice = v.hirePrice !== undefined && v.hirePrice !== null ? Number(v.hirePrice) : (o.hirePrice !== undefined ? Number(o.hirePrice) : p.hirePrice);
         return {
           ...v,
+          price: vPrice,
+          regularPrice: v.regularPrice ? Number(v.regularPrice) : vPrice,
+          hirePrice: vHirePrice,
           image: vImgValid ? v.image : effectiveImage,
         };
       });
@@ -653,6 +659,11 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         galleryImages: effectiveImages,
         images: effectiveImages,
         variants: effectiveVariants,
+        attributes: o.attributes !== undefined ? o.attributes : p.attributes,
+        badge: o.badge !== undefined ? o.badge : p.badge,
+        shortDescription: o.shortDescription !== undefined ? o.shortDescription : p.shortDescription,
+        fullDescription: o.fullDescription !== undefined ? o.fullDescription : p.fullDescription,
+        description: o.description !== undefined ? o.description : p.description,
         optionalEquipment: effectiveOptionalEquipment,
         price: finalPrice,
         buyPrice: finalBuyPrice,
@@ -920,6 +931,13 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                   sku: p.sku,
                   brand: p.brand,
                   description: p.description,
+                  shortDescription: p.shortDescription,
+                  fullDescription: p.fullDescription,
+                  badge: p.badge,
+                  attributes: p.attributes,
+                  variants: p.variants,
+                  features: p.features,
+                  specifications: p.specifications,
                 };
               } else {
                 const idx = dbCustom.findIndex((c) => c.id === p.id);
@@ -1125,8 +1143,15 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                     sku: p.sku || existingOverride.sku,
                     brand: p.brand || existingOverride.brand,
                     description: p.description || existingOverride.description,
+                    shortDescription: p.shortDescription || p.short_description || existingOverride.shortDescription,
+                    fullDescription: p.fullDescription || p.description || existingOverride.fullDescription,
+                    badge: p.badge !== undefined ? p.badge : existingOverride.badge,
+                    attributes: Array.isArray(p.attributes) && p.attributes.length > 0 ? p.attributes : existingOverride.attributes,
+                    variants: Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : existingOverride.variants,
+                    features: Array.isArray(p.features) ? p.features : existingOverride.features,
+                    specifications: Array.isArray(p.specifications) ? p.specifications : existingOverride.specifications,
                     // Sync pricing and availability so admin edits propagate
-                    hirePrice: (p.hirePrice > 0 ? p.hirePrice : existingOverride.hirePrice),
+                    hirePrice: p.hirePrice !== undefined ? parseFloat(p.hirePrice) : (p.hire_price !== undefined ? parseFloat(p.hire_price) : existingOverride.hirePrice),
                     hireAvailable: p.hireAvailable ?? existingOverride.hireAvailable,
                     buyAvailable: p.buyAvailable ?? existingOverride.buyAvailable,
                     purchaseType: p.purchaseType || existingOverride.purchaseType,

@@ -1264,8 +1264,9 @@ if ($endpoint === 'products') {
 
                 if (!empty($rows)) {
                     $formatted = array_map('formatProductRow', $rows);
-                    header('Cache-Control: public, max-age=300, stale-while-revalidate=600');
-                    header('ETag: "products-' . md5($sql . count($rows)) . '"');
+                    header('Cache-Control: no-cache, no-store, must-revalidate');
+                    header('Pragma: no-cache');
+                    header('Expires: 0');
                     sendJson(['products' => $formatted]);
                 }
             }
@@ -1439,6 +1440,11 @@ if ($endpoint === 'products') {
         if (isset($b['variants'])) { $fields[] = 'variants_json = ?'; $params[] = json_encode($b['variants']); }
         if (isset($b['features'])) { $fields[] = 'features_json = ?'; $params[] = json_encode($b['features']); }
         if (isset($b['specifications'])) { $fields[] = 'specs_json = ?'; $params[] = json_encode($b['specifications']); }
+        if (isset($b['optionalEquipment']) || isset($b['addons'])) {
+            $addonData = $b['optionalEquipment'] ?? $b['addons'];
+            $fields[] = 'addons_json = ?';
+            $params[] = is_array($addonData) ? json_encode(array_values($addonData)) : $addonData;
+        }
 
         if (!empty($fields)) {
             $updateParams = $params;
@@ -1452,16 +1458,56 @@ if ($endpoint === 'products') {
                 $checkStmt = $db->prepare("SELECT id FROM products WHERE id = ? OR sku = ? LIMIT 1");
                 $checkStmt->execute([$prodId, $prodId]);
                 if (!$checkStmt->fetch()) {
-                    $insName = $b['name'] ?? $prodId;
-                    $insSlug = $b['slug'] ?? preg_replace('/[^a-z0-9]+/i', '-', strtolower($insName));
-                    $insSku = $b['sku'] ?? $prodId;
-                    $insCat = $b['category'] ?? 'General';
-                    $insPrice = floatval($b['price'] ?? $b['buyPrice'] ?? 0);
-                    $insStock = intval($b['stock'] ?? 25);
-                    $insImg = $b['image'] ?? $b['thumbnail'] ?? '';
-                    $insGallery = isset($b['galleryImages']) ? (is_array($b['galleryImages']) ? json_encode($b['galleryImages']) : $b['galleryImages']) : ($insImg ? json_encode([$insImg]) : '[]');
-                    $insInsert = $db->prepare("INSERT INTO products (id, name, slug, sku, category, price, stock, image, gallery_images_json, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
-                    $insInsert->execute([$prodId, $insName, $insSlug, $insSku, $insCat, $insPrice, $insStock, $insImg, $insGallery]);
+                    $matchedVar = null;
+                    $catProd = findProductInCatalog($prodId, $matchedVar) ?? [];
+
+                    $insName = $b['name'] ?? ($catProd['name'] ?? $prodId);
+                    $insSlug = $b['slug'] ?? ($catProd['slug'] ?? preg_replace('/[^a-z0-9]+/i', '-', strtolower($insName)));
+                    $insSku = $b['sku'] ?? ($catProd['sku'] ?? $prodId);
+                    $insBrand = $b['brand'] ?? ($catProd['brand'] ?? 'AT Specialists');
+                    $insCat = $b['category'] ?? ($catProd['category'] ?? 'General');
+                    $insCats = isset($b['categories']) ? (is_array($b['categories']) ? json_encode($b['categories']) : $b['categories']) : (isset($catProd['categories']) ? json_encode($catProd['categories']) : json_encode([$insCat]));
+                    $insPrice = floatval($b['price'] ?? ($b['buyPrice'] ?? ($catProd['buyPrice'] ?? ($catProd['price'] ?? 0))));
+                    $insHirePrice = floatval($b['hirePrice'] ?? ($b['hire_price'] ?? ($catProd['hirePrice'] ?? ($catProd['hire_price'] ?? 0))));
+                    $insHirePeriod = $b['hirePeriod'] ?? ($b['hire_period'] ?? ($catProd['hirePeriod'] ?? ($catProd['hire_period'] ?? 'week')));
+                    $insStock = intval($b['stock'] ?? ($catProd['stock'] ?? 25));
+                    $insLowStock = intval($b['lowStockThreshold'] ?? ($b['low_stock_threshold'] ?? 5));
+                    $insImg = $b['image'] ?? ($b['thumbnail'] ?? ($catProd['image'] ?? ''));
+                    $rawGal = $b['galleryImages'] ?? ($b['gallery_images'] ?? ($catProd['galleryImages'] ?? ($catProd['images'] ?? [$insImg])));
+                    $insGallery = is_array($rawGal) ? json_encode($rawGal) : (string)$rawGal;
+                    $insShortDesc = $b['shortDescription'] ?? ($b['short_description'] ?? ($catProd['shortDescription'] ?? ''));
+                    $insDesc = $b['description'] ?? ($b['fullDescription'] ?? ($catProd['fullDescription'] ?? ($catProd['description'] ?? '')));
+                    $insBadge = $b['badge'] ?? ($catProd['badge'] ?? ($insHirePrice > 0 ? 'Hire Available' : null));
+                    $insGstType = $b['gstType'] ?? ($b['gst_type'] ?? ($catProd['gstType'] ?? 'gst-free'));
+                    $insGstRate = floatval($b['gstRate'] ?? ($b['gst_rate'] ?? ($catProd['gstRate'] ?? 0)));
+                    $insDelFee = floatval($b['deliveryFee'] ?? ($b['delivery_fee'] ?? ($catProd['deliveryFee'] ?? 0)));
+                    $insNdisCode = $b['ndisCode'] ?? ($b['ndis_code'] ?? ($catProd['ndisCode'] ?? ''));
+                    $insAttrs = isset($b['attributes']) ? (is_array($b['attributes']) ? json_encode($b['attributes']) : $b['attributes']) : (!empty($catProd['attributes']) ? json_encode($catProd['attributes']) : null);
+                    $insVariants = isset($b['variants']) ? (is_array($b['variants']) ? json_encode($b['variants']) : $b['variants']) : (!empty($catProd['variants']) ? json_encode($catProd['variants']) : null);
+                    $insFeatures = isset($b['features']) ? (is_array($b['features']) ? json_encode($b['features']) : $b['features']) : (!empty($catProd['features']) ? json_encode($catProd['features']) : null);
+                    $insSpecs = isset($b['specifications']) ? (is_array($b['specifications']) ? json_encode($b['specifications']) : $b['specifications']) : (!empty($catProd['specifications']) ? json_encode($catProd['specifications']) : null);
+                    $insAddons = isset($b['optionalEquipment']) ? (is_array($b['optionalEquipment']) ? json_encode($b['optionalEquipment']) : $b['optionalEquipment']) : (!empty($catProd['optionalEquipment']) ? json_encode($catProd['optionalEquipment']) : null);
+                    $insActive = isset($b['available']) ? ($b['available'] ? 1 : 0) : (isset($b['isActive']) ? (empty($b['isActive']) ? 0 : 1) : 1);
+
+                    $insInsert = $db->prepare("
+                        INSERT INTO products (
+                            id, name, slug, sku, brand, category, categories_json, price, hire_price, hire_period,
+                            stock, low_stock_threshold, image, gallery_images_json, short_description, description,
+                            badge, gst_type, gst_rate, delivery_fee, ndis_code, attributes_json, variants_json,
+                            features_json, specs_json, addons_json, is_active
+                        ) VALUES (
+                            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?, ?, ?, ?,
+                            ?, ?, ?, ?
+                        )
+                    ");
+                    $insInsert->execute([
+                        $prodId, $insName, $insSlug, $insSku, $insBrand, $insCat, $insCats, $insPrice, $insHirePrice, $insHirePeriod,
+                        $insStock, $insLowStock, $insImg, $insGallery, $insShortDesc, $insDesc,
+                        $insBadge, $insGstType, $insGstRate, $insDelFee, $insNdisCode, $insAttrs, $insVariants,
+                        $insFeatures, $insSpecs, $insAddons, $insActive
+                    ]);
                 }
             }
         }

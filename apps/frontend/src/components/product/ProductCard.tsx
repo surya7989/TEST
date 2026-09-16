@@ -57,9 +57,9 @@ export function ProductCard({
     if (isHireActive) {
       if (hasVariants) {
         const hireVariants = product.variants.filter((v) => v.attributes && v.attributes['purchase-type'] === 'hire');
-        const hirePrices = (hireVariants.length > 0 ? hireVariants : product.variants)
-          .map((v) => v.price || v.hirePrice || product.hirePrice || 0)
-          .filter((p) => p > 0);
+        const hirePrices = hireVariants.length > 0
+          ? hireVariants.map((v) => v.hirePrice || v.price || product.hirePrice || 0).filter((p) => p > 0)
+          : product.variants.map((v) => v.hirePrice || product.hirePrice || 0).filter((p) => p > 0);
         if (hirePrices.length > 0) {
           const minHire = Math.min(...hirePrices);
           const maxHire = Math.max(...hirePrices);

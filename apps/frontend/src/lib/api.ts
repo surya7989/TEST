@@ -5,7 +5,21 @@
  * Automatically injects Bearer JWT authentication for administrative and customer sessions.
  */
 
-const API_BASE = (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api` : '/api');
+const resolveApiBase = (): string => {
+  if (typeof window !== 'undefined' && window.location.protocol.startsWith('http')) {
+    // Relative /api is always reliable because frontend and PHP API live together on Hostinger
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl && envUrl.startsWith('http') && !envUrl.includes(window.location.hostname)) {
+      if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+        return '/api';
+      }
+    }
+    return '/api';
+  }
+  return (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api` : '/api');
+};
+
+const API_BASE = resolveApiBase();
 
 // Local storage keys for session persistence
 const ADMIN_TOKEN_KEY = 'at_admin_jwt_token';
@@ -252,14 +266,20 @@ export async function getCustomerProfile(): Promise<{ success: boolean; user: an
 // ============================================================================
 
 export async function getProducts(): Promise<{ products: any[] }> {
-  // The full catalogue is 1200+ products (>5MB in one response). Requesting it
-  // unbounded exhausts PHP memory on shared hosting and returns HTTP 500, so
-  // page through ?limit=&offset= (supported by GET /api/products) instead.
+  // Page through ?limit=&offset= (supported by GET /api/products).
+  // Use cache-busting timestamp and no-cache header to ensure fresh product data from MySQL.
   const PAGE = 400;
   const all: any[] = [];
   let offset = 0;
+  const t = Date.now();
   for (;;) {
-    const res = await apiRequest<{ products: any[] }>(`/products?limit=${PAGE}&offset=${offset}`);
+    const res = await apiRequest<{ products: any[] }>(`/products?limit=${PAGE}&offset=${offset}&_t=${t}`, {
+      cache: 'no-cache',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+    });
     const batch = res?.products ?? [];
     all.push(...batch);
     if (batch.length < PAGE) break;

@@ -51,10 +51,9 @@ export function getVariantPriceInfo(product: {
     const hireVariants = allVariants.filter(
       (v) => v.attributes && v.attributes['purchase-type'] === 'hire'
     );
-    const candidateVariants = hireVariants.length > 0 ? hireVariants : allVariants;
-    const hirePrices = candidateVariants
-      .map((v) => Number(v.price || v.hirePrice || 0))
-      .filter((p) => p > 0);
+    const hirePrices = hireVariants.length > 0
+      ? hireVariants.map((v) => Number(v.hirePrice || v.price || 0)).filter((p) => p > 0)
+      : allVariants.map((v) => Number(v.hirePrice || hp)).filter((p) => p > 0);
     const hasPricedVariants = hirePrices.length > 0;
     const min = hasPricedVariants ? Math.min(...hirePrices) : hp;
     const max = hasPricedVariants ? Math.max(...hirePrices) : hp;

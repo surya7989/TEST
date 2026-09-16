@@ -223,7 +223,7 @@ export function AdminProducts() {
   // Size/Colour dropdowns on the product page, variants drive price/SKU/image.
   interface FormAttrValue { label: string; value: string; colorHex?: string }
   interface FormAttr { key: string; name: string; type: 'select' | 'color'; values: FormAttrValue[] }
-  interface FormVariant { key: string; attrs: Record<string, string>; sku: string; price: string; image: string; available: boolean }
+  interface FormVariant { key: string; attrs: Record<string, string>; sku: string; price: string; hirePrice?: string; image: string; available: boolean; purchaseType?: string }
 
   const [formAttrs, setFormAttrs] = useState<FormAttr[]>([]);
   const [formVariants, setFormVariants] = useState<FormVariant[]>([]);
@@ -388,15 +388,21 @@ export function AdminProducts() {
       setFormAttrs(loadedAttrs);
       setFormVariants(((p as any).variants || []).map((v: any, i: number) => {
           const attrs: Record<string, string> = {};
+          let purchaseType = '';
           Object.entries((v.attributes || {}) as Record<string, unknown>).forEach(([k, val]) => {
-            if (k === 'purchase-type') return;
+            if (k === 'purchase-type') {
+              purchaseType = String(val ?? '');
+              return;
+            }
             attrs[k] = String(val ?? '');
           });
           return {
             key: comboKeyFor(attrs) || `row-${i}`,
             attrs,
+            purchaseType,
             sku: String(v.sku || ''),
             price: v.price !== undefined && v.price !== null ? String(v.price) : '',
+            hirePrice: v.hirePrice !== undefined && v.hirePrice !== null ? String(v.hirePrice) : '',
             image: String(v.image || ''),
             available: v.available !== false,
           };
@@ -630,12 +636,19 @@ export function AdminProducts() {
     const buildVariants = () =>
       formVariants.map((v, i) => {
         const vImgValid = v.image && galleryImgs.includes(v.image);
+        const variantAttrs = { ...v.attrs };
+        if (v.purchaseType) {
+          variantAttrs['purchase-type'] = v.purchaseType;
+        }
+        const vPrice = v.price !== undefined && v.price !== '' ? Number(v.price) : basePriceNum;
+        const vHirePrice = v.hirePrice !== undefined && v.hirePrice !== '' ? Number(v.hirePrice) : (hirePriceNum > 0 ? hirePriceNum : undefined);
         return {
           id: `var-${i + 1}`,
           sku: v.sku.trim() || baseSku || `AT-${Date.now().toString().slice(-4)}-${i + 1}`,
-          attributes: v.attrs,
-          price: Number(v.price) || basePriceNum,
-          regularPrice: Number(v.price) || basePriceNum,
+          attributes: variantAttrs,
+          price: vPrice,
+          regularPrice: vPrice,
+          hirePrice: vHirePrice,
           image: vImgValid ? v.image : finalImage,
           stockStatus: v.available ? 'in_stock' : 'out_of_stock',
           available: v.available,
