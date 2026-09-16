@@ -159,10 +159,11 @@ export function ProductPage() {
       if (vPurchaseType) return vPurchaseType === purchaseType;
 
       // Infer mode from SKU prefix or price if attributes are missing
-      if (v.sku?.toUpperCase().startsWith('CHA')) {
+      const vSkuUpper = (v.sku || '').toUpperCase();
+      if (vSkuUpper.startsWith('CHA') || vSkuUpper.includes('-HIRE') || vSkuUpper.includes('_HIRE')) {
         return purchaseType === 'hire';
       }
-      if (v.sku?.toUpperCase().startsWith('CR') || v.sku?.toUpperCase().startsWith('CHP')) {
+      if (vSkuUpper.startsWith('CR') || vSkuUpper.startsWith('CHP') || vSkuUpper.includes('-BUY')) {
         return purchaseType === 'buy';
       }
       if (product.buyPrice > 500 && product.hirePrice > 0 && typeof v.price === 'number' && v.price <= (product.hirePrice * 3) && purchaseType === 'buy') {
@@ -275,12 +276,12 @@ export function ProductPage() {
   // If the current variant is a hire variant, don't use its price as the buy price
   const baseBuyPrice: number = useMemo(() => {
     if (!product.variants || product.variants.length === 0) return product.buyPrice || 0;
-
     const isBuyVariant = (v: ProductVariant) => {
       const vAttrs = getAttrs(v);
       if (vAttrs['purchase-type'] === 'hire') return false;
       if (vAttrs['purchase-type'] === 'buy') return true;
-      if (v.sku?.toUpperCase().startsWith('CHA')) return false;
+      const vSkuUpper = (v.sku || '').toUpperCase();
+      if (vSkuUpper.startsWith('CHA') || vSkuUpper.includes('-HIRE') || vSkuUpper.includes('_HIRE')) return false;
       if (product.buyPrice > 500 && product.hirePrice > 0 && typeof v.price === 'number' && v.price <= (product.hirePrice * 3)) return false;
       return true;
     };
@@ -319,7 +320,8 @@ export function ProductPage() {
     const isHireVariant = (v: ProductVariant) => {
       const vAttrs = getAttrs(v);
       if (vAttrs['purchase-type'] === 'hire') return true;
-      if (v.sku?.toUpperCase().startsWith('CHA')) return true;
+      const vSkuUpper = (v.sku || '').toUpperCase();
+      if (vSkuUpper.startsWith('CHA') || vSkuUpper.includes('-HIRE') || vSkuUpper.includes('_HIRE')) return true;
       return false;
     };
     const hireVariants = product.variants.filter(isHireVariant);
@@ -358,24 +360,29 @@ export function ProductPage() {
   // Active SKU (dynamic variant SKU if selected and matching current mode)
   const activeSku = useMemo(() => {
     if (purchaseType === 'buy') {
-      if (currentVariant?.sku && !currentVariant.sku.toUpperCase().startsWith('CHA')) {
+      const curSkuUpper = (currentVariant?.sku || '').toUpperCase();
+      if (currentVariant?.sku && !curSkuUpper.startsWith('CHA') && !curSkuUpper.includes('-HIRE')) {
         return currentVariant.sku;
       }
       const buyVar = product.variants?.find((v) => {
         const vAttrs = getAttrs(v);
-        return vAttrs['purchase-type'] === 'buy' || (!v.sku?.toUpperCase().startsWith('CHA') && typeof v.price === 'number' && v.price > 500);
+        const sUpper = (v.sku || '').toUpperCase();
+        return vAttrs['purchase-type'] === 'buy' || (!sUpper.startsWith('CHA') && !sUpper.includes('-HIRE') && typeof v.price === 'number' && v.price > 500);
       });
       if (buyVar?.sku) return buyVar.sku;
-      if (product.sku && !product.sku.toUpperCase().startsWith('CHA')) return product.sku;
+      const prodSkuUpper = (product.sku || '').toUpperCase();
+      if (product.sku && !prodSkuUpper.startsWith('CHA') && !prodSkuUpper.includes('-HIRE')) return product.sku;
       return product.sku;
     } else {
       // Hire mode
-      if (currentVariant?.sku && (getAttrs(currentVariant)['purchase-type'] === 'hire' || currentVariant.sku.toUpperCase().startsWith('CHA'))) {
+      const curSkuUpper = (currentVariant?.sku || '').toUpperCase();
+      if (currentVariant?.sku && (getAttrs(currentVariant)['purchase-type'] === 'hire' || curSkuUpper.startsWith('CHA') || curSkuUpper.includes('-HIRE'))) {
         return currentVariant.sku;
       }
       const hireVar = product.variants?.find((v) => {
         const vAttrs = getAttrs(v);
-        return vAttrs['purchase-type'] === 'hire' || v.sku?.toUpperCase().startsWith('CHA');
+        const sUpper = (v.sku || '').toUpperCase();
+        return vAttrs['purchase-type'] === 'hire' || sUpper.startsWith('CHA') || sUpper.includes('-HIRE');
       });
       if (hireVar?.sku) return hireVar.sku;
       return product.sku;

@@ -389,13 +389,22 @@ export function AdminProducts() {
       setFormVariants(((p as any).variants || []).map((v: any, i: number) => {
           const attrs: Record<string, string> = {};
           let purchaseType = '';
-          Object.entries((v.attributes || {}) as Record<string, unknown>).forEach(([k, val]) => {
+          const vAttrs = (v.attributes && !Array.isArray(v.attributes)) ? v.attributes : {};
+          Object.entries(vAttrs as Record<string, unknown>).forEach(([k, val]) => {
             if (k === 'purchase-type') {
               purchaseType = String(val ?? '');
               return;
             }
             attrs[k] = String(val ?? '');
           });
+          if (!purchaseType) {
+            const sUpper = String(v.sku || '').toUpperCase();
+            if (sUpper.startsWith('CHA') || sUpper.includes('-HIRE') || sUpper.includes('_HIRE')) {
+              purchaseType = 'hire';
+            } else {
+              purchaseType = 'buy';
+            }
+          }
           return {
             key: comboKeyFor(attrs) || `row-${i}`,
             attrs,
@@ -637,9 +646,10 @@ export function AdminProducts() {
       formVariants.map((v, i) => {
         const vImgValid = v.image && galleryImgs.includes(v.image);
         const variantAttrs = { ...v.attrs };
-        if (v.purchaseType) {
-          variantAttrs['purchase-type'] = v.purchaseType;
-        }
+        const vSkuUpper = (v.sku || '').toUpperCase();
+        const pType = v.purchaseType || variantAttrs['purchase-type'] || (vSkuUpper.startsWith('CHA') || vSkuUpper.includes('-HIRE') ? 'hire' : 'buy');
+        variantAttrs['purchase-type'] = pType;
+
         const vPrice = v.price !== undefined && v.price !== '' ? Number(v.price) : basePriceNum;
         const vHirePrice = v.hirePrice !== undefined && v.hirePrice !== '' ? Number(v.hirePrice) : (hirePriceNum > 0 ? hirePriceNum : undefined);
         return {

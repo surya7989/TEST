@@ -1118,6 +1118,23 @@ function formatProductRow(array $row): array {
         }
     }
 
+    // Ensure every variant across all products always has a valid attributes object with purchase-type
+    if (is_array($variants) && !empty($variants)) {
+        $variants = array_map(function($v) {
+            if (!is_array($v)) return $v;
+            $attrs = $v['attributes'] ?? [];
+            if (!is_array($attrs) || empty($attrs) || (array_is_list($attrs) && empty($attrs))) {
+                $vSku = strtoupper(trim((string)($v['sku'] ?? '')));
+                $attrs = ['purchase-type' => str_starts_with($vSku, 'CHA') ? 'hire' : 'buy'];
+            } else if (!isset($attrs['purchase-type'])) {
+                $vSku = strtoupper(trim((string)($v['sku'] ?? '')));
+                $attrs['purchase-type'] = str_starts_with($vSku, 'CHA') ? 'hire' : 'buy';
+            }
+            $v['attributes'] = $attrs;
+            return $v;
+        }, $variants);
+    }
+
     if (!is_array($addons)) $addons = [];
     // Normalize to priced objects; plain id strings carry no price.
     $addons = array_values(array_filter(array_map(function($a) {
@@ -1276,6 +1293,31 @@ function repairCatalogInconsistencies(PDO $db): void {
             WHERE id = 'prod-accora-configura-advance-mobile-care-chair'
               AND (sku = 'CHA510' OR variants_json LIKE '%\"attributes\":[]%' OR variants_json LIKE '%\"attributes\": []%' OR short_description IS NULL OR short_description LIKE 'Please complete%')
         ");
+        // 3. Universal heal for ANY product across the entire database:
+        // If any product has variants with empty attributes array ([]),
+        // normalize attributes to an object with purchase-type assigned.
+        $brokenStmt = $db->query("SELECT id, sku, variants_json FROM products WHERE variants_json LIKE '%\"attributes\":[]%' OR variants_json LIKE '%\"attributes\": []%' LIMIT 200");
+        if ($brokenStmt) {
+            $brokenRows = $brokenStmt->fetchAll();
+            foreach ($brokenRows as $bRow) {
+                $bId = $bRow['id'];
+                $vList = json_decode((string)$bRow['variants_json'], true);
+                if (is_array($vList) && !empty($vList)) {
+                    $fixedList = array_map(function($v) {
+                        if (!is_array($v)) return $v;
+                        $attrs = $v['attributes'] ?? [];
+                        if (!is_array($attrs) || empty($attrs) || (array_is_list($attrs) && empty($attrs))) {
+                            $vSku = strtoupper(trim((string)($v['sku'] ?? '')));
+                            $attrs = ['purchase-type' => str_starts_with($vSku, 'CHA') ? 'hire' : 'buy'];
+                        }
+                        $v['attributes'] = (object)$attrs;
+                        return $v;
+                    }, $vList);
+                    $upStmt = $db->prepare("UPDATE products SET variants_json = ? WHERE id = ?");
+                    $upStmt->execute([json_encode($fixedList, JSON_UNESCAPED_SLASHES), $bId]);
+                }
+            }
+        }
     } catch (Throwable $e) {
         error_log('Catalog self-heal error: ' . $e->getMessage());
     }
