@@ -144,20 +144,38 @@ export function ProductPage() {
   // Find the exact matching variant based on currently selected attributes
   // Purchase-type-aware: prefer variants matching the current buy/hire mode
   // (case-insensitive, consistent with isOptionAvailable below)
+  const getAttrs = (v: ProductVariant): Record<string, any> =>
+    v.attributes && !Array.isArray(v.attributes) ? v.attributes : {};
+
+  // Purchase-type-aware: prefer variants matching the current buy/hire mode
+  // (case-insensitive, consistent with isOptionAvailable below)
   const currentVariant: ProductVariant | undefined = useMemo(() => {
     if (!product.variants || product.variants.length === 0) return undefined;
 
     // Try to find a variant matching both the selected attributes AND the current purchase mode
     const matchMode = (v: ProductVariant) => {
-      const vPurchaseType = v.attributes['purchase-type'];
-      if (!vPurchaseType) return true; // no purchase-type attr = universal variant
-      return vPurchaseType === purchaseType;
+      const vAttrs = getAttrs(v);
+      const vPurchaseType = vAttrs['purchase-type'];
+      if (vPurchaseType) return vPurchaseType === purchaseType;
+
+      // Infer mode from SKU prefix or price if attributes are missing
+      if (v.sku?.toUpperCase().startsWith('CHA')) {
+        return purchaseType === 'hire';
+      }
+      if (v.sku?.toUpperCase().startsWith('CR') || v.sku?.toUpperCase().startsWith('CHP')) {
+        return purchaseType === 'buy';
+      }
+      if (product.buyPrice > 500 && product.hirePrice > 0 && typeof v.price === 'number' && v.price <= (product.hirePrice * 3) && purchaseType === 'buy') {
+        return false;
+      }
+      return true;
     };
 
     const matchAttrs = (v: ProductVariant) => {
+      const vAttrs = getAttrs(v);
       return Object.entries(selectedAttributes).every(([attrSlug, attrVal]) => {
         if (attrSlug === 'purchase-type') return true; // handled separately
-        const variantVal = v.attributes[attrSlug];
+        const variantVal = vAttrs[attrSlug];
         if (!variantVal) return true; // wildcard
         return String(variantVal).toLowerCase() === String(attrVal).toLowerCase();
       });
@@ -171,36 +189,39 @@ export function ProductPage() {
     const modeMatch = product.variants.find((v) => matchMode(v));
     if (modeMatch) return modeMatch;
 
-    // 3. Last resort: matching attributes regardless of purchase-type
+    // 3. Last resort: matching attributes
     const attrMatch = product.variants.find((v) => matchAttrs(v));
     if (attrMatch) return attrMatch;
 
     return product.variants[0];
-  }, [product.variants, selectedAttributes, purchaseType]);
+  }, [product.variants, selectedAttributes, purchaseType, product.buyPrice, product.hirePrice]);
 
   // When purchaseType changes, ensure selectedAttributes has a valid variant in the new purchase mode
   useEffect(() => {
     if (!product.variants || product.variants.length === 0) return;
 
     const hasMatch = product.variants.some((v) => {
-      const vType = v.attributes['purchase-type'];
+      const vAttrs = getAttrs(v);
+      const vType = vAttrs['purchase-type'] || (v.sku?.toUpperCase().startsWith('CHA') ? 'hire' : 'buy');
       if (vType && vType !== purchaseType) return false;
       return Object.entries(selectedAttributes).every(([slug, val]) => {
         if (slug === 'purchase-type') return true;
-        const vv = v.attributes[slug];
+        const vv = vAttrs[slug];
         return !vv || String(vv).toLowerCase() === String(val).toLowerCase();
       });
     });
 
     if (!hasMatch) {
       const matchingVariant = product.variants.find((v) => {
-        const vType = v.attributes['purchase-type'];
+        const vAttrs = getAttrs(v);
+        const vType = vAttrs['purchase-type'] || (v.sku?.toUpperCase().startsWith('CHA') ? 'hire' : 'buy');
         return !vType || vType === purchaseType;
       });
       if (matchingVariant) {
+        const vAttrs = getAttrs(matchingVariant);
         setSelectedAttributes((prev) => {
           const next = { ...prev };
-          for (const [k, v] of Object.entries(matchingVariant.attributes)) {
+          for (const [k, v] of Object.entries(vAttrs)) {
             if (k !== 'purchase-type') next[k] = v;
           }
           return next;
@@ -228,12 +249,13 @@ export function ProductPage() {
     const hypothetical = {...selectedAttributes, [attrSlug]: value };
 
     return product.variants.some((v) => {
-      const vPurchaseType = v.attributes['purchase-type'];
+      const vAttrs = getAttrs(v);
+      const vPurchaseType = vAttrs['purchase-type'] || (v.sku?.toUpperCase().startsWith('CHA') ? 'hire' : 'buy');
       if (vPurchaseType && vPurchaseType !== purchaseType) return false;
 
       const matches = Object.entries(hypothetical).every(([slug, val]) => {
         if (slug === 'purchase-type') return true;
-        const vv = v.attributes[slug];
+        const vv = vAttrs[slug];
         if (slug === attrSlug) return vv === val || !vv;
         return !vv || String(vv).toLowerCase() === String(val).toLowerCase();
       });
@@ -253,20 +275,32 @@ export function ProductPage() {
   // If the current variant is a hire variant, don't use its price as the buy price
   const baseBuyPrice: number = useMemo(() => {
     if (!product.variants || product.variants.length === 0) return product.buyPrice || 0;
-    // Find the best buy variant price
-    const buyVariants = product.variants.filter((v) => v.attributes['purchase-type'] === 'buy');
-    if (currentVariant && currentVariant.attributes['purchase-type'] !== 'hire' && typeof currentVariant.price === 'number') {
+
+    const isBuyVariant = (v: ProductVariant) => {
+      const vAttrs = getAttrs(v);
+      if (vAttrs['purchase-type'] === 'hire') return false;
+      if (vAttrs['purchase-type'] === 'buy') return true;
+      if (v.sku?.toUpperCase().startsWith('CHA')) return false;
+      if (product.buyPrice > 500 && product.hirePrice > 0 && typeof v.price === 'number' && v.price <= (product.hirePrice * 3)) return false;
+      return true;
+    };
+
+    const buyVariants = product.variants.filter(isBuyVariant);
+
+    if (currentVariant && isBuyVariant(currentVariant) && typeof currentVariant.price === 'number' && currentVariant.price > 0) {
       return currentVariant.price;
     }
+
     if (buyVariants.length > 0) {
       // Use the buy variant that matches selected attributes
-      const matchingBuyVar = buyVariants.find((v) =>
-        Object.entries(selectedAttributes).every(([slug, val]) => {
+      const matchingBuyVar = buyVariants.find((v) => {
+        const vAttrs = getAttrs(v);
+        return Object.entries(selectedAttributes).every(([slug, val]) => {
           if (slug === 'purchase-type') return true;
-          const vv = v.attributes[slug];
+          const vv = vAttrs[slug];
           return !vv || String(vv).toLowerCase() === String(val).toLowerCase();
-        })
-      );
+        });
+      });
       if (matchingBuyVar && typeof matchingBuyVar.price === 'number' && matchingBuyVar.price > 0) {
         return matchingBuyVar.price;
       }
@@ -274,34 +308,40 @@ export function ProductPage() {
       const firstPriced = buyVariants.find((v) => typeof v.price === 'number' && v.price > 0);
       if (firstPriced && typeof firstPriced.price === 'number') return firstPriced.price;
     }
-    // No purchase-type attribute on variants — use current variant or product base
-    if (typeof currentVariant?.price === 'number') return currentVariant.price;
+
     return product.buyPrice || 0;
-  }, [product.variants, product.buyPrice, currentVariant, selectedAttributes]);
+  }, [product.variants, product.buyPrice, product.hirePrice, currentVariant, selectedAttributes]);
 
   const baseHirePrice: number = useMemo(() => {
     if (!product.variants || product.variants.length === 0) {
       return product.hirePrice || estimateWeeklyHireRate(baseBuyPrice);
     }
-    const hireVariants = product.variants.filter((v) => v.attributes['purchase-type'] === 'hire');
-    if (currentVariant && currentVariant.attributes['purchase-type'] === 'hire' && typeof currentVariant.price === 'number') {
+    const isHireVariant = (v: ProductVariant) => {
+      const vAttrs = getAttrs(v);
+      if (vAttrs['purchase-type'] === 'hire') return true;
+      if (v.sku?.toUpperCase().startsWith('CHA')) return true;
+      return false;
+    };
+    const hireVariants = product.variants.filter(isHireVariant);
+    if (currentVariant && isHireVariant(currentVariant) && typeof currentVariant.price === 'number' && currentVariant.price > 0) {
       return currentVariant.price;
     }
     if (hireVariants.length > 0) {
-      const matchingHireVar = hireVariants.find((v) =>
-        Object.entries(selectedAttributes).every(([slug, val]) => {
+      const matchingHireVar = hireVariants.find((v) => {
+        const vAttrs = getAttrs(v);
+        return Object.entries(selectedAttributes).every(([slug, val]) => {
           if (slug === 'purchase-type') return true;
-          const vv = v.attributes[slug];
+          const vv = vAttrs[slug];
           return !vv || String(vv).toLowerCase() === String(val).toLowerCase();
-        })
-      );
+        });
+      });
       if (matchingHireVar && typeof matchingHireVar.price === 'number' && matchingHireVar.price > 0) {
         return matchingHireVar.price;
       }
       const firstPriced = hireVariants.find((v) => typeof v.price === 'number' && v.price > 0);
       if (firstPriced && typeof firstPriced.price === 'number') return firstPriced.price;
     }
-    if (typeof currentVariant?.hirePrice === 'number') return currentVariant.hirePrice;
+    if (typeof currentVariant?.hirePrice === 'number' && currentVariant.hirePrice > 0) return currentVariant.hirePrice;
     return product.hirePrice || estimateWeeklyHireRate(baseBuyPrice);
   }, [product.variants, product.hirePrice, currentVariant, selectedAttributes, baseBuyPrice]);
 
@@ -315,8 +355,32 @@ export function ProductPage() {
   const isHireOnly = product.hireAvailable && baseBuyPrice <= 0 && !product.buyAvailable;
   const canBuy = product.buyAvailable !== false && unitBuyPrice > 0;
 
-  // Active SKU (dynamic variant SKU if selected)
-  const activeSku = currentVariant?.sku || product.sku;
+  // Active SKU (dynamic variant SKU if selected and matching current mode)
+  const activeSku = useMemo(() => {
+    if (purchaseType === 'buy') {
+      if (currentVariant?.sku && !currentVariant.sku.toUpperCase().startsWith('CHA')) {
+        return currentVariant.sku;
+      }
+      const buyVar = product.variants?.find((v) => {
+        const vAttrs = getAttrs(v);
+        return vAttrs['purchase-type'] === 'buy' || (!v.sku?.toUpperCase().startsWith('CHA') && typeof v.price === 'number' && v.price > 500);
+      });
+      if (buyVar?.sku) return buyVar.sku;
+      if (product.sku && !product.sku.toUpperCase().startsWith('CHA')) return product.sku;
+      return product.sku;
+    } else {
+      // Hire mode
+      if (currentVariant?.sku && (getAttrs(currentVariant)['purchase-type'] === 'hire' || currentVariant.sku.toUpperCase().startsWith('CHA'))) {
+        return currentVariant.sku;
+      }
+      const hireVar = product.variants?.find((v) => {
+        const vAttrs = getAttrs(v);
+        return vAttrs['purchase-type'] === 'hire' || v.sku?.toUpperCase().startsWith('CHA');
+      });
+      if (hireVar?.sku) return hireVar.sku;
+      return product.sku;
+    }
+  }, [purchaseType, currentVariant, product.sku, product.variants]);
 
   // Image Gallery Assembly: strictly respects product.galleryImages and cover photo.
   // Never re-injects deleted images or obsolete variant photos.

@@ -636,8 +636,23 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         const vImgValid = v.image && effectiveImages.includes(v.image);
         const vPrice = v.price !== undefined && v.price !== null && v.price !== '' ? Number(v.price) : finalBuyPrice;
         const vHirePrice = v.hirePrice !== undefined && v.hirePrice !== null ? Number(v.hirePrice) : (o.hirePrice !== undefined ? Number(o.hirePrice) : p.hirePrice);
+
+        // Find base catalogue variant for attribute inheritance
+        const baseVar = (p.variants || []).find((bv: any) => bv.id === v.id || bv.sku === v.sku);
+        const baseAttrs = (baseVar && baseVar.attributes && !Array.isArray(baseVar.attributes)) ? baseVar.attributes : {};
+        const incomingAttrs = (v.attributes && !Array.isArray(v.attributes)) ? v.attributes : {};
+        const mergedAttrs = { ...baseAttrs, ...incomingAttrs };
+        if (!mergedAttrs['purchase-type']) {
+          if (v.sku && String(v.sku).toUpperCase().startsWith('CHA')) {
+            mergedAttrs['purchase-type'] = 'hire';
+          } else if (v.sku && (String(v.sku).toUpperCase().startsWith('CR') || String(v.sku).toUpperCase().startsWith('CHP'))) {
+            mergedAttrs['purchase-type'] = 'buy';
+          }
+        }
+
         return {
           ...v,
+          attributes: mergedAttrs,
           price: vPrice,
           regularPrice: v.regularPrice ? Number(v.regularPrice) : vPrice,
           hirePrice: vHirePrice,
@@ -649,9 +664,19 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         ? o.optionalEquipment
         : p.optionalEquipment;
 
+      const rawShortDesc = o.shortDescription !== undefined ? o.shortDescription : p.shortDescription;
+      const cleanShortDesc = (rawShortDesc && !rawShortDesc.startsWith('Please complete a Referral Assessment Form'))
+        ? rawShortDesc
+        : p.shortDescription;
+
+      const resolvedSku = (p.id === 'prod-accora-configura-advance-mobile-care-chair' && (o.sku === 'CHA510' || p.sku === 'CHA510'))
+        ? 'CR5435'
+        : (o.sku !== undefined ? o.sku : p.sku);
+
       return {
         ...p,
         ...o,
+        sku: resolvedSku,
         name: o.name !== undefined ? o.name : p.name,
         brand: o.brand !== undefined ? o.brand : p.brand,
         image: effectiveImage,
@@ -661,7 +686,7 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
         variants: effectiveVariants,
         attributes: o.attributes !== undefined ? o.attributes : p.attributes,
         badge: o.badge !== undefined ? o.badge : p.badge,
-        shortDescription: o.shortDescription !== undefined ? o.shortDescription : p.shortDescription,
+        shortDescription: cleanShortDesc,
         fullDescription: o.fullDescription !== undefined ? o.fullDescription : p.fullDescription,
         description: o.description !== undefined ? o.description : p.description,
         optionalEquipment: effectiveOptionalEquipment,
@@ -1131,33 +1156,63 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                     ? p.addons
                     : existingOverride.optionalEquipment;
 
-                  dbOverrides[p.id] = {
-                    ...existingOverride,
-                    name: p.name,
-                    stock: p.stock !== undefined ? parseInt(p.stock, 10) : existingOverride.stock,
-                    category: p.category || existingOverride.category,
-                    image: p.image || existingOverride.image,
-                    thumbnail: p.image || existingOverride.thumbnail || existingOverride.image,
-                    galleryImages: p.galleryImages || p.gallery_images || existingOverride.galleryImages,
-                    images: p.galleryImages || p.gallery_images || existingOverride.images,
-                    sku: p.sku || existingOverride.sku,
-                    brand: p.brand || existingOverride.brand,
-                    description: p.description || existingOverride.description,
-                    shortDescription: p.shortDescription || p.short_description || existingOverride.shortDescription,
-                    fullDescription: p.fullDescription || p.description || existingOverride.fullDescription,
-                    badge: p.badge !== undefined ? p.badge : existingOverride.badge,
-                    attributes: Array.isArray(p.attributes) && p.attributes.length > 0 ? p.attributes : existingOverride.attributes,
-                    variants: Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : existingOverride.variants,
-                    features: Array.isArray(p.features) ? p.features : existingOverride.features,
-                    specifications: Array.isArray(p.specifications) ? p.specifications : existingOverride.specifications,
-                    // Sync pricing and availability so admin edits propagate
-                    hirePrice: p.hirePrice !== undefined ? parseFloat(p.hirePrice) : (p.hire_price !== undefined ? parseFloat(p.hire_price) : existingOverride.hirePrice),
-                    hireAvailable: p.hireAvailable ?? existingOverride.hireAvailable,
-                    buyAvailable: p.buyAvailable ?? existingOverride.buyAvailable,
-                    purchaseType: p.purchaseType || existingOverride.purchaseType,
-                    ...(incomingAddons && incomingAddons.length > 0 ? { optionalEquipment: incomingAddons } : {}),
-                    ...(p.accessories ? { accessories: p.accessories } : {}),
-                  };
+                    const resolvedSku = (p.id === 'prod-accora-configura-advance-mobile-care-chair' && p.sku === 'CHA510')
+                      ? 'CR5435'
+                      : (p.sku || existingOverride.sku);
+
+                    const rawShortDesc = p.shortDescription || p.short_description || existingOverride.shortDescription;
+                    const cleanShortDesc = (rawShortDesc && !rawShortDesc.startsWith('Please complete a Referral Assessment Form'))
+                      ? rawShortDesc
+                      : (existingOverride.shortDescription || (initialFallbackProducts.find((x: any) => x.id === p.id)?.shortDescription));
+
+                    const rawIncomingVariants = Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : existingOverride.variants;
+                    const normalizedVariants = Array.isArray(rawIncomingVariants)
+                      ? rawIncomingVariants.map((v: any) => {
+                          const baseVar = (initialFallbackProducts.find((x: any) => x.id === p.id)?.variants || []).find((bv: any) => bv.id === v.id || bv.sku === v.sku);
+                          const baseAttrs = (baseVar && baseVar.attributes && !Array.isArray(baseVar.attributes)) ? baseVar.attributes : {};
+                          const incomingAttrs = (v.attributes && !Array.isArray(v.attributes)) ? v.attributes : {};
+                          const mergedAttrs = { ...baseAttrs, ...incomingAttrs };
+                          if (!mergedAttrs['purchase-type']) {
+                            if (v.sku && String(v.sku).toUpperCase().startsWith('CHA')) {
+                              mergedAttrs['purchase-type'] = 'hire';
+                            } else if (v.sku && (String(v.sku).toUpperCase().startsWith('CR') || String(v.sku).toUpperCase().startsWith('CHP'))) {
+                              mergedAttrs['purchase-type'] = 'buy';
+                            }
+                          }
+                          return {
+                            ...v,
+                            attributes: mergedAttrs,
+                          };
+                        })
+                      : existingOverride.variants;
+
+                    dbOverrides[p.id] = {
+                      ...existingOverride,
+                      name: p.name,
+                      stock: p.stock !== undefined ? parseInt(p.stock, 10) : existingOverride.stock,
+                      category: p.category || existingOverride.category,
+                      image: p.image || existingOverride.image,
+                      thumbnail: p.image || existingOverride.thumbnail || existingOverride.image,
+                      galleryImages: p.galleryImages || p.gallery_images || existingOverride.galleryImages,
+                      images: p.galleryImages || p.gallery_images || existingOverride.images,
+                      sku: resolvedSku,
+                      brand: p.brand || existingOverride.brand,
+                      description: p.description || existingOverride.description,
+                      shortDescription: cleanShortDesc,
+                      fullDescription: p.fullDescription || p.description || existingOverride.fullDescription,
+                      badge: p.badge !== undefined ? p.badge : existingOverride.badge,
+                      attributes: Array.isArray(p.attributes) && p.attributes.length > 0 ? p.attributes : existingOverride.attributes,
+                      variants: normalizedVariants,
+                      features: Array.isArray(p.features) ? p.features : existingOverride.features,
+                      specifications: Array.isArray(p.specifications) ? p.specifications : existingOverride.specifications,
+                      // Sync pricing and availability so admin edits propagate
+                      hirePrice: p.hirePrice !== undefined ? parseFloat(p.hirePrice) : (p.hire_price !== undefined ? parseFloat(p.hire_price) : existingOverride.hirePrice),
+                      hireAvailable: p.hireAvailable ?? existingOverride.hireAvailable,
+                      buyAvailable: p.buyAvailable ?? existingOverride.buyAvailable,
+                      purchaseType: p.purchaseType || existingOverride.purchaseType,
+                      ...(incomingAddons && incomingAddons.length > 0 ? { optionalEquipment: incomingAddons } : {}),
+                      ...(p.accessories ? { accessories: p.accessories } : {}),
+                    };
                   const inPrice = parseFloat(p.price);
                   const inBuyPrice = parseFloat(p.buyPrice ?? p.price);
                   if (inPrice > 0) dbOverrides[p.id].price = inPrice;

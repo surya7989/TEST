@@ -49,6 +49,9 @@ if (fs.existsSync(distDir)) {
     const dest = path.join(rootDir, item);
     // Don't overwrite package.json or git files or api
     if (['package.json', 'package-lock.json', '.git', 'api'].includes(item)) continue;
+    if (item === 'assets' && fs.existsSync(dest)) {
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
     fs.cpSync(src, dest, { recursive: true, force: true });
   }
 

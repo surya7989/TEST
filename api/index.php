@@ -1101,7 +1101,18 @@ function formatProductRow(array $row): array {
             $catItem = $staticCatalogById[$id];
             // Only backfill variants (critical for sizing/pricing), NOT addons.
             // Addons were deliberately removed by admin request.
-            if (empty($variants) && !empty($catItem['variants']) && is_array($catItem['variants'])) {
+            // If DB variants are empty OR have corrupted attributes (empty array / missing purchase-type),
+            // fallback to canonical static catalog variants!
+            $hasBrokenVariants = empty($variants) || !is_array($variants);
+            if (!$hasBrokenVariants && !empty($catItem['variants']) && is_array($catItem['variants'])) {
+                foreach ($variants as $v) {
+                    if (!isset($v['attributes']) || !is_array($v['attributes']) || empty($v['attributes']) || !isset($v['attributes']['purchase-type'])) {
+                        $hasBrokenVariants = true;
+                        break;
+                    }
+                }
+            }
+            if ($hasBrokenVariants && !empty($catItem['variants']) && is_array($catItem['variants'])) {
                 $variants = $catItem['variants'];
             }
         }
@@ -1139,8 +1150,17 @@ function formatProductRow(array $row): array {
         }
     }
     $sku = (string)($row['sku'] ?? $id);
+    if ($id === 'prod-accora-configura-advance-mobile-care-chair' && $sku === 'CHA510') {
+        $sku = 'CR5435';
+    }
     $desc = (string)($row['description'] ?? ($row['fullDescription'] ?? ''));
-    $shortDesc = (string)($row['short_description'] ?? ($row['shortDescription'] ?? ($desc !== '' ? substr($desc, 0, 150) : '')));
+    $shortDesc = trim((string)($row['short_description'] ?? ($row['shortDescription'] ?? '')));
+    if (($shortDesc === '' || str_starts_with($shortDesc, 'Please complete a Referral Assessment Form')) && isset($staticCatalogById[$id]) && !empty($staticCatalogById[$id]['shortDescription'])) {
+        $shortDesc = (string)$staticCatalogById[$id]['shortDescription'];
+    }
+    if ($shortDesc === '' && $desc !== '') {
+        $shortDesc = substr($desc, 0, 150);
+    }
     $isActive = isset($row['is_active']) ? (intval($row['is_active']) !== 0) : (isset($row['available']) ? (bool)$row['available'] : true);
     $isFeatured = !empty($row['is_featured']) || !empty($row['featured']);
 
@@ -1197,6 +1217,70 @@ function formatProductRow(array $row): array {
     ];
 }
 
+function repairCatalogInconsistencies(PDO $db): void {
+    static $repaired = false;
+    if ($repaired) return;
+    $repaired = true;
+    try {
+        // 1. Remap obsolete seed product image paths
+        $db->exec("
+            UPDATE products SET
+                image = CASE id
+                    WHEN 'eq-101' THEN '/images/products/atsa-aspire-vida-wheelchair-1.png'
+                    WHEN 'eq-102' THEN '/images/products/atsa-aspire-vogue-lightweight-1.png'
+                    WHEN 'eq-103' THEN '/images/products/atsa-aspire-lifestyle-bed-1.png'
+                    WHEN 'eq-104' THEN '/images/products/atsa-action-pilot-cushion-1.jpg'
+                    ELSE image END,
+                gallery_images_json = CASE id
+                    WHEN 'eq-101' THEN '[\"/images/products/atsa-aspire-vida-wheelchair-1.png\"]'
+                    WHEN 'eq-102' THEN '[\"/images/products/atsa-aspire-vogue-lightweight-1.png\"]'
+                    WHEN 'eq-103' THEN '[\"/images/products/atsa-aspire-lifestyle-bed-1.png\"]'
+                    WHEN 'eq-104' THEN '[\"/images/products/atsa-action-pilot-cushion-1.jpg\"]'
+                    ELSE gallery_images_json END
+            WHERE id IN ('eq-101','eq-102','eq-103','eq-104')
+              AND (image IN ('/images/quantum_power_wheelchair.jpg','/images/ultralight_wheelchair.jpg','/images/hospital_bed.jpg','/images/pressure_cushion.jpg')
+                   OR image IS NULL OR image = '')
+        ");
+
+        // 2. Heal corrupted Accora Configura Advance Mobile Care Chair
+        $accoraVariants = json_encode([
+            [
+                'id' => '55514',
+                'sku' => 'CR5435',
+                'attributes' => ['purchase-type' => 'buy'],
+                'price' => 6160.00,
+                'regularPrice' => 6160.00,
+                'image' => 'https://www.rehabhire.com.au/wp-content/uploads/2022/08/Configura-Advance-01.webp',
+                'stockStatus' => 'in_stock',
+                'available' => true
+            ],
+            [
+                'id' => '55513',
+                'sku' => 'CHA510',
+                'attributes' => ['purchase-type' => 'hire'],
+                'price' => 138.00,
+                'regularPrice' => 276.00,
+                'image' => 'https://www.rehabhire.com.au/wp-content/uploads/2022/08/Configura-Advance-01.webp',
+                'stockStatus' => 'in_stock',
+                'available' => true
+            ]
+        ], JSON_UNESCAPED_SLASHES);
+
+        $db->exec("
+            UPDATE products SET
+                sku = 'CR5435',
+                price = 6160.00,
+                hire_price = 138.00,
+                short_description = 'Highly configurable specialist chair with manual tilt-in-space mechanism.',
+                variants_json = " . $db->quote($accoraVariants) . "
+            WHERE id = 'prod-accora-configura-advance-mobile-care-chair'
+              AND (sku = 'CHA510' OR variants_json LIKE '%\"attributes\":[]%' OR variants_json LIKE '%\"attributes\": []%' OR short_description IS NULL OR short_description LIKE 'Please complete%')
+        ");
+    } catch (Throwable $e) {
+        error_log('Catalog self-heal error: ' . $e->getMessage());
+    }
+}
+
 if ($endpoint === 'products') {
     $prodId = $segments[1] ?? '';
     global $pdo;
@@ -1221,6 +1305,9 @@ if ($endpoint === 'products') {
     if ($prodId === '' && $method === 'GET') {
         try {
             if ($db) {
+                // Ensure data consistency before querying
+                repairCatalogInconsistencies($db);
+
                 $limit = isset($_GET['limit']) ? max(1, min(500, intval($_GET['limit']))) : 0;
                 $offset = isset($_GET['offset']) ? max(0, intval($_GET['offset'])) : 0;
                 $sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY is_featured DESC, name ASC";
@@ -1236,31 +1323,6 @@ if ($endpoint === 'products') {
                     $stmt = $db->query($sql);
                     $rows = $stmt ? $stmt->fetchAll() : $rows;
                 }
-
-                // Self-heal: early seed rows referenced /images/*.jpg files that
-                // were never shipped, so those product photos 422 on production.
-                // Remap the four known seed IDs to real catalogue images (no-op
-                // once healed, never touches merchant-edited rows).
-                try {
-                    $db->exec("
-                        UPDATE products SET
-                            image = CASE id
-                                WHEN 'eq-101' THEN '/images/products/atsa-aspire-vida-wheelchair-1.png'
-                                WHEN 'eq-102' THEN '/images/products/atsa-aspire-vogue-lightweight-1.png'
-                                WHEN 'eq-103' THEN '/images/products/atsa-aspire-lifestyle-bed-1.png'
-                                WHEN 'eq-104' THEN '/images/products/atsa-action-pilot-cushion-1.jpg'
-                                ELSE image END,
-                            gallery_images_json = CASE id
-                                WHEN 'eq-101' THEN '[\"/images/products/atsa-aspire-vida-wheelchair-1.png\"]'
-                                WHEN 'eq-102' THEN '[\"/images/products/atsa-aspire-vogue-lightweight-1.png\"]'
-                                WHEN 'eq-103' THEN '[\"/images/products/atsa-aspire-lifestyle-bed-1.png\"]'
-                                WHEN 'eq-104' THEN '[\"/images/products/atsa-action-pilot-cushion-1.jpg\"]'
-                                ELSE gallery_images_json END
-                        WHERE id IN ('eq-101','eq-102','eq-103','eq-104')
-                          AND (image IN ('/images/quantum_power_wheelchair.jpg','/images/ultralight_wheelchair.jpg','/images/hospital_bed.jpg','/images/pressure_cushion.jpg')
-                               OR image IS NULL OR image = '')
-                    ");
-                } catch (Throwable $e) {}
 
                 if (!empty($rows)) {
                     $formatted = array_map('formatProductRow', $rows);
@@ -1288,6 +1350,7 @@ if ($endpoint === 'products') {
     if ($prodId !== '' && $method === 'GET') {
         if ($db) {
             try {
+                repairCatalogInconsistencies($db);
                 $stmt = $db->prepare("SELECT * FROM products WHERE id = ? OR slug = ? OR sku = ? LIMIT 1");
                 $stmt->execute([$prodId, $prodId, $prodId]);
                 $row = $stmt->fetch();
@@ -1364,7 +1427,20 @@ if ($endpoint === 'products') {
         if (empty($cleanGallery) && $image !== '') $cleanGallery = [$image];
         $galleryImagesJson = json_encode($cleanGallery);
         $attributesJson = !empty($b['attributes']) ? json_encode($b['attributes']) : null;
-        $variantsJson = !empty($b['variants']) ? json_encode($b['variants']) : null;
+        $variantsJson = null;
+        if (!empty($b['variants']) && is_array($b['variants'])) {
+            $cleanVars = array_map(function($v) {
+                if (!is_array($v)) return $v;
+                $attrs = $v['attributes'] ?? [];
+                if (!is_array($attrs) || empty($attrs) || (array_is_list($attrs) && empty($attrs))) {
+                    $sku = strtoupper(trim((string)($v['sku'] ?? '')));
+                    $attrs = ['purchase-type' => str_starts_with($sku, 'CHA') ? 'hire' : 'buy'];
+                }
+                $v['attributes'] = (object)$attrs;
+                return $v;
+            }, $b['variants']);
+            $variantsJson = json_encode($cleanVars, JSON_UNESCAPED_SLASHES);
+        }
         $featuresJson = !empty($b['features']) ? json_encode($b['features']) : null;
         $specsJson = !empty($b['specifications']) ? json_encode($b['specifications']) : null;
 
@@ -1437,7 +1513,23 @@ if ($endpoint === 'products') {
         if (isset($b['hasFreeSample']) || isset($b['has_free_sample'])) { $fields[] = 'has_free_sample = ?'; $params[] = !empty($b['hasFreeSample'] ?? $b['has_free_sample']) ? 1 : 0; }
         if (isset($b['sampleNote']) || isset($b['sample_note'])) { $fields[] = 'sample_note = ?'; $params[] = ($b['sampleNote'] ?? $b['sample_note']); }
         if (isset($b['attributes'])) { $fields[] = 'attributes_json = ?'; $params[] = json_encode($b['attributes']); }
-        if (isset($b['variants'])) { $fields[] = 'variants_json = ?'; $params[] = json_encode($b['variants']); }
+        if (isset($b['variants'])) {
+            $rawVars = $b['variants'];
+            if (is_array($rawVars)) {
+                $cleanVars = array_map(function($v) {
+                    if (!is_array($v)) return $v;
+                    $attrs = $v['attributes'] ?? [];
+                    if (!is_array($attrs) || empty($attrs) || (array_is_list($attrs) && empty($attrs))) {
+                        $sku = strtoupper(trim((string)($v['sku'] ?? '')));
+                        $attrs = ['purchase-type' => str_starts_with($sku, 'CHA') ? 'hire' : 'buy'];
+                    }
+                    $v['attributes'] = (object)$attrs;
+                    return $v;
+                }, $rawVars);
+                $fields[] = 'variants_json = ?';
+                $params[] = json_encode($cleanVars, JSON_UNESCAPED_SLASHES);
+            }
+        }
         if (isset($b['features'])) { $fields[] = 'features_json = ?'; $params[] = json_encode($b['features']); }
         if (isset($b['specifications'])) { $fields[] = 'specs_json = ?'; $params[] = json_encode($b['specifications']); }
         if (isset($b['optionalEquipment']) || isset($b['addons'])) {

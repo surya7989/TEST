@@ -56,7 +56,10 @@ export function ProductCard({
   const priceDisplay = React.useMemo(() => {
     if (isHireActive) {
       if (hasVariants) {
-        const hireVariants = product.variants.filter((v) => v.attributes && v.attributes['purchase-type'] === 'hire');
+        const hireVariants = product.variants.filter((v) => {
+          const attrs = v.attributes && !Array.isArray(v.attributes) ? v.attributes : {};
+          return attrs['purchase-type'] === 'hire' || v.sku?.toUpperCase().startsWith('CHA');
+        });
         const hirePrices = hireVariants.length > 0
           ? hireVariants.map((v) => v.hirePrice || v.price || product.hirePrice || 0).filter((p) => p > 0)
           : product.variants.map((v) => v.hirePrice || product.hirePrice || 0).filter((p) => p > 0);
@@ -89,8 +92,20 @@ export function ProductCard({
 
     if (hasVariants) {
       // In buy mode, filter ONLY for buy variants (or variants without purchase-type: 'hire')
-      const buyVariants = product.variants.filter((v) => v.attributes && v.attributes['purchase-type'] === 'buy');
-      const nonHireVariants = product.variants.filter((v) => !v.attributes || v.attributes['purchase-type'] !== 'hire');
+      const buyVariants = product.variants.filter((v) => {
+        const attrs = v.attributes && !Array.isArray(v.attributes) ? v.attributes : {};
+        if (attrs['purchase-type'] === 'buy') return true;
+        if (attrs['purchase-type'] === 'hire') return false;
+        if (v.sku?.toUpperCase().startsWith('CHA')) return false;
+        return true;
+      });
+      const nonHireVariants = product.variants.filter((v) => {
+        const attrs = v.attributes && !Array.isArray(v.attributes) ? v.attributes : {};
+        if (attrs['purchase-type'] === 'hire') return false;
+        if (v.sku?.toUpperCase().startsWith('CHA')) return false;
+        if (effectiveBuyPrice > 500 && hireWeeklyRate > 0 && typeof v.price === 'number' && v.price <= (hireWeeklyRate * 3)) return false;
+        return true;
+      });
       const candidateVariants = buyVariants.length > 0 ? buyVariants : nonHireVariants;
 
       const prices = (candidateVariants.length > 0 ? candidateVariants : product.variants)
