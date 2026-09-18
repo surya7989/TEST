@@ -26,7 +26,11 @@ export function proxyImageUrl(url: string | undefined | null): string {
   
   // Only proxy rehabhire.com.au URLs
   if (url.includes('rehabhire.com.au')) {
-    // Encode the full URL and route through proxy
+    // Strip upstream scheme and host to avoid triggering WAF / ModSecurity RFI rules
+    const cleanPath = url.replace(/^https?:\/\/(?:www\.)?rehabhire\.com\.au/i, '');
+    if (cleanPath.startsWith('/')) {
+      return `${PROXY_PREFIX}?path=${encodeURIComponent(cleanPath)}`;
+    }
     return `${PROXY_PREFIX}?url=${encodeURIComponent(url)}`;
   }
   

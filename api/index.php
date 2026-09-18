@@ -55,6 +55,12 @@ function tableHasColumn(PDO $db, string $table, string $column): bool {
     return $cache[$key];
 }
 
+// Delegated Image Proxy Route
+if ($endpoint === 'img-proxy' || $endpoint === 'img-proxy.php') {
+    require_once __DIR__. '/img-proxy.php';
+    exit;
+}
+
 // 0. ROOT API DISCOVERY & HEALTH CHECK (`GET /api` or `GET /api/health`)
 if ($endpoint === '' || $endpoint === 'health') {
     global $pdo, $paypal_client_id, $paypal_secret, $paypal_mode, $currency;

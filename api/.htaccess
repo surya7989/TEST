@@ -26,6 +26,21 @@
     CGIPassAuth On
 </IfModule>
 
+DirectoryIndex index.php
+
+<IfModule mod_autoindex.c>
+    IndexIgnore *
+</IfModule>
+
+# Default allow access to API endpoints
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
 # Prevent direct access to sensitive files (modern + legacy Apache syntax).
 # Covers dotfiles plus anything that must never be web-readable if copied here.
 <FilesMatch "^\.">
@@ -47,5 +62,3 @@
         Deny from all
     </IfModule>
 </FilesMatch>
-
-Options -Indexes

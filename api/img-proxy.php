@@ -30,11 +30,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
-$imageUrl = isset($_GET['url']) ? trim((string)$_GET['url']) : '';
+$imageUrl = '';
+if (!empty($_GET['path'])) {
+    $p = trim((string)$_GET['path']);
+    $imageUrl = 'https://www.rehabhire.com.au' . (strpos($p, '/') === 0 ? '' : '/') . $p;
+} elseif (!empty($_GET['b64'])) {
+    $b64 = strtr((string)$_GET['b64'], '-_', '+/');
+    $imageUrl = trim((string)base64_decode($b64));
+} elseif (isset($_GET['url'])) {
+    $imageUrl = trim((string)$_GET['url']);
+}
 
 if ($imageUrl === '') {
     http_response_code(400);
-    echo 'Missing URL';
+    echo 'Missing image path or URL';
     exit;
 }
 

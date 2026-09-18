@@ -46,24 +46,26 @@
     RewriteCond %{HTTPS} off
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-    # Route image proxy requests to PHP image proxy script
-    RewriteCond %{REQUEST_URI} ^/img-proxy/? [NC]
+    # Route image proxy requests directly to PHP image proxy script
     RewriteRule ^img-proxy/?(.*)$ api/img-proxy.php [QSA,L]
+
+    # Pass through existing files and directories directly without further rewrites
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
     # Route API requests to PHP REST backend (handles /api, /api/, and /api/sub/paths)
     RewriteCond %{REQUEST_URI} ^/api/? [NC]
     RewriteRule ^api/?(.*)$ api/index.php [QSA,L]
 
-    # If an asset file doesn't exist on disk, return a clean 404
+    # If an asset file doesn't exist on disk, return a clean 404 (do not fallback to index.html)
     RewriteCond %{REQUEST_URI} ^/assets/ [NC]
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ - [L,R=404]
-
-    # Do not rewrite actual files or directories
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ - [R=404,L]
 
     # Redirect all SPA routes (e.g. /shop, /admin, /checkout, /about) to index.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.html [L]
 </IfModule>
 
@@ -95,10 +97,24 @@
 </IfModule>
 
 # ------------------------------------------------------------------------------
-# 2b. SENSITIVE FILE PROTECTION & DIRECTORY LISTING
+# 2b. DIRECTORY INDEX & ACCESS CONTROL
 # ------------------------------------------------------------------------------
-Options -Indexes
+DirectoryIndex index.html index.php
 
+<IfModule mod_autoindex.c>
+    IndexIgnore *
+</IfModule>
+
+# Default allow access to site files
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>
+
+# Protect sensitive server and configuration files
 <FilesMatch "(\.env|\.sql|\.bak|\.log|\.swp|deploy\.zip|composer\.(json|lock)|package-lock\.json)$">
     <IfModule mod_authz_core.c>
         Require all denied
@@ -108,16 +124,6 @@ Options -Indexes
         Deny from all
     </IfModule>
 </FilesMatch>
-
-<LimitExcept GET POST PUT PATCH DELETE HEAD OPTIONS>
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-    <IfModule !mod_authz_core.c>
-        Order allow,deny
-        Deny from all
-    </IfModule>
-</LimitExcept>
 
 # ------------------------------------------------------------------------------
 # 3. PERFORMANCE: BROWSER CACHING & COMPRESSION
