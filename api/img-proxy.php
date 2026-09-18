@@ -23,8 +23,8 @@ if ($imgOrigin !== '' && in_array($imgOrigin, $imgAllowed, true)) {
 header('Access-Control-Allow-Methods: GET');
 header('X-Content-Type-Options: nosniff');
 
-// Only allow GET requests
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+// Only allow GET and HEAD requests
+if ($_SERVER['REQUEST_METHOD'] !== 'GET' && $_SERVER['REQUEST_METHOD'] !== 'HEAD') {
     http_response_code(405);
     echo 'Method not allowed';
     exit;

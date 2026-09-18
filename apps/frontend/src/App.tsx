@@ -19,14 +19,12 @@ const HirePage = lazy(() => import('@/pages/HirePage').then((m) => ({ default: m
 const NDISPage = lazy(() => import('@/pages/NDISPage').then((m) => ({ default: m.NDISPage })));
 const ResourcesPage = lazy(() => import('@/pages/ResourcesPage').then((m) => ({ default: m.ResourcesPage })));
 const ArticleDetailPage = lazy(() => import('@/pages/ArticleDetailPage').then((m) => ({ default: m.ArticleDetailPage })));
-const BrandsPage = lazy(() => import('@/pages/BrandsPage').then((m) => ({ default: m.BrandsPage })));
 const SearchResultsPage = lazy(() => import('@/pages/SearchResultsPage').then((m) => ({ default: m.SearchResultsPage })));
 const WishlistPage = lazy(() => import('@/pages/WishlistPage').then((m) => ({ default: m.WishlistPage })));
 const AccountPage = lazy(() => import('@/pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 const ForCarersPage = lazy(() => import('@/pages/ForCarersPage').then((m) => ({ default: m.ForCarersPage })));
 const HelpPage = lazy(() => import('@/pages/HelpPage').then((m) => ({ default: m.HelpPage })));
 const AboutPage = lazy(() => import('@/pages/AboutPage').then((m) => ({ default: m.AboutPage })));
-const TeamPage = lazy(() => import('@/pages/TeamPage').then((m) => ({ default: m.TeamPage })));
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
 import { useAdminStore } from '@/store/adminStore';
 
@@ -174,7 +172,6 @@ function App() {
                   <Route path="/pages/for-carers" element={<ForCarersPage />} />
                   <Route path="/resources" element={<ResourcesPage />} />
                   <Route path="/resources/:slug" element={<ArticleDetailPage />} />
-                  <Route path="/brands" element={<BrandsPage />} />
                   <Route path="/search" element={<SearchResultsPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/account" element={<AccountPage />} />
@@ -183,7 +180,6 @@ function App() {
                   <Route path="/delivery" element={<HelpPage />} />
                   <Route path="/returns" element={<HelpPage />} />
                   <Route path="/about" element={<AboutPage />} />
-                  <Route path="/team" element={<TeamPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/terms" element={<PrivacyPage />} />
                   <Route path="*" element={<NotFound />} />

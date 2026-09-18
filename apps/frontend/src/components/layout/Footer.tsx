@@ -32,8 +32,6 @@ const footerLinks = {
   ],
   company: [
     { label: 'About AT Specialists', href: '/about' },
-    { label: 'Our Clinical Team', href: '/team' },
-    { label: 'Brands We Stock', href: '/brands' },
     { label: 'Guides & Resources', href: '/resources' },
     { label: 'Privacy Policy', href: '/privacy' },
   ],

@@ -154,8 +154,6 @@ export function MainNavigation() {
 
   const companyLinks = [
     { label: 'About AT Specialists', href: '/about', desc: "Australia's dedicated clinical assistive technology provider", icon: Building2 },
-    { label: 'Our Clinical Team', href: '/team', desc: 'Meet our registered Occupational Therapists and ATPs', icon: Award },
-    { label: 'Brands We Stock', href: '/brands', desc: 'Accora, Etac, Invacare, Permobil, Roho, Sunrise & more', icon: Sparkles },
     { label: 'Privacy Policy', href: '/privacy', desc: 'Australian Privacy Principles & NDIS data safeguards', icon: Lock },
   ];
 

@@ -81,10 +81,10 @@ export function AboutPage() {
 
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
-                to="/team"
+                to="/contact"
                 className="px-6 py-3.5 bg-[#147A7A] hover:bg-[#106262] text-white font-bold rounded-xl text-xs sm:text-sm transition-all shadow-md flex items-center gap-2 group cursor-pointer"
               >
-                <span>Meet Our Clinical Team</span>
+                <span>Contact Our Specialists</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link

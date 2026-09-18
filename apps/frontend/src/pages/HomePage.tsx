@@ -7,10 +7,10 @@ import { PopularProducts } from '@/components/home/PopularProducts';
 import { WhyATSpecialists } from '@/components/home/WhyATSpecialists';
 import { NDISSection } from '@/components/home/NDISSection';
 import { ExpertAdvice } from '@/components/home/ExpertAdvice';
-import { BrandsStrip } from '@/components/home/BrandsStrip';
 
 export function HomePage() {
-  return (<>
+  return (
+    <>
       <Hero />
       <TrustStrip />
       <ShopByCategory />
@@ -19,6 +19,6 @@ export function HomePage() {
       <WhyATSpecialists />
       <NDISSection />
       <ExpertAdvice />
-      <BrandsStrip />
-    </>);
+    </>
+  );
 }
