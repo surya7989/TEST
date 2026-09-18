@@ -47,17 +47,17 @@ type SortDir = 'asc' | 'desc';
 type ViewMode = 'list' | 'form' | 'detail';
 
 const samplePresetImages = [
-  { label: 'Configura® Lift Chair', url: 'https://www.rehabhire.com.au/wp-content/uploads/2021/11/Configura-Comfort-Black-Upright-2026.webp' },
-  { label: 'Hospital Profiling Bed', url: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp' },
-  { label: 'Transit Wheelchair', url: 'https://www.rehabhire.com.au/wp-content/uploads/2024/01/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp' },
-  { label: 'Tilt Shower Commode', url: 'https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp' },
-  { label: 'Carbon Fibre Walker', url: 'https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire-Vogue-Adventure-Walker-WAF705450.webp' },
-  { label: 'Patient Standing Hoist', url: 'https://www.rehabhire.com.au/wp-content/uploads/2018/08/Sara-Stedy-Badge.webp' },
-  { label: 'ROHO Pressure Cushion', url: 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Quadtro-Select-High-Profile-02-Flattened.png' },
-  { label: 'Adaptive Tipping Kettle', url: 'https://www.rehabhire.com.au/wp-content/uploads/2022/01/Uccello-Black-and-White-01.webp' },
-  { label: 'Automatic Bottle Opener', url: 'https://www.rehabhire.com.au/wp-content/uploads/2018/11/One-Touch-Bottle-Opener-01.webp' },
-  { label: 'Access Threshold Ramp', url: 'https://www.rehabhire.com.au/wp-content/uploads/2018/08/Pride-Single-Fold-Ramp-01.jpg' },
-  { label: 'Conni Absorbent Mat', url: 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Conni-Anti-Slip-Floor-Mat-Pebble.webp' },
+  { label: 'Configura® Lift Chair', url: '/images/products/Configura-Comfort-Black-Upright-2026.webp' },
+  { label: 'Hospital Profiling Bed', url: '/images/products/Empresa-LTC-Bed-Main-Badge.webp' },
+  { label: 'Transit Wheelchair', url: '/images/products/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp' },
+  { label: 'Tilt Shower Commode', url: '/images/products/Ocean-Ergo-VIP-Main.webp' },
+  { label: 'Carbon Fibre Walker', url: '/images/products/Aspire-Vogue-Adventure-Walker-WAF705450.webp' },
+  { label: 'Patient Standing Hoist', url: '/images/products/Sara-Stedy-Badge.webp' },
+  { label: 'ROHO Pressure Cushion', url: '/images/products/Quadtro-Select-High-Profile-02-Flattened.png' },
+  { label: 'Adaptive Tipping Kettle', url: '/images/products/Uccello-Black-and-White-01.webp' },
+  { label: 'Automatic Bottle Opener', url: '/images/products/One-Touch-Bottle-Opener-01.webp' },
+  { label: 'Access Threshold Ramp', url: '/images/products/Pride-Single-Fold-Ramp-01.jpg' },
+  { label: 'Conni Absorbent Mat', url: '/images/products/Conni-Anti-Slip-Floor-Mat-Pebble.webp' },
 ];
 
 export function AdminProducts() {
@@ -1559,6 +1559,37 @@ export function AdminProducts() {
                   type="button"
                   onClick={() =>
                     handleAddAttribute('Size', [
+                      { label: 'King Single', value: 'king-single' },
+                      { label: 'Long Double', value: 'long-double' },
+                      { label: 'Long Single', value: 'long-single' },
+                      { label: 'Queen', value: 'queen' },
+                    ])
+                  }
+                  className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-[#147A7A] border border-teal-200 text-[11px] font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  + Bed Sizing: King Single / Long Double / Long Single / Queen
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleAddAttribute('Sub-Product Add-on', [
+                      { label: 'Fold-Down Side Safety Rails', value: 'side-rails' },
+                      { label: 'Pressure Care Foam/Air Mattress', value: 'pressure-mattress' },
+                      { label: 'Timber Headboard & Footboard', value: 'head-foot-boards' },
+                      { label: 'Self-Help Repositioning Pole', value: 'repositioning-pole' },
+                      { label: 'Waterproof Incontinence Cover', value: 'waterproof-cover' },
+                      { label: 'Hospital-Grade Terminal Sanitization', value: 'terminal-sanitization' },
+                      { label: 'Delivery & Setup Orientation', value: 'delivery-setup' },
+                    ])
+                  }
+                  className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-[#147A7A] border border-teal-200 text-[11px] font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  + Sub-Products / Accessories
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleAddAttribute('Size', [
                       { label: 'Small', value: 'small' },
                       { label: 'Medium', value: 'medium' },
                       { label: 'Large', value: 'large' },
@@ -2271,8 +2302,8 @@ export function AdminProducts() {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3.5 hidden sm:table-cell">
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 capitalize">
+                      <td className="px-4 py-3.5 hidden sm:table-cell whitespace-nowrap">
+                        <span className="text-xs font-medium text-slate-600 capitalize">
                           {p.category.replace(/-/g, ' ')}
                         </span>
                       </td>
@@ -2290,49 +2321,49 @@ export function AdminProducts() {
                         ) : p.hirePrice && p.hirePrice > 0 ? (
                           <div>
                             <p className="font-semibold font-mono text-slate-900">{formatCurrency(p.hirePrice)}<span className="text-[10px] text-gray-500 font-normal">/wk</span></p>
-                            <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-50 text-orange-700 border border-orange-200 mt-0.5">Hire Only</span>
+                            <span className="text-[11px] font-semibold text-amber-700">Hire Only</span>
                           </div>
                         ) : p.quoteRequired ? (
                           <div>
                             <p className="text-xs font-semibold text-amber-700">Quote Only</p>
-                            <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-600 border border-amber-200 mt-0.5">POA</span>
+                            <span className="text-[10px] font-bold text-amber-600">POA</span>
                           </div>
                         ) : (
                           <p className="font-semibold font-mono text-gray-400">$0.00</p>
                         )}
-                        <div className="flex items-center gap-1 mt-0.5">
-                          {p.gstType === 'gst-free' ? (<span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
-                              GST-Free
-                            </span>) : p.gstType === 'custom' ? (<span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
-                              {p.gstRate || 10}% GST
-                            </span>) : (<span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.2 rounded">
-                              10% GST
-                            </span>)}
-                          {p.deliveryFee && p.deliveryFee > 0 ? (<span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded">
-                              +${p.deliveryFee} ship
-                            </span>) : (<span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                              Free Ship
-                            </span>)}
-                          {p.hasFreeSample && (<span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-300">
-                              Free Sample
-                            </span>)}
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 flex-wrap">
+                          <span>{p.gstType === 'gst-free' ? 'GST-Free' : `${p.gstRate || 10}% GST`}</span>
+                          <span>&middot;</span>
+                          <span className={p.deliveryFee && p.deliveryFee > 0 ? 'text-slate-600' : 'text-emerald-700 font-medium'}>
+                            {p.deliveryFee && p.deliveryFee > 0 ? `+$${p.deliveryFee} ship` : 'Free Ship'}
+                          </span>
+                          {p.hasFreeSample && (
+                            <>
+                              <span>&middot;</span>
+                              <span className="text-teal-700 font-medium">Free Sample</span>
+                            </>
+                          )}
                         </div>
                       </td>
 
-                      <td className="px-4 py-3.5 hidden md:table-cell">
-                        {p.hirePrice > 0 ? (<span className="inline-flex items-center gap-1 text-xs font-bold text-[#D97706] bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                      <td className="px-4 py-3.5 hidden md:table-cell whitespace-nowrap">
+                        {p.hirePrice > 0 ? (
+                          <span className="text-xs font-semibold text-amber-700 font-mono">
                             ${p.hirePrice}/{p.hirePeriod || 'wk'}
-                          </span>) : (<span className="text-xs text-gray-400 font-medium">Buy Only</span>)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 font-medium">Buy Only</span>
+                        )}
                       </td>
 
-                      <td className="px-4 py-3.5">
+                      <td className="px-4 py-3.5 whitespace-nowrap">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          className={`text-xs font-semibold ${
                             isOut
-                              ? 'bg-red-50 text-red-700 border border-red-200'
+                              ? 'text-red-600 font-bold'
                               : isLow
-                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              ? 'text-amber-600 font-bold'
+                              : 'text-slate-700 font-medium'
                           }`}
                         >
                           {isOut ? 'Out of Stock' : isLow ? `Low (${p.stock})` : `${p.stock} units`}

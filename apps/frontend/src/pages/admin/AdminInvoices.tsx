@@ -8,6 +8,7 @@ import {
 } from '@/lib/api';
 import logoHeaderImg from '@/assets/logo-header.png';
 import { ExactEmailPreview } from '@/components/admin/ExactEmailPreview';
+import { proxyImageUrl, PLACEHOLDER_IMAGE } from '@/lib/imageProxy';
 import {
   FileText,
   Mail,
@@ -50,10 +51,11 @@ import {
   Edit3,
   ArrowRight,
   Pencil,
+  Package,
 } from 'lucide-react';
 import { exportElementToPdf } from '@/lib/exportPdf';
 
-export type TemplateType = 'ndis_quote' | 'order' | 'quote' | 'hire' | 'trial' | 'contact';
+export type TemplateType = 'ndis_quote' | 'order' | 'quote' | 'hire' | 'contact';
 
 export interface CustomInvoiceItem {
   id: string;
@@ -63,6 +65,159 @@ export interface CustomInvoiceItem {
   price: number;
   amount: number;
   detail?: string;
+  size?: string;
+  color?: string;
+  subProducts?: string[];
+  productId?: string;
+  availableSizes?: string[];
+  availableColors?: { name: string; hex?: string }[];
+  availableSubProducts?: { name: string; price?: number }[];
+}
+
+export const STANDARD_SIZES = [
+  'King Single',
+  'Long Double',
+  'Long Single',
+  'Queen',
+] as const;
+
+export const STANDARD_COLOURS = [
+  { name: 'Charcoal / Black', hex: '#1e293b' },
+  { name: 'Hospital White', hex: '#f8fafc' },
+  { name: 'Classic Blue', hex: '#1d4ed8' },
+  { name: 'Cream / Beige', hex: '#fef3c7' },
+  { name: 'Warm Oak / Timber', hex: '#b45309' },
+  { name: 'Slate Grey', hex: '#64748b' },
+] as const;
+
+export const STANDARD_SUB_PRODUCTS = [
+  { name: 'Fold-Down Side Safety Rails (Pair)', price: 280.0 },
+  { name: 'Pressure Care Foam/Air Mattress', price: 650.0 },
+  { name: 'Timber Headboard & Footboard Panels', price: 320.0 },
+  { name: 'Self-Help Repositioning Pole & Handle', price: 180.0 },
+  { name: 'Waterproof Incontinence Fitted Cover', price: 85.0 },
+  { name: 'Hospital-Grade Terminal Sanitization', price: 120.0 },
+  { name: 'Delivery, Assembly & Setup Orientation', price: 150.0 },
+];
+
+export function isRealBedOrMattress(prod: any): boolean {
+  if (!prod) return false;
+  const name = (prod.name || '').toLowerCase();
+  const nonBedKeywords = [
+    'pillow',
+    'sheet',
+    'rail',
+    'pole',
+    'bracket',
+    'strap',
+    'pad',
+    'protector',
+    'table',
+    'cradle',
+    'wedge',
+    'block',
+    'lever',
+    'cover',
+    'bar',
+    'pan',
+    'hoist',
+    'sling',
+    'scale',
+    'commode',
+    'walker',
+    'cushion',
+    'case',
+    'swatch',
+  ];
+  if (nonBedKeywords.some((w) => name.includes(w))) return false;
+
+  return /\bbeds?\b/i.test(name) || /\bmattress(es)?\b/i.test(name);
+}
+
+export interface RelatedProductOptions {
+  sizes: string[];
+  colors: { name: string; hex?: string }[];
+  subProducts: { name: string; price?: number }[];
+  variants: any[];
+  isBedOrMattress: boolean;
+}
+
+export function getRelatedProductOptions(prod: any): RelatedProductOptions {
+  if (!prod) {
+    return {
+      sizes: [],
+      colors: [],
+      subProducts: [],
+      variants: [],
+      isBedOrMattress: false,
+    };
+  }
+
+  const isBed = isRealBedOrMattress(prod);
+
+  // 1. SIZES: Extract ONLY real sizes that actually exist on this product in the catalog
+  let sizes: string[] = [];
+  const sizeAttr = (prod.attributes || []).find(
+    (a: any) =>
+      a.slug === 'size' ||
+      a.name?.toLowerCase() === 'size' ||
+      a.name?.toLowerCase() === 'sizing' ||
+      a.name?.toLowerCase() === 'bed sizing'
+  );
+  if (sizeAttr && Array.isArray(sizeAttr.values)) {
+    sizes = sizeAttr.values.map((v: any) => (typeof v === 'object' ? (v.label || v.value) : String(v)));
+  } else if (Array.isArray(prod.variants) && prod.variants.length > 0) {
+    const sSet = new Set<string>();
+    prod.variants.forEach((v: any) => {
+      const s = v.attributes?.size || v.attributes?.Size || v.attributes?.sizing;
+      if (s) {
+        const formatted = s
+          .split('-')
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+        sSet.add(formatted);
+      }
+    });
+    sizes = Array.from(sSet);
+  }
+
+  // 2. COLOURS: Extract ONLY real colours that actually exist on this product in the catalog
+  let colors: { name: string; hex?: string }[] = [];
+  const colorAttr = (prod.attributes || []).find(
+    (a: any) =>
+      a.slug === 'colour' ||
+      a.slug === 'color' ||
+      a.name?.toLowerCase() === 'colour' ||
+      a.name?.toLowerCase() === 'color' ||
+      a.type === 'color'
+  );
+  if (colorAttr && Array.isArray(colorAttr.values)) {
+    colors = colorAttr.values.map((v: any) => ({
+      name: typeof v === 'object' ? (v.label || v.value) : String(v),
+      hex: v.colorHex || v.hex,
+    }));
+  } else if (Array.isArray(prod.variants) && prod.variants.length > 0) {
+    const cMap = new Map<string, string | undefined>();
+    prod.variants.forEach((v: any) => {
+      const c = v.attributes?.colour || v.attributes?.color || v.attributes?.Colour;
+      if (c && !cMap.has(c)) {
+        const formatted = c.charAt(0).toUpperCase() + c.slice(1);
+        cMap.set(formatted, v.colorHex || v.hex);
+      }
+    });
+    colors = Array.from(cMap.entries()).map(([name, hex]) => ({ name, hex }));
+  }
+
+  // 3. SUB-PRODUCTS: Strictly empty (sub-products are managed via the dedicated Sub-Product button)
+  const subProducts: { name: string; price?: number }[] = [];
+
+  return {
+    sizes,
+    colors,
+    subProducts,
+    variants: Array.isArray(prod.variants) ? prod.variants : [],
+    isBedOrMattress: isBed,
+  };
 }
 
 export interface CanonicalTemplate {
@@ -89,11 +244,11 @@ export const CANONICAL_TEMPLATES: CanonicalTemplate[] = [
     name: 'NDIS Quotation',
     shortTitle: 'NDIS Quotation',
     badge: 'NDIS Item 05 • Valid 30 Days',
-    category: 'NDIS Funding & PACE Claims',
+    category: 'NDIS Funding & PACE Claims (Customer Request)',
     pdfAttachmentName: 'NDIS-Quotation.pdf',
     description:
-      'Australian NDIS Assistive Technology Quote prepared according to NDIA Price Arrangements with support item codes, plan management allocation, and clinical OT specifications.',
-    trigger: 'Submitted via website NDIS Quote Request form or generated by clinic staff.',
+      'Official NDIS Assistive Technology Quote compliant with NDIA Price Arrangements, PACE claims, and clinical OT approvals.',
+    trigger: 'Triggered automatically when a customer submits an NDIS Quote Request on the website.',
     defaultRecipient: '',
     customerName: '',
     customerPhone: '',
@@ -136,11 +291,11 @@ export const CANONICAL_TEMPLATES: CanonicalTemplate[] = [
     name: 'NDIS Invoice',
     shortTitle: 'NDIS Invoice',
     badge: 'ATO Compliant • Paid Receipt',
-    category: 'NDIS Payment & Storefront Purchase',
+    category: 'Storefront Checkout & Order (Customer Request)',
     pdfAttachmentName: 'NDIS-Invoice.pdf',
     description:
-      'Australian Tax Office compliant NDIS Invoice confirming customer payment, product specifications, delivery address, and medical GST-free exemption.',
-    trigger: 'Generated upon invoice dispatch, checkout payment, or NDIS quote approval.',
+      'ATO-compliant tax invoice confirming customer payment, product specifications, and medical GST-free exemption.',
+    trigger: 'Triggered automatically upon customer online order completion, payment, or NDIS checkout.',
     defaultRecipient: '',
     customerName: '',
     customerPhone: '',
@@ -178,11 +333,11 @@ export const CANONICAL_TEMPLATES: CanonicalTemplate[] = [
     name: 'EQUIPMENT HIRE',
     shortTitle: 'EQUIPMENT HIRE',
     badge: 'Sanitized Rental Fleet',
-    category: 'Short/Medium Term Hire',
+    category: 'Equipment Rental Fleet (Customer Request)',
     pdfAttachmentName: 'Equipment-Hire.pdf',
     description:
-      'Assistive equipment hire agreement detailing rental period, hospital-grade sanitized terminal clean, delivery, and setup orientation.',
-    trigger: 'Customer books equipment rental online or OT requests post-hospital discharge rental.',
+      'Sanitized rental agreement detailing hire tenure, security bond, hospital-grade sanitize clean, and setup orientation.',
+    trigger: 'Triggered automatically when a customer submits an equipment rental booking on the website.',
     defaultRecipient: '',
     customerName: '',
     customerPhone: '',
@@ -212,11 +367,11 @@ export const CANONICAL_TEMPLATES: CanonicalTemplate[] = [
     name: 'EQUIPMENT INVOICE',
     shortTitle: 'EQUIPMENT INVOICE',
     badge: 'Commercial Proposal • 30 Days',
-    category: 'Private Healthcare & Clinics',
+    category: 'Commercial & Healthcare Facility (Customer Request)',
     pdfAttachmentName: 'Equipment-Invoice.pdf',
     description:
-      'Commercial equipment invoice and quotation prepared for aged care facilities, private hospitals, or private clients with product specifications, pricing, and freight.',
-    trigger: 'Created by sales/clinic consultant upon commercial procurement inquiry or hire billing.',
+      'Commercial equipment quotation prepared for healthcare facilities, aged care providers, and private clients.',
+    trigger: 'Triggered automatically when a healthcare facility or client requests an equipment quote online.',
     defaultRecipient: '',
     customerName: '',
     customerPhone: '',
@@ -240,49 +395,15 @@ export const CANONICAL_TEMPLATES: CanonicalTemplate[] = [
     },
   },
   {
-    id: 'trial',
-    name: 'EQUIPMENT TRIAL',
-    shortTitle: 'EQUIPMENT TRIAL',
-    badge: 'Prescribing OT Protocol',
-    category: 'Clinical Trial & Handover',
-    pdfAttachmentName: 'Equipment-Trial.pdf',
-    description:
-      'Prescribing therapist clinical trial evaluation schedule, ergonomic configuration measurements, and equipment demonstration handover.',
-    trigger: 'Booked by Occupational Therapist or clinic coordinator for in-home trial.',
-    defaultRecipient: '',
-    customerName: '',
-    customerPhone: '',
-    deliveryAddress: '',
-    subject: 'EQUIPMENT TRIAL #{{document_id}} — AT Specialists Australia',
-    items: [
-      {
-        id: 'tmpl-trial-1',
-        code: 'TRIAL-OT-01',
-        name: 'Clinical In-Home Equipment Trial & Ergonomic Assessment Session',
-        detail: 'On-site prescriptional trial of complex rehab equipment with senior clinical specialist and prescribing therapist',
-        quantity: 1,
-        price: 0.0,
-        amount: 0.0,
-      },
-    ],
-    extraMeta: {
-      trialDate: 'Thursday, 18 September 2026 at 10:30 AM',
-      prescribingClinician: 'Senior Occupational Therapist',
-      clinicianAhpra: 'AHPRA Registered',
-      validityPeriod: 'Scheduled Appointment',
-      generatePdf: true,
-    },
-  },
-  {
     id: 'contact',
     name: 'Clinical Advisory',
     shortTitle: 'Clinical Advisory',
     badge: 'Clinical Advice',
-    category: 'Consultation & Inquiries',
+    category: 'Clinical Advisory Consultation (Customer Request)',
     pdfAttachmentName: 'Clinical-Advisory.pdf',
     description:
-      'Written clinical advice summary addressing specific assistive technology questions, sizing guidance, and supplier recommendations.',
-    trigger: 'Sent following consultation with occupational therapist or client inquiry.',
+      'Written clinical advice summary with assistive technology guidance, sizing matrix, and supplier recommendations.',
+    trigger: 'Triggered automatically when a customer or therapist submits a clinical inquiry on the website.',
     defaultRecipient: '',
     customerName: '',
     customerPhone: '',
@@ -300,8 +421,10 @@ export const CANONICAL_TEMPLATES: CanonicalTemplate[] = [
       },
     ],
     extraMeta: {
-      assessmentRef: 'INQ-CLINICAL/ADVICE',
-      validityPeriod: 'General Guidance',
+      advisoryDate: '18 September 2026',
+      prescribingClinician: 'Senior Occupational Therapist',
+      clinicianAhpra: 'AHPRA Registered',
+      validityPeriod: 'Clinical Advisory',
       generatePdf: true,
     },
   },
@@ -324,8 +447,8 @@ export const DEFAULT_PDF_CONFIGS: Record<TemplateType, {
     tagline: 'NDIS Provider • Capital Supports',
     terms: 'Valid for 30 Days from Issue • Standard NDIA Pricing Schedule',
     notes: 'Quote prepared according to NDIA Price Arrangements and Support Catalogue guidelines. Items comply with Australian Standards for medical devices.',
-    showStatutoryNotice: true,
-    statutoryNoticeText: 'GST-Free Medical Supply pursuant to Section 38-45 of A New Tax System (Goods and Services Tax) Act 1999 (Cth).',
+    showStatutoryNotice: false,
+    statutoryNoticeText: '',
     bankTitle: 'Direct Bank Transfer (EFT) Remittance Details:',
     footerText: 'NDIS Quotation • Assistive Technology Specialists Australia Pty Ltd • Thank you for your business.',
   },
@@ -335,8 +458,8 @@ export const DEFAULT_PDF_CONFIGS: Record<TemplateType, {
     tagline: 'ABN: 48 123 456 789 • NDIS Provider',
     terms: 'Payment Received in Full • ATO Compliant NDIS Tax Invoice',
     notes: 'Thank you for your order with AT Specialists. All items are dispatched with manufacturer warranty and Australian safety compliance certifications.',
-    showStatutoryNotice: true,
-    statutoryNoticeText: 'This document serves as an Australian Tax Office (ATO) compliant Tax Invoice. Assistive technology items supplied for disability rehabilitation are GST-Free under Section 38-45 of the GST Act.',
+    showStatutoryNotice: false,
+    statutoryNoticeText: '',
     bankTitle: 'Payment Method: Confirmed via Secure Payment Gateway / Card / EFT',
     footerText: 'NDIS Invoice • Assistive Technology Specialists Australia Pty Ltd • Thank you for your business.',
   },
@@ -361,17 +484,6 @@ export const DEFAULT_PDF_CONFIGS: Record<TemplateType, {
     statutoryNoticeText: '',
     bankTitle: 'Direct Bank Transfer (EFT) Remittance Details:',
     footerText: 'EQUIPMENT INVOICE • Assistive Technology Specialists Australia Pty Ltd • Thank you for your business.',
-  },
-  trial: {
-    title: 'EQUIPMENT TRIAL',
-    subtitle: 'Prescribing OT Ergonomic Handover Protocol',
-    tagline: 'Clinical Assistive Technology Trials • NDIS Provider',
-    terms: 'Complimentary In-Home OT Trial Session ($0.00)',
-    notes: 'Scripted assistive technology trialing appointment. Clinical evaluation and ergonomic measurement protocol.',
-    showStatutoryNotice: false,
-    statutoryNoticeText: '',
-    bankTitle: 'Direct Bank Transfer (EFT) Remittance Details:',
-    footerText: 'EQUIPMENT TRIAL • Assistive Technology Specialists Australia Pty Ltd • Thank you for your business.',
   },
   contact: {
     title: 'CLINICAL ADVISORY',
@@ -445,18 +557,6 @@ export const DEFAULT_MAIL_CONFIGS: Record<TemplateType, {
     validityPeriod: '30 Days from Issue Date',
     deliveryTimeframe: '5 - 10 Business Days',
   },
-  trial: {
-    subject: 'EQUIPMENT TRIAL Schedule #{{document_id}} — AT Specialists Australia',
-    badge: 'EQUIPMENT TRIAL',
-    headline: 'Your In-Home EQUIPMENT TRIAL Schedule',
-    subtext: 'Scheduled trial appointment with Prescribing Occupational Therapist.',
-    body: 'Dear {{customer_name}},\n\nYour in-home clinical EQUIPMENT TRIAL session has been confirmed. Our Senior Assistive Technology Specialist will coordinate with your prescribing therapist to evaluate ergonomic fit and accessibility goals.',
-    ctaText: 'View EQUIPMENT TRIAL Schedule Online',
-    footerText: 'EQUIPMENT TRIAL • AT Specialists Australia • Clinical Evaluations • Call 0494 767 409',
-    prescribingClinician: 'Dr. Alistair Vance, Senior OT (AHPRA: OCC0001892341)',
-    assessmentRef: 'AT-TRIAL/2026/0914',
-    validityPeriod: 'Scheduled Appointment',
-  },
   contact: {
     subject: 'Clinical Advisory #{{document_id}} — AT Specialists Australia',
     badge: 'Clinical Advisory',
@@ -482,6 +582,19 @@ function formatDisplayDate(dateStr?: string): string {
   } catch {
     return dateStr || new Date().toLocaleDateString('en-AU');
   }
+}
+
+function sanitizePdfConfig(cfg: any) {
+  if (!cfg) return cfg;
+  const copy = { ...cfg };
+  if (
+    copy.statutoryNoticeText &&
+    (copy.statutoryNoticeText.includes('Section 38-45') || copy.statutoryNoticeText.includes('GST-Free Medical Supply'))
+  ) {
+    copy.showStatutoryNotice = false;
+    copy.statutoryNoticeText = '';
+  }
+  return copy;
 }
 
 export function AdminInvoices() {
@@ -510,6 +623,11 @@ export function AdminInvoices() {
   const handleSetTab = (tab: MainTab) => {
     setActiveTab(tab);
     setSearchParams({ tab });
+    if (tab === 'email_templates') {
+      if (selectedMailType === 'ndis_quote' || selectedMailType === 'hire') {
+        handleSelectMailType('order');
+      }
+    }
   };
 
   // Notification Toast State
@@ -594,9 +712,105 @@ export function AdminInvoices() {
   const [workflowDeliveryTimeframe, setWorkflowDeliveryTimeframe] = useState('2 - 4 Weeks from Approval');
   const [workflowPlanType, setWorkflowPlanType] = useState('Plan-Managed (Capital AT Level 3/4)');
 
-  // Product Catalog Search in Workflow
+  // Product Catalog Search & Sub-Product Modal in Workflow
   const [productSearch, setProductSearch] = useState('');
+  const [searchCategoryFilter, setSearchCategoryFilter] = useState('all');
+  const [searchVisibleLimit, setSearchVisibleLimit] = useState(25);
   const [isProductSearchOpen, setIsProductSearchOpen] = useState(false);
+  const [isSubProductModalOpen, setIsSubProductModalOpen] = useState(false);
+  const [customSubProductInput, setCustomSubProductInput] = useState<Record<string, string>>({});
+
+  // Smart SKU, Variant, Multi-Term & Category Search across ALL Catalogue Products
+  const allMatchedProducts = useMemo(() => {
+    const q = (productSearch || '').toLowerCase().trim();
+    const tokens: string[] = q.split(/\s+/).filter(Boolean);
+
+    // Filter by Category if selected
+    let baseList = products;
+    if (searchCategoryFilter !== 'all') {
+      baseList = products.filter((p: any) => {
+        const cat = ((p.category || '') + ' ' + (p.categories || []).join(' ')).toLowerCase();
+        const pName = (p.name || '').toLowerCase();
+        if (searchCategoryFilter === 'beds') {
+          return isRealBedOrMattress(p) || cat.includes('bed');
+        }
+        if (searchCategoryFilter === 'pressure') {
+          return cat.includes('mattress') || cat.includes('pressure') || pName.includes('mattress') || pName.includes('cushion');
+        }
+        if (searchCategoryFilter === 'mobility') {
+          return cat.includes('mobility') || cat.includes('wheelchair') || cat.includes('scooter') || cat.includes('walker') || pName.includes('wheelchair');
+        }
+        if (searchCategoryFilter === 'accessories') {
+          return cat.includes('accessory') || cat.includes('linen') || pName.includes('pillow') || pName.includes('rail') || pName.includes('pole') || pName.includes('cover');
+        }
+        return true;
+      });
+    }
+
+    if (!q) {
+      return baseList;
+    }
+
+    return baseList
+      .map((p: any) => {
+        let score = 0;
+        const pSku = (p.sku || p.id || '').toLowerCase().trim();
+        const pName = (p.name || '').toLowerCase().trim();
+        const pBrand = (p.brand || '').toLowerCase().trim();
+        const pCat = ((p.category || '') + ' ' + (p.categories || []).join(' ')).toLowerCase();
+        const variantSkus: string[] = Array.isArray(p.variants)
+          ? p.variants.map((v: any) => String(v.sku || '').toLowerCase().trim())
+          : [];
+
+        // Exact match on product SKU or variant SKU (highest priority)
+        if (pSku === q) {
+          score += 3000;
+        } else if (variantSkus.includes(q)) {
+          score += 3000;
+        } else if (pSku.startsWith(q)) {
+          score += 1500;
+        } else if (variantSkus.some((s: string) => s.startsWith(q))) {
+          score += 1400;
+        } else if (pSku.includes(q)) {
+          score += 800;
+        } else if (variantSkus.some((s: string) => s.includes(q))) {
+          score += 750;
+        }
+
+        // Exact match on product name
+        if (pName === q) {
+          score += 1200;
+        } else if (pName.startsWith(q)) {
+          score += 600;
+        } else if (pName.includes(q)) {
+          score += 350;
+        }
+
+        // Multi-word token matching (e.g. "aspire bed", "neeki pillowcase", "activ care")
+        if (tokens.length > 1) {
+          const fullText = `${pName} ${pSku} ${pBrand} ${pCat} ${variantSkus.join(' ')}`;
+          const allMatch = tokens.every((t: string) => fullText.includes(t));
+          if (allMatch) {
+            score += 500;
+          }
+          const matchedCount = tokens.filter((t: string) => fullText.includes(t)).length;
+          score += matchedCount * 50;
+        }
+
+        // Brand and Category matches
+        if (pBrand && pBrand.includes(q)) score += 80;
+        if (pCat && pCat.includes(q)) score += 50;
+
+        return { product: p, score };
+      })
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((item) => item.product);
+  }, [products, productSearch, searchCategoryFilter]);
+
+  const displayedProducts = useMemo(() => {
+    return allMatchedProducts.slice(0, searchVisibleLimit);
+  }, [allMatchedProducts, searchVisibleLimit]);
 
   // Workflow Preview Toggle: 'document' (A4 PDF) or 'email' (Exact Email Preview)
   const [workflowPreviewMode, setWorkflowPreviewMode] = useState<'document' | 'email'>('document');
@@ -618,7 +832,7 @@ export function AdminInvoices() {
   // Populate Workflow fields when a document type is selected
   const applyTopicDefaults = (topic: TemplateType) => {
     const tmpl = CANONICAL_TEMPLATES.find((t) => t.id === topic);
-    const activePdf = invoiceSettings.pdfTemplates?.[topic] || DEFAULT_PDF_CONFIGS[topic];
+    const activePdf = sanitizePdfConfig(invoiceSettings.pdfTemplates?.[topic] || DEFAULT_PDF_CONFIGS[topic]);
     const activeMail = invoiceSettings.mailTemplates?.[topic] || DEFAULT_MAIL_CONFIGS[topic];
 
     if (tmpl) {
@@ -632,8 +846,6 @@ export function AdminInvoices() {
           ? 'QT-COMM'
           : topic === 'hire'
           ? 'HIRE'
-          : topic === 'trial'
-          ? 'TRIAL'
           : 'CLIN';
       const newDocId = `${prefix}-${Date.now().toString().slice(-5)}`;
       setDocumentId(newDocId);
@@ -793,6 +1005,9 @@ export function AdminInvoices() {
         code: it.code,
         name: it.name,
         detail: it.detail,
+        size: it.size,
+        color: it.color,
+        subProducts: it.subProducts,
         quantity: it.quantity,
         price: it.price,
         purchaseType: (isHire ? 'hire' : 'buy'),
@@ -940,20 +1155,37 @@ export function AdminInvoices() {
   };
 
   // Add Item from Catalog Search
-  const handleAddProductItem = (prod: any) => {
+  const handleAddProductItem = (
+    prod: any,
+    size?: string,
+    color?: string,
+    subProducts?: string[],
+    variantSku?: string,
+    variantPrice?: number
+  ) => {
+    const rel = getRelatedProductOptions(prod);
+    const finalPrice = Number(variantPrice !== undefined ? variantPrice : (prod.price || prod.buyPrice || 0));
     const newItem: CustomInvoiceItem = {
       id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      code: prod.sku || prod.id.toUpperCase(),
+      code: variantSku || prod.sku || prod.id.toUpperCase(),
       name: prod.name,
       detail: prod.shortDescription || prod.category || 'Assistive Equipment',
       quantity: 1,
-      price: Number(prod.price || prod.buyPrice || 0),
-      amount: Number(prod.price || prod.buyPrice || 0),
+      price: finalPrice,
+      amount: finalPrice,
+      productId: prod.id,
+      size: size || undefined,
+      color: color || undefined,
+      subProducts: subProducts && subProducts.length > 0 ? subProducts : undefined,
+      availableSizes: rel.sizes.length > 0 ? rel.sizes : undefined,
+      availableColors: rel.colors.length > 0 ? rel.colors : undefined,
+      availableSubProducts: rel.subProducts.length > 0 ? rel.subProducts : undefined,
     };
     setItems((prev) => [...prev, newItem]);
     setProductSearch('');
     setIsProductSearchOpen(false);
-    showNotice(`Added product: ${prod.name}`);
+    const badges = [size, color, variantSku].filter(Boolean).join(' • ');
+    showNotice(`Added: ${prod.name}${badges ? ` (${badges})` : ''}`);
   };
 
   // Item Manipulations
@@ -984,6 +1216,21 @@ export function AdminInvoices() {
       amount: 0,
     };
     setItems((prev) => [...prev, newItem]);
+  };
+
+  const handleAddSubProductAsLineItem = (sub: { name: string; price: number }) => {
+    const newItem: CustomInvoiceItem = {
+      id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      code: '05_120603099_0105_1_2',
+      name: sub.name,
+      detail: 'Assistive equipment accessory / clinical add-on',
+      quantity: 1,
+      price: sub.price,
+      amount: sub.price,
+    };
+    setItems((prev) => [...prev, newItem]);
+    setIsSubProductModalOpen(false);
+    showNotice(`Added accessory: ${sub.name}`);
   };
 
   // Export A4 PDF from Live Preview
@@ -1103,13 +1350,13 @@ export function AdminInvoices() {
   const [selectedPdfType, setSelectedPdfType] = useState<TemplateType>('ndis_quote');
   const [pdfEditState, setPdfEditState] = useState<any>(() => {
     const saved = invoiceSettings.pdfTemplates?.ndis_quote;
-    return saved ? {...DEFAULT_PDF_CONFIGS.ndis_quote,...saved } : {...DEFAULT_PDF_CONFIGS.ndis_quote };
+    return sanitizePdfConfig(saved ? { ...DEFAULT_PDF_CONFIGS.ndis_quote, ...saved } : { ...DEFAULT_PDF_CONFIGS.ndis_quote });
   });
 
   const handleSelectPdfType = (type: TemplateType) => {
     setSelectedPdfType(type);
     const saved = invoiceSettings.pdfTemplates?.[type];
-    setPdfEditState(saved ? {...DEFAULT_PDF_CONFIGS[type],...saved } : {...DEFAULT_PDF_CONFIGS[type] });
+    setPdfEditState(sanitizePdfConfig(saved ? { ...DEFAULT_PDF_CONFIGS[type], ...saved } : { ...DEFAULT_PDF_CONFIGS[type] }));
   };
 
   const handleSavePdfTemplate = () => {
@@ -1159,38 +1406,84 @@ export function AdminInvoices() {
   };
 
   // =========================================================================
-  // TAB 3: EMAIL TEMPLATES EDITOR STATE
   // =========================================================================
-  const [selectedMailType, setSelectedMailType] = useState<TemplateType>('ndis_quote');
+  // TAB 3: CUSTOMER RECEIVE FORMATS (EMAIL & PDF DUAL STUDIO) STATE
+  // =========================================================================
+  const [selectedMailType, setSelectedMailType] = useState<TemplateType>('order');
   const [mailEditState, setMailEditState] = useState<any>(() => {
-    const saved = invoiceSettings.mailTemplates?.ndis_quote;
-    return saved ? {...DEFAULT_MAIL_CONFIGS.ndis_quote,...saved } : {...DEFAULT_MAIL_CONFIGS.ndis_quote };
+    const saved = invoiceSettings.mailTemplates?.order;
+    return saved ? { ...DEFAULT_MAIL_CONFIGS.order, ...saved } : { ...DEFAULT_MAIL_CONFIGS.order };
   });
   const [mailEditorDevice, setMailEditorDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [mailPreviewMode, setMailPreviewMode] = useState<'email' | 'document'>('email');
+  const [editSubTab, setEditSubTab] = useState<'email' | 'pdf'>('email');
 
   const handleSelectMailType = (type: TemplateType) => {
     setSelectedMailType(type);
-    const saved = invoiceSettings.mailTemplates?.[type];
-    setMailEditState(saved ? {...DEFAULT_MAIL_CONFIGS[type],...saved } : {...DEFAULT_MAIL_CONFIGS[type] });
+    setSelectedPdfType(type);
+    const savedMail = invoiceSettings.mailTemplates?.[type];
+    setMailEditState(savedMail ? { ...DEFAULT_MAIL_CONFIGS[type], ...savedMail } : { ...DEFAULT_MAIL_CONFIGS[type] });
+    const savedPdf = invoiceSettings.pdfTemplates?.[type];
+    setPdfEditState(sanitizePdfConfig(savedPdf ? { ...DEFAULT_PDF_CONFIGS[type], ...savedPdf } : { ...DEFAULT_PDF_CONFIGS[type] }));
   };
 
   const handleSaveMailTemplate = () => {
+    const templateWithBank = {
+      ...pdfEditState,
+      bankName: pdfEditState.bankName || companyForm.bankName,
+      accountName: pdfEditState.accountName || companyForm.accountName,
+      bsb: pdfEditState.bsb || companyForm.bsb,
+      accountNumber: pdfEditState.accountNumber || companyForm.accountNumber,
+    };
     const updatedMailTemplates = {
       ...(invoiceSettings.mailTemplates || {}),
       [selectedMailType]: mailEditState,
     };
-    updateInvoiceSettings({ mailTemplates: updatedMailTemplates });
-    showNotice(`Saved Email template for: ${selectedMailType.toUpperCase()}`);
+    const updatedPdfTemplates = {
+      ...(invoiceSettings.pdfTemplates || {}),
+      [selectedMailType]: templateWithBank,
+    };
+    updateInvoiceSettings({
+      mailTemplates: updatedMailTemplates,
+      pdfTemplates: updatedPdfTemplates,
+      bankName: templateWithBank.bankName,
+      accountName: templateWithBank.accountName,
+      bsb: templateWithBank.bsb,
+      accountNumber: templateWithBank.accountNumber,
+    });
+    setCompanyForm((prev) => ({
+      ...prev,
+      bankName: templateWithBank.bankName,
+      accountName: templateWithBank.accountName,
+      bsb: templateWithBank.bsb,
+      accountNumber: templateWithBank.accountNumber,
+    }));
+    showNotice(`Saved Email & PDF format settings for: ${selectedMailType.toUpperCase()}`);
   };
 
   const handleResetMailTemplate = () => {
     setMailEditState({...DEFAULT_MAIL_CONFIGS[selectedMailType] });
+    const resetPdfConfig = {
+      ...DEFAULT_PDF_CONFIGS[selectedMailType],
+      bankName: companyForm.bankName,
+      accountName: companyForm.accountName,
+      bsb: companyForm.bsb,
+      accountNumber: companyForm.accountNumber,
+    };
+    setPdfEditState(resetPdfConfig);
     const updatedMailTemplates = {
       ...(invoiceSettings.mailTemplates || {}),
       [selectedMailType]: DEFAULT_MAIL_CONFIGS[selectedMailType],
     };
-    updateInvoiceSettings({ mailTemplates: updatedMailTemplates });
-    showNotice(`Reset Email template for: ${selectedMailType.toUpperCase()} to standard defaults`);
+    const updatedPdfTemplates = {
+      ...(invoiceSettings.pdfTemplates || {}),
+      [selectedMailType]: resetPdfConfig,
+    };
+    updateInvoiceSettings({
+      mailTemplates: updatedMailTemplates,
+      pdfTemplates: updatedPdfTemplates,
+    });
+    showNotice(`Reset Email & PDF formats for: ${selectedMailType.toUpperCase()} to standard defaults`);
   };
 
   // =========================================================================
@@ -1237,7 +1530,7 @@ export function AdminInvoices() {
   const activeWorkflowPdf =
     invoiceSettings.pdfTemplates?.[selectedTopic] || DEFAULT_PDF_CONFIGS[selectedTopic];
 
-  return (<div className="p-4 sm:p-6 lg:p-8 max-w-[1700px] mx-auto space-y-6">
+  return (<div className="p-3 sm:p-5 lg:p-6 2xl:p-8 max-w-[1880px] mx-auto space-y-6">
       {/* Toast Notification */}
       {notification && (<div
           className={`fixed top-5 right-5 z-50 px-5 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-xs font-bold animate-fade-in ${
@@ -1291,7 +1584,7 @@ export function AdminInvoices() {
             }`}
           >
             <Send className="w-3.5 h-3.5 text-[#147A7A]" />
-            <span>Send Document to Customer</span>
+            <span>Send Document to Customer (Manual Dispatch)</span>
           </button>
 
           <button
@@ -1317,7 +1610,7 @@ export function AdminInvoices() {
             }`}
           >
             <Mail className="w-3.5 h-3.5 text-amber-500" />
-            <span>Email Formats &amp; Templates</span>
+            <span>Email Formats &amp; Templates (Customer Requests)</span>
           </button>
 
 <button
@@ -1410,11 +1703,11 @@ export function AdminInvoices() {
         return null;
       })()}
 
-      {activeTab === 'workflow' && (<div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-          {/* LEFT COLUMN: CONFIGURATION & ITEMS (7 Cols) */}
-          <div className="xl:col-span-6 space-y-6">
+      {activeTab === 'workflow' && (<div className="grid grid-cols-1 lg:grid-cols-12 gap-5 xl:gap-6 items-start">
+          {/* LEFT COLUMN: CONFIGURATION & ITEMS (BALANCED 6 OF 12 COLS) */}
+          <div className="lg:col-span-6 xl:col-span-6 2xl:col-span-6 space-y-5">
             {/* STEP 1: DOCUMENT TYPE & TEMPLATE SELECTION (ARRANGED BY 3 SESSIONS) */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-[#147A7A] text-white text-xs font-black flex items-center justify-center">
@@ -1467,8 +1760,8 @@ export function AdminInvoices() {
                             </span>
                             {isSel && <Check className="w-3.5 h-3.5 text-[#147A7A]" />}
                           </div>
-                          <div className="text-[11px] font-bold text-[#147A7A] mb-0.5">{t.badge}</div>
-                          <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{t.description}</p>
+                          <div className="text-[10.5px] font-bold text-[#147A7A] mb-1">{t.badge}</div>
+                          <p className="text-[11px] text-slate-500 leading-snug">{t.description}</p>
                         </button>
                       );
                     })()}
@@ -1495,8 +1788,8 @@ export function AdminInvoices() {
                             </span>
                             {isSel && <Check className="w-3.5 h-3.5 text-blue-600" />}
                           </div>
-                          <div className="text-[11px] font-bold text-blue-700 mb-0.5">{t.badge}</div>
-                          <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{t.description}</p>
+                          <div className="text-[10.5px] font-bold text-blue-700 mb-1">{t.badge}</div>
+                          <p className="text-[11px] text-slate-500 leading-snug">{t.description}</p>
                         </button>
                       );
                     })()}
@@ -1538,8 +1831,8 @@ export function AdminInvoices() {
                             </span>
                             {isSel && <Check className="w-3.5 h-3.5 text-amber-600" />}
                           </div>
-                          <div className="text-[11px] font-bold text-amber-800 mb-0.5">{t.badge}</div>
-                          <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{t.description}</p>
+                          <div className="text-[10.5px] font-bold text-amber-800 mb-1">{t.badge}</div>
+                          <p className="text-[11px] text-slate-500 leading-snug">{t.description}</p>
                         </button>
                       );
                     })()}
@@ -1566,55 +1859,27 @@ export function AdminInvoices() {
                             </span>
                             {isSel && <Check className="w-3.5 h-3.5 text-purple-600" />}
                           </div>
-                          <div className="text-[11px] font-bold text-purple-700 mb-0.5">{t.badge}</div>
-                          <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{t.description}</p>
+                          <div className="text-[10.5px] font-bold text-purple-700 mb-1">{t.badge}</div>
+                          <p className="text-[11px] text-slate-500 leading-snug">{t.description}</p>
                         </button>
                       );
                     })()}
                   </div>
                 </div>
 
-                {/* SESSION 3: EQUIPMENT TRIAL & CLINICAL ADVISORY */}
+                {/* SESSION 3: CLINICAL ADVISORY & CONSULTATION */}
                 <div className="bg-gradient-to-r from-emerald-50/50 to-slate-50/70 border border-emerald-200/70 rounded-2xl p-3.5 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-900 uppercase tracking-wider">
-                      <Clock className="w-4 h-4 text-emerald-600" />
-                      <span>Session 3: EQUIPMENT TRIAL &amp; Clinical Advisory</span>
+                      <MessageSquare className="w-4 h-4 text-emerald-600" />
+                      <span>Session 3: Clinical Advisory &amp; OT Consultation</span>
                     </div>
                     <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/60 px-2 py-0.5 rounded-md">
                       Prescribing OT Protocols
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {/* OT Trial Schedule */}
-                    {(() => {
-                      const t = CANONICAL_TEMPLATES.find((x) => x.id === 'trial')!;
-                      const isSel = selectedTopic === 'trial';
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => handleSelectTopic(t.id)}
-                          className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between ${
-                            isSel
-                              ? 'bg-emerald-50/90 border-emerald-600 ring-2 ring-emerald-600/30 shadow-xs'
-                              : 'bg-white hover:bg-slate-50 border-slate-200'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                              <Clock className="w-4 h-4 text-emerald-600" />
-                              {t.shortTitle}
-                            </span>
-                            {isSel && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                          </div>
-                          <div className="text-[11px] font-bold text-emerald-700 mb-0.5">{t.badge}</div>
-                          <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{t.description}</p>
-                        </button>
-                      );
-                    })()}
-
+                  <div className="grid grid-cols-1 gap-2.5">
                     {/* Clinical Advisory */}
                     {(() => {
                       const t = CANONICAL_TEMPLATES.find((x) => x.id === 'contact')!;
@@ -1637,8 +1902,8 @@ export function AdminInvoices() {
                             </span>
                             {isSel && <Check className="w-3.5 h-3.5 text-[#147A7A]" />}
                           </div>
-                          <div className="text-[11px] font-bold text-[#147A7A] mb-0.5">{t.badge}</div>
-                          <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">{t.description}</p>
+                          <div className="text-[10.5px] font-bold text-[#147A7A] mb-1">{t.badge}</div>
+                          <p className="text-[11px] text-slate-500 leading-snug">{t.description}</p>
                         </button>
                       );
                     })()}
@@ -1647,8 +1912,8 @@ export function AdminInvoices() {
               </div>
 
               {/* Editable Document Title, Reference, Date, Tagline & Terms for this Dispatch */}
-              <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
-                <div className="sm:col-span-3">
+              <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Document Reference #</label>
                   <input
                     type="text"
@@ -1658,7 +1923,7 @@ export function AdminInvoices() {
                   />
                 </div>
 
-                <div className="sm:col-span-3">
+                <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Issue Date</label>
                   <input
                     type="date"
@@ -1668,7 +1933,7 @@ export function AdminInvoices() {
                   />
                 </div>
 
-                <div className="sm:col-span-6">
+                <div className="sm:col-span-2">
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Editable Document Main Title</label>
                   <input
                     type="text"
@@ -1679,7 +1944,7 @@ export function AdminInvoices() {
                   />
                 </div>
 
-                <div className="sm:col-span-4">
+                <div className="sm:col-span-2">
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Document Subtitle / Sub-Heading</label>
                   <input
                     type="text"
@@ -1689,7 +1954,7 @@ export function AdminInvoices() {
                   />
                 </div>
 
-                <div className="sm:col-span-4">
+                <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Header Tagline / Badge Text</label>
                   <input
                     type="text"
@@ -1699,7 +1964,7 @@ export function AdminInvoices() {
                   />
                 </div>
 
-                <div className="sm:col-span-4">
+                <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Terms &amp; Validity Statement</label>
                   <input
                     type="text"
@@ -1711,14 +1976,14 @@ export function AdminInvoices() {
               </div>
 
               {/* Editable Clinical Assessment, Prescribing OT & Logistics */}
-              <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">Prescribing OT / Clinician</label>
                   <input
                     type="text"
                     value={workflowPrescribingClinician}
                     onChange={(e) => setWorkflowPrescribingClinician(e.target.value)}
-                    placeholder="e.g. Dr. Alistair Vance, Senior OT (AHPRA: OCC0001892341)"
+                    placeholder="e.g. Senior OT (AHPRA Registered)"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:border-[#147A7A]"
                   />
                 </div>
@@ -1740,7 +2005,7 @@ export function AdminInvoices() {
                     type="text"
                     value={workflowValidityPeriod}
                     onChange={(e) => setWorkflowValidityPeriod(e.target.value)}
-                    placeholder="e.g. Quote Valid for 30 Days"
+                    placeholder="e.g. Valid for 30 Days"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:border-[#147A7A]"
                   />
                 </div>
@@ -1949,171 +2214,783 @@ export function AdminInvoices() {
             </div>
 
             {/* STEP 3: ITEMS & PRICING */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#147A7A] text-white text-xs font-black flex items-center justify-center">
-                    3
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-4">
+              <div className="pb-3 border-b border-slate-100 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-[#147A7A] text-white text-xs font-black flex items-center justify-center shrink-0">
+                      3
+                    </span>
+                    <h2 className="text-sm font-bold text-slate-900">Document Line Items &amp; Pricing</h2>
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {items.length} {items.length === 1 ? 'item' : 'items'}
                   </span>
-                  <h2 className="text-sm font-bold text-slate-900">Document Line Items &amp; Pricing</h2>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsProductSearchOpen(!isProductSearchOpen)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#147A7A] hover:bg-[#106262] text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                    onClick={() => {
+                      setIsProductSearchOpen(!isProductSearchOpen);
+                      setIsSubProductModalOpen(false);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs ${
+                      isProductSearchOpen
+                        ? 'bg-[#0F1E2E] text-white'
+                        : 'bg-[#147A7A] hover:bg-[#106262] text-white'
+                    }`}
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add from 1,237 Products</span>
+                    <Plus className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Add Catalog</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSubProductModalOpen(!isSubProductModalOpen);
+                      setIsProductSearchOpen(false);
+                    }}
+                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                      isSubProductModalOpen
+                        ? 'bg-teal-100 text-[#0F766E] border-teal-300'
+                        : 'bg-teal-50 hover:bg-teal-100 text-[#147A7A] border-teal-200'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#147A7A] shrink-0" />
+                    <span className="truncate">Sub-Product</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleAddNewBlankItem}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center gap-1 cursor-pointer"
+                    className="py-2 px-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
-                    <Plus className="w-3 h-3" />
-                    <span>Custom Line</span>
+                    <Plus className="w-3 h-3 shrink-0" />
+                    <span className="truncate">Custom Line</span>
                   </button>
                 </div>
               </div>
 
+              {/* Quick Add Sub-Product Panel */}
+              {isSubProductModalOpen && (
+                <div className="p-3.5 bg-teal-50/80 border border-teal-200 rounded-xl space-y-2.5 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-teal-900 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#147A7A]" />
+                      <span>Select Sub-Product / Equipment Accessory to Add as Line Item:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsSubProductModalOpen(false)}
+                      className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {STANDARD_SUB_PRODUCTS.map((sub) => (
+                      <button
+                        key={sub.name}
+                        type="button"
+                        onClick={() => handleAddSubProductAsLineItem(sub)}
+                        className="p-2.5 bg-white hover:bg-teal-50 border border-teal-200/80 rounded-xl text-left transition-all hover:shadow-xs group cursor-pointer"
+                      >
+                        <div className="text-xs font-bold text-slate-900 group-hover:text-[#147A7A] transition-colors">
+                          + {sub.name}
+                        </div>
+                        <div className="flex items-center justify-between mt-1 text-[11px] text-slate-500">
+                          <span className="font-mono text-[#0F766E] font-bold">${sub.price.toFixed(2)} AUD</span>
+                          <span className="text-[10px] text-teal-700 font-medium">Add to Document →</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Product Catalog Search Modal / Dropdown */}
-              {isProductSearchOpen && (<div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 animate-fade-in">
+              {isProductSearchOpen && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3.5 animate-fade-in shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Search className="w-3.5 h-3.5 text-[#147A7A]" />
+                      <span>Search Catalog by SKU or Product Name:</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsProductSearchOpen(false)}
+                      className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Search Bar Input */}
                   <div className="relative">
                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
-                      placeholder="Search catalog by product name, SKU, or department..."
+                      placeholder="Type SKU (e.g. HHPCSETB, IC333) or name (e.g. Bed, Mattress, Pillowcase)..."
                       value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:border-[#147A7A]"
+                      onChange={(e) => {
+                        setProductSearch(e.target.value);
+                        setSearchVisibleLimit(25);
+                      }}
+                      className="w-full pl-9 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#147A7A] focus:ring-2 focus:ring-[#147A7A]/20 transition-all"
                     />
-                  </div>
-
-                  <div className="max-h-56 overflow-y-auto space-y-1 divide-y divide-slate-100">
-                    {products
-                      .filter((p) => {
-                        const q = productSearch.toLowerCase().trim();
-                        if (!q) return true;
-                        return (p.name?.toLowerCase().includes(q) ||
-                          p.sku?.toLowerCase().includes(q) ||
-                          p.category?.toLowerCase().includes(q));
-                      })
-                      .slice(0, 15)
-                      .map((prod) => (<div
-                          key={prod.id}
-                          onClick={() => handleAddProductItem(prod)}
-                          className="p-2 hover:bg-white rounded-lg cursor-pointer flex items-center justify-between text-xs transition-colors"
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <img
-                              src={prod.image}
-                              alt={prod.name}
-                              className="w-9 h-9 rounded object-cover border border-slate-200 bg-white"
-                            />
-                            <div>
-                              <div className="font-bold text-slate-900 line-clamp-1">{prod.name}</div>
-                              <div className="text-[11px] text-slate-500">
-                                SKU: {prod.sku || prod.id} • {prod.category || 'General'}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-slate-900">${Number(prod.price || prod.buyPrice || 0).toFixed(2)}</div>
-                            <span className="text-[10px] font-bold text-[#147A7A]">+ Add</span>
-                          </div>
-                        </div>))}
-                  </div>
-                </div>)}
-
-              {/* Line Items List */}
-              <div className="space-y-2.5">
-                {items.map((it, idx) => (<div
-                    key={it.id || idx}
-                    className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1">
-                        <input
-                          type="text"
-                          value={it.name}
-                          onChange={(e) => handleItemChange(it.id, 'name', e.target.value)}
-                          placeholder="Item description"
-                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#147A7A]"
-                        />
-                      </div>
+                    {productSearch && (
                       <button
                         type="button"
-                        onClick={() => handleRemoveItem(it.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setProductSearch('');
+                          setSearchVisibleLimit(25);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Quick Category Filter Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {[
+                      { id: 'all', label: `All Products (${products.length})` },
+                      { id: 'beds', label: '🛏️ Beds & Profiling Deck' },
+                      { id: 'pressure', label: '💨 Pressure Care & Mattresses' },
+                      { id: 'mobility', label: '♿ Mobility & Seating' },
+                      { id: 'accessories', label: '🧩 Accessories & Linen' },
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => {
+                          setSearchCategoryFilter(cat.id);
+                          setSearchVisibleLimit(25);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                          searchCategoryFilter === cat.id
+                            ? 'bg-[#147A7A] text-white shadow-2xs'
+                            : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Search Results Summary Header */}
+                  <div className="text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-1 px-1">
+                    <span>
+                      Showing <strong className="text-slate-800 font-bold">{displayedProducts.length}</strong> of{' '}
+                      <strong className="text-slate-800 font-bold">{allMatchedProducts.length}</strong> products
+                      {productSearch ? ` matching "${productSearch}"` : ' in catalogue'}:
+                    </span>
+                    <span className="font-semibold text-teal-800 text-[10.5px]">Exact SKU matches appear first</span>
+                  </div>
+
+                  {/* Scrollable Products List */}
+                  <div className="max-h-[32rem] overflow-y-auto space-y-3 divide-y divide-slate-100 pr-1">
+                    {displayedProducts.map((prod: any) => {
+                      const qLower = productSearch.toLowerCase().trim();
+                      const isExactSkuMatch =
+                        qLower &&
+                        ((prod.sku || '').toLowerCase().trim() === qLower ||
+                          (prod.variants || []).some((v: any) => (v.sku || '').toLowerCase().trim() === qLower));
+
+                      // Strictly extract ONLY real colours or sizes present in THIS product
+                      const rel = getRelatedProductOptions(prod);
+                      const hasOptions = rel.sizes.length > 0 || rel.colors.length > 0;
+
+                      return (
+                        <div
+                          key={prod.id}
+                          className={`p-3.5 rounded-2xl border transition-all space-y-2.5 ${
+                            isExactSkuMatch
+                              ? 'bg-teal-50/70 border-teal-300 ring-1 ring-teal-400/40 shadow-xs'
+                              : 'bg-white hover:bg-slate-50/80 border-slate-200/90'
+                          }`}
+                        >
+                          {/* Product Main Row: Image, Full Name, Badges & Price */}
+                          <div className="flex items-start justify-between gap-3 text-xs">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              {/* High-Clarity Proxied Product Image */}
+                              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border border-slate-200 bg-white shrink-0 p-1 flex items-center justify-center overflow-hidden shadow-2xs">
+                                <img
+                                  src={proxyImageUrl(prod.image)}
+                                  alt={prod.name}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
+                                  }}
+                                  className="w-full h-full object-contain"
+                                />
+                              </div>
+
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm leading-snug">
+                                    {prod.name}
+                                  </h3>
+                                  {isExactSkuMatch && (
+                                    <span className="px-2 py-0.5 rounded-md bg-[#147A7A] text-white text-[10px] font-black uppercase tracking-wider shadow-2xs">
+                                      ⭐ Exact SKU Match
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-1.5 mt-0.5">
+                                  <span className="font-mono font-bold text-[#147A7A] bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded">
+                                    SKU: {prod.sku || prod.id}
+                                  </span>
+                                  <span className="font-medium text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {prod.brand || 'AT Specialists'}
+                                  </span>
+                                  <span className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {prod.category || 'General Equipment'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <div className="font-mono text-sm sm:text-base font-black text-slate-900">
+                                ${Number(prod.price || prod.buyPrice || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} AUD
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleAddProductItem(prod)}
+                                className="mt-1 px-3 py-1.5 rounded-lg bg-[#147A7A] hover:bg-[#106262] text-white text-[11px] font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1 ml-auto"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Add Item</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Options: ONLY rendered if THIS product has real colours or sizes in the catalog */}
+                          {hasOptions && (
+                            <div className="pt-2 border-t border-slate-100 space-y-2 text-[10.5px]">
+                              {/* Colours (ONLY IF PRESENT IN THIS PRODUCT) */}
+                              {rel.colors.length > 0 && (
+                                <div className="space-y-1">
+                                  <span className="font-bold text-slate-500 uppercase tracking-wider text-[9.5px] flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3 text-[#147A7A]" />
+                                    <span>Available Colours:</span>
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {rel.colors.map((col) => (
+                                      <button
+                                        key={col.name}
+                                        type="button"
+                                        onClick={() => handleAddProductItem(prod, undefined, col.name)}
+                                        className="px-2.5 py-1 rounded-lg text-[10.5px] font-medium bg-white hover:bg-slate-900 hover:text-white text-slate-700 border border-slate-200 transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
+                                      >
+                                        {col.hex && (
+                                          <span
+                                            className="w-2.5 h-2.5 rounded-full border border-slate-300 shrink-0"
+                                            style={{ backgroundColor: col.hex }}
+                                          />
+                                        )}
+                                        <span>+ {col.name.split('/')[0].trim()}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Sizes (ONLY IF PRESENT IN THIS PRODUCT) */}
+                              {rel.sizes.length > 0 && (
+                                <div className="space-y-1">
+                                  <span className="font-bold text-slate-500 uppercase tracking-wider text-[9.5px] flex items-center gap-1">
+                                    <Tag className="w-3 h-3 text-[#147A7A]" />
+                                    <span>Available Sizes:</span>
+                                  </span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {rel.sizes.map((sz) => (
+                                      <button
+                                        key={sz}
+                                        type="button"
+                                        onClick={() => handleAddProductItem(prod, sz)}
+                                        className="px-2.5 py-1 rounded-lg text-[10.5px] font-bold bg-white hover:bg-[#147A7A] hover:text-white text-slate-700 border border-slate-200 hover:border-[#147A7A] transition-all cursor-pointer shadow-2xs"
+                                      >
+                                        + {sz}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {displayedProducts.length === 0 && (
+                      <div className="py-8 text-center space-y-2">
+                        <Package className="w-8 h-8 text-slate-300 mx-auto" />
+                        <p className="text-xs font-bold text-slate-700">No products match your search or filter</p>
+                        <p className="text-[11px] text-slate-500">
+                          Try typing a different SKU (e.g. &ldquo;BA4240&rdquo;, &ldquo;HHPCSETB&rdquo;) or click &ldquo;All Products&rdquo;.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Load More & Pagination Bar */}
+                  {allMatchedProducts.length > displayedProducts.length && (
+                    <div className="pt-3 pb-1 flex flex-wrap items-center justify-center gap-2.5 border-t border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setSearchVisibleLimit((prev) => prev + 30)}
+                        className="px-4 py-2 bg-white hover:bg-teal-50 text-[#147A7A] border border-teal-300 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Load Next 30 Products</span>
+                        <span className="text-[10px] text-teal-700 bg-teal-100/80 px-2 py-0.5 rounded-full font-mono font-bold">
+                          {allMatchedProducts.length - displayedProducts.length} remaining
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSearchVisibleLimit(allMatchedProducts.length)}
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Show All ({allMatchedProducts.length})
                       </button>
                     </div>
+                  )}
+                </div>
+              )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs">
-                      <div className="sm:col-span-4">
-                        <input
-                          type="text"
-                          value={it.code}
-                          onChange={(e) => handleItemChange(it.id, 'code', e.target.value)}
-                          placeholder="NDIS Item Code / SKU"
-                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-mono font-semibold"
-                        />
+              {/* Empty State Banner when no items are present */}
+              {items.length === 0 && !isProductSearchOpen && !isSubProductModalOpen && (
+                <div className="p-6 text-center bg-slate-50/80 border border-dashed border-slate-200 rounded-2xl space-y-2 animate-fade-in">
+                  <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-200 text-[#147A7A] flex items-center justify-center mx-auto">
+                    <Package className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700">No line items in this document yet</p>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                    Click &ldquo;Add from Catalog&rdquo; above to search products by SKU or name, or click &ldquo;Custom Line&rdquo; to add a custom clinical item.
+                  </p>
+                </div>
+              )}
+
+              {/* Line Items List */}
+              <div className="space-y-3">
+                {items.map((it, idx) => {
+                  const linkedProduct = products.find(
+                    (p: any) =>
+                      (p.sku && p.sku === it.code) ||
+                      p.id === it.productId ||
+                      p.name === it.name ||
+                      (Array.isArray(p.variants) && p.variants.some((v: any) => v.sku === it.code))
+                  );
+
+                  const rel = linkedProduct
+                    ? getRelatedProductOptions(linkedProduct)
+                    : {
+                        sizes: it.availableSizes || (it.size ? [it.size] : []),
+                        colors: it.availableColors || (it.color ? [{ name: it.color }] : []),
+                        subProducts: it.availableSubProducts || (it.subProducts ? it.subProducts.map((n) => ({ name: n })) : []),
+                        variants: [],
+                        isBedOrMattress: isRealBedOrMattress({ name: it.name }),
+                      };
+
+                  const hasSize = rel.sizes.length > 0 || !!it.size;
+                  const hasColor = rel.colors.length > 0 || !!it.color;
+                  const hasSub = rel.subProducts.length > 0 || (it.subProducts && it.subProducts.length > 0);
+
+                  return (
+                    <div
+                      key={it.id || idx}
+                      className="p-4 bg-white border border-slate-200/90 rounded-2xl shadow-xs space-y-3.5 hover:border-slate-300 transition-all"
+                    >
+                      {/* Row 1: Item Header (Number, Description Input, Active Badges, and Trash) */}
+                      <div className="flex items-start gap-3">
+                        <div className="w-6 h-6 rounded-lg bg-teal-50 border border-teal-200 text-[#147A7A] text-[11px] font-black flex items-center justify-center shrink-0 mt-1">
+                          {idx + 1}
+                        </div>
+
+                        <div className="flex-1 space-y-1 min-w-0">
+                          <div className="flex flex-wrap items-center justify-between gap-1">
+                            <label className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
+                              Item Description &amp; Technical Specifications
+                            </label>
+                            <div className="flex flex-wrap items-center gap-1 text-[10px] font-bold">
+                              {it.size && (
+                                <span className="px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200">
+                                  Size: {it.size}
+                                </span>
+                              )}
+                              {it.color && (
+                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300">
+                                  Colour: {it.color}
+                                </span>
+                              )}
+                              {it.subProducts && it.subProducts.length > 0 && (
+                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  +{it.subProducts.length} Sub-Products
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <input
+                            type="text"
+                            value={it.name}
+                            onChange={(e) => handleItemChange(it.id, 'name', e.target.value)}
+                            placeholder="e.g. Icare IC333 Hi-Lo Electric Adjustable Bed"
+                            className="w-full bg-slate-50/70 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-[#147A7A] transition-all"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(it.id)}
+                          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all cursor-pointer shrink-0 mt-1"
+                          title="Delete line item"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
 
-                      <div className="sm:col-span-3 flex items-center gap-1">
-                        <span className="text-slate-500 text-[11px]">Qty:</span>
-                        <input
-                          type="number"
-                          min="1"
-                          value={it.quantity}
-                          onChange={(e) =>
-                            handleItemChange(it.id, 'quantity', Math.max(1, parseInt(e.target.value, 10) || 1))
-                          }
-                          className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-center"
-                        />
+                      {/* Row 2: Parameters Grid (Code, Qty, Unit Rate, Line Total) */}
+                      <div className="grid grid-cols-2 sm:grid-cols-12 gap-3 items-end bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
+                        <div className="col-span-2 sm:col-span-4 space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            NDIS Code / SKU
+                          </label>
+                          <input
+                            type="text"
+                            value={it.code}
+                            onChange={(e) => handleItemChange(it.id, 'code', e.target.value)}
+                            placeholder="e.g. 05_120603099_0105_1_2 or SKU"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-[#147A7A]"
+                          />
+                        </div>
+
+                        <div className="col-span-1 sm:col-span-2 space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Quantity
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={it.quantity}
+                            onChange={(e) =>
+                              handleItemChange(it.id, 'quantity', Math.max(1, parseInt(e.target.value, 10) || 1))
+                            }
+                            className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold text-center focus:outline-none focus:border-[#147A7A]"
+                          />
+                        </div>
+
+                        <div className="col-span-1 sm:col-span-3 space-y-1">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                            Unit Rate ($AUD)
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={it.price}
+                              onChange={(e) => handleItemChange(it.id, 'price', parseFloat(e.target.value) || 0)}
+                              className="w-full bg-white border border-slate-200 rounded-lg pl-6 pr-2 py-1.5 text-xs font-mono font-bold focus:outline-none focus:border-[#147A7A]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="col-span-2 sm:col-span-3 text-right space-y-0.5 pb-1">
+                          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Line Total</div>
+                          <div className="font-mono text-sm font-black text-slate-900">
+                            ${Number(it.amount || (Number(it.price || 0) * Number(it.quantity || 1))).toFixed(2)} AUD
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="sm:col-span-3 flex items-center gap-1">
-                        <span className="text-slate-500 text-[11px]">Price:</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={it.price}
-                          onChange={(e) => handleItemChange(it.id, 'price', parseFloat(e.target.value) || 0)}
-                          className="w-24 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold"
-                        />
-                      </div>
+                      {/* Row 3: Size & Colour (ONLY rendered if THIS item has sizes or colours) */}
+                      {(hasSize || hasColor) && (
+                        <div className={`grid grid-cols-1 ${hasSize && hasColor ? 'md:grid-cols-2' : ''} gap-3 pt-2 border-t border-slate-100`}>
+                          {/* Size Selection */}
+                          {hasSize && (
+                            <div className="space-y-1.5 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/70">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                                  <Tag className="w-3.5 h-3.5 text-[#147A7A]" />
+                                  <span>Size:</span>
+                                </span>
+                                {it.size && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleItemChange(it.id, 'size', '')}
+                                    className="text-[10px] text-slate-400 hover:text-rose-600 font-medium flex items-center gap-0.5 cursor-pointer"
+                                  >
+                                    <X className="w-3 h-3" /> Clear
+                                  </button>
+                                )}
+                              </div>
 
-                      <div className="sm:col-span-2 text-right self-center font-bold text-slate-900">
-                        ${(it.amount || it.price * it.quantity).toFixed(2)}
-                      </div>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {rel.sizes.map((sz) => {
+                                  const isSelected = it.size === sz;
+                                  return (
+                                    <button
+                                      key={sz}
+                                      type="button"
+                                      onClick={() => handleItemChange(it.id, 'size', isSelected ? '' : sz)}
+                                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-[#147A7A] text-white shadow-2xs ring-2 ring-[#147A7A]/25'
+                                          : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                      }`}
+                                    >
+                                      {isSelected && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                                      <span>{sz}</span>
+                                    </button>
+                                  );
+                                })}
+
+                                <input
+                                  type="text"
+                                  value={rel.sizes.includes(it.size || '') ? '' : (it.size || '')}
+                                  onChange={(e) => handleItemChange(it.id, 'size', e.target.value)}
+                                  placeholder="Other size..."
+                                  className="w-24 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10.5px] font-medium text-slate-700 focus:outline-none focus:border-[#147A7A]"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Colour Selection */}
+                          {hasColor && (
+                            <div className="space-y-1.5 bg-slate-50/60 p-2.5 rounded-xl border border-slate-200/70">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                                  <Sparkles className="w-3.5 h-3.5 text-[#147A7A]" />
+                                  <span>Colour / Finish:</span>
+                                </span>
+                                {it.color && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleItemChange(it.id, 'color', '')}
+                                    className="text-[10px] text-slate-400 hover:text-rose-600 font-medium flex items-center gap-0.5 cursor-pointer"
+                                  >
+                                    <X className="w-3 h-3" /> Clear
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {rel.colors.map((col) => {
+                                  const isSelected = it.color === col.name;
+                                  return (
+                                    <button
+                                      key={col.name}
+                                      type="button"
+                                      onClick={() => handleItemChange(it.id, 'color', isSelected ? '' : col.name)}
+                                      className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                        isSelected
+                                          ? 'bg-slate-900 text-white shadow-2xs ring-2 ring-slate-900/30'
+                                          : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                      }`}
+                                    >
+                                      {col.hex && (
+                                        <span
+                                          className="w-2.5 h-2.5 rounded-full border border-slate-300"
+                                          style={{ backgroundColor: col.hex }}
+                                        />
+                                      )}
+                                      <span>{col.name.split('/')[0].trim()}</span>
+                                    </button>
+                                  );
+                                })}
+
+                                <input
+                                  type="text"
+                                  value={rel.colors.some((c) => c.name === it.color) ? '' : (it.color || '')}
+                                  onChange={(e) => handleItemChange(it.id, 'color', e.target.value)}
+                                  placeholder="Custom colour..."
+                                  className="w-28 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10.5px] font-medium text-slate-700 focus:outline-none focus:border-[#147A7A]"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Row 4: Sub Products / Add-ons (ONLY rendered if THIS item has sub-products) */}
+                      {hasSub && (
+                        <div className="pt-2 border-t border-slate-100 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                              <Plus className="w-3.5 h-3.5 text-[#147A7A]" />
+                              <span>Sub Products / Add-ons Attached:</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400">Click any accessory to toggle on/off</span>
+                          </div>
+
+                          {/* Active Sub Products Badges */}
+                          {it.subProducts && it.subProducts.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 p-2 bg-teal-50/70 border border-teal-200 rounded-xl">
+                              {it.subProducts.map((subName, sIdx) => (
+                                <span
+                                  key={sIdx}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-teal-300 text-[#0F766E] text-[10.5px] font-bold shadow-2xs"
+                                >
+                                  <span>✓ {subName}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = (it.subProducts || []).filter((_, i) => i !== sIdx);
+                                      handleItemChange(it.id, 'subProducts', updated.length > 0 ? updated : undefined);
+                                    }}
+                                    className="text-slate-400 hover:text-rose-600 cursor-pointer p-0.5"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Sub-product toggle pills */}
+                          <div className="flex flex-wrap gap-1.5">
+                            {rel.subProducts.map((sub) => {
+                              const isAttached = (it.subProducts || []).includes(sub.name);
+                              return (
+                                <button
+                                  key={sub.name}
+                                  type="button"
+                                  onClick={() => {
+                                    const curr = it.subProducts || [];
+                                    const updated = isAttached
+                                      ? curr.filter((s) => s !== sub.name)
+                                      : [...curr, sub.name];
+                                    handleItemChange(it.id, 'subProducts', updated.length > 0 ? updated : undefined);
+                                  }}
+                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                                    isAttached
+                                      ? 'bg-[#147A7A] text-white shadow-2xs ring-1 ring-[#147A7A]'
+                                      : 'bg-white hover:bg-teal-50 hover:text-[#147A7A] text-slate-600 border border-slate-200'
+                                  }`}
+                                >
+                                  {isAttached ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Plus className="w-2.5 h-2.5" />}
+                                  <span>{sub.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Custom sub-product text input */}
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <input
+                              type="text"
+                              value={customSubProductInput[it.id] || ''}
+                              onChange={(e) =>
+                                setCustomSubProductInput((prev) => ({ ...prev, [it.id]: e.target.value }))
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  const val = (customSubProductInput[it.id] || '').trim();
+                                  if (val) {
+                                    const curr = it.subProducts || [];
+                                    if (!curr.includes(val)) {
+                                      handleItemChange(it.id, 'subProducts', [...curr, val]);
+                                    }
+                                    setCustomSubProductInput((prev) => ({ ...prev, [it.id]: '' }));
+                                  }
+                                }
+                              }}
+                              placeholder="Type custom accessory or sub-product & press Enter..."
+                              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = (customSubProductInput[it.id] || '').trim();
+                                if (val) {
+                                  const curr = it.subProducts || [];
+                                  if (!curr.includes(val)) {
+                                    handleItemChange(it.id, 'subProducts', [...curr, val]);
+                                  }
+                                  setCustomSubProductInput((prev) => ({ ...prev, [it.id]: '' }));
+                                }
+                              }}
+                              className="px-3 py-1 bg-teal-50 hover:bg-teal-100 text-[#147A7A] border border-teal-200 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                            >
+                              + Add Sub-Product
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quick Add Specification Buttons (if item has no attached options) */}
+                      {!hasSize && !hasColor && !hasSub && (
+                        <div className="flex flex-wrap items-center gap-3 pt-1 text-[10.5px] text-slate-500 border-t border-slate-100/80">
+                          <button
+                            type="button"
+                            onClick={() => handleItemChange(it.id, 'size', 'Standard')}
+                            className="hover:text-[#147A7A] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                          >
+                            <Plus className="w-3 h-3 text-[#147A7A]" /> Add Size Spec
+                          </button>
+                          <span className="text-slate-300">•</span>
+                          <button
+                            type="button"
+                            onClick={() => handleItemChange(it.id, 'color', 'Standard')}
+                            className="hover:text-[#147A7A] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                          >
+                            <Plus className="w-3 h-3 text-[#147A7A]" /> Add Colour Spec
+                          </button>
+                          <span className="text-slate-300">•</span>
+                          <button
+                            type="button"
+                            onClick={() => handleItemChange(it.id, 'subProducts', ['Standard Accessory'])}
+                            className="hover:text-[#147A7A] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+                          >
+                            <Plus className="w-3 h-3 text-[#147A7A]" /> Add Sub-Product
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>))}
+                  );
+                })}
               </div>
 
-              {/* Totals & Delivery Adjustment */}
-              <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-600">Freight &amp; Delivery ($AUD):</span>
-                  <input
-                    type="number"
-                    value={deliveryFee}
-                    onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
-                    className="w-24 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 font-bold text-center"
-                  />
+              {/* Totals & Delivery Adjustment Card */}
+              <div className="p-4 bg-slate-50/90 border border-slate-200/90 rounded-2xl space-y-3 text-xs shadow-2xs">
+                {/* Freight & Delivery Row */}
+                <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-slate-200/80">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-[#147A7A]" />
+                    <span className="font-bold text-slate-700 text-xs">Freight &amp; Delivery:</span>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="10"
+                      value={deliveryFee}
+                      onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
+                      className="w-28 bg-white border border-slate-200 rounded-lg pl-6 pr-2.5 py-1.5 font-mono font-bold text-slate-900 text-right focus:outline-none focus:border-[#147A7A] shadow-2xs"
+                    />
+                  </div>
                 </div>
 
-                <div className="text-right space-y-0.5">
-                  <div className="text-slate-500">Subtotal: ${subtotal.toFixed(2)}</div>
-                  <div className="text-sm font-black text-slate-900">
-                    Grand Total: ${total.toFixed(2)} AUD
+                {/* Subtotal & Grand Total Stack */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-slate-600 text-xs">
+                    <span className="font-medium">Subtotal</span>
+                    <span className="font-mono font-bold text-slate-800">${subtotal.toFixed(2)} AUD</span>
                   </div>
-                  <div className="text-[10px] text-teal-700 font-semibold">
-                    GST-Free Medical Exemption (Sec 38-45)
+                  <div className="flex items-center justify-between text-slate-900 pt-2 border-t border-slate-200">
+                    <span className="text-sm font-extrabold">Grand Total</span>
+                    <span className="text-base font-black text-[#147A7A] font-mono">${total.toFixed(2)} AUD</span>
+                  </div>
+                  <div className="text-[10px] text-emerald-800 font-semibold text-right pt-0.5">
+                    GST-Free Medical Exemption (pursuant to Sec 38-45)
                   </div>
                 </div>
               </div>
@@ -2291,8 +3168,8 @@ export function AdminInvoices() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: LIVE DUAL-MODE PREVIEW (5 Cols) */}
-          <div className="xl:col-span-6 space-y-4">
+          {/* RIGHT COLUMN: LIVE DUAL-MODE PREVIEW (BALANCED 6 OF 12 COLS) */}
+          <div className="lg:col-span-6 xl:col-span-6 2xl:col-span-6 space-y-4 lg:sticky lg:top-4 self-start">
             {/* Mode Switcher */}
             <div className="bg-white rounded-2xl border border-slate-200/80 p-3 shadow-xs flex items-center justify-between">
               <div className="flex items-center gap-1.5">
@@ -2345,12 +3222,12 @@ export function AdminInvoices() {
                 </div>)}
             </div>
 
-                        {/* PREVIEW 1: EXACT PREVIOUS A4 DOCUMENT PREVIEW */}
-            {workflowPreviewMode === 'document' && (<div className="bg-slate-100 p-3 sm:p-5 rounded-2xl border border-slate-200/80 max-h-[850px] overflow-y-auto print:max-h-none print:overflow-visible print:bg-white print:p-0 print:border-none">
+            {/* PREVIEW 1: EXACT PREVIOUS A4 DOCUMENT PREVIEW */}
+            {workflowPreviewMode === 'document' && (<div className="bg-slate-100/90 p-3 sm:p-5 lg:p-6 rounded-2xl border border-slate-200/80 max-h-[920px] overflow-y-auto print:max-h-none print:overflow-visible print:bg-white print:p-0 print:border-none shadow-inner">
                 <div
                   ref={a4PreviewRef}
                   id="printable-a4-document"
-                  className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-8 text-black space-y-4 print:shadow-none print:border-none print:p-0 print:m-0"
+                  className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8 lg:p-9 text-black space-y-5 max-w-[880px] mx-auto print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none"
                 >
                   {/* Header Bar */}
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-slate-900 pb-3">
@@ -2419,15 +3296,15 @@ export function AdminInvoices() {
                         <span>
                           {selectedTopic === 'ndis_quote'
                             ? 'Plan Management & Remittance:'
-                            : selectedTopic === 'trial'
-                            ? 'Clinical Evaluation Details:'
+                            : selectedTopic === 'contact'
+                            ? 'Clinical Advisory Details:'
                             : selectedTopic === 'hire'
                             ? 'Hire Tenure & Agreement:'
                             : 'Quotation Terms & Validity:'}
                         </span>
                         <span className="text-[10px] font-bold text-[#147A7A]">
-                          {selectedTopic === 'trial'
-                            ? 'COMPLIMENTARY ($0.00)'
+                          {selectedTopic === 'contact'
+                            ? 'SPECIALIST ADVICE'
                             : selectedTopic === 'ndis_quote'
                             ? planManager || 'NDIS'
                             : workflowTagline || activeWorkflowPdf.tagline || '30 Days Validity'}
@@ -2446,9 +3323,13 @@ export function AdminInvoices() {
                         <span className="text-slate-600">Terms:</span>{' '}
                         <strong>{workflowDocTerms || activeWorkflowPdf.terms || 'Strictly 14 Days Net (ATO & NDIS Standard)'}</strong>
                       </p>
-                      <p className="text-[10.5px] text-slate-700 pt-0.5 truncate">
-                        <span className="text-slate-500 font-bold">EFT:</span> {workflowBankName || companyForm.bankName} | BSB: <strong className="font-mono">{workflowBsb || companyForm.bsb}</strong> | Acc: <strong className="font-mono">{workflowAccountNumber || companyForm.accountNumber}</strong>
-                      </p>
+                      <div className="text-[10.5px] text-slate-700 pt-1.5 border-t border-slate-200/90 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span><span className="text-slate-500 font-semibold">Bank:</span> <strong className="text-slate-900">{workflowBankName || companyForm.bankName}</strong></span>
+                        <span className="text-slate-300">•</span>
+                        <span><span className="text-slate-500 font-semibold">BSB:</span> <strong className="font-mono text-slate-900">{workflowBsb || companyForm.bsb}</strong></span>
+                        <span className="text-slate-300">•</span>
+                        <span><span className="text-slate-500 font-semibold">Acc:</span> <strong className="font-mono text-slate-900">{workflowAccountNumber || companyForm.accountNumber}</strong></span>
+                      </div>
                     </div>
                   </div>
 
@@ -2471,9 +3352,31 @@ export function AdminInvoices() {
                               {it.code || (selectedTopic === 'ndis_quote' ? '05_120603099_0105_1_2' : 'AT-PRD-01')}
                             </td>
                             <td className="py-3 align-top pr-2">
-                              <div className="font-bold text-black text-[12.5px]">
-                                {it.name || 'Assistive Rehabilitation Technology'}
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="font-bold text-black text-[12.5px]">
+                                  {it.name || 'Assistive Rehabilitation Technology'}
+                                </span>
+                                {it.size && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                                    Size: {it.size}
+                                  </span>
+                                )}
+                                {it.color && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300">
+                                    Colour: {it.color}
+                                  </span>
+                                )}
                               </div>
+                              {it.subProducts && it.subProducts.length > 0 && (
+                                <div className="text-[10.5px] text-slate-700 mt-1 space-y-0.5">
+                                  <span className="font-bold text-[#147A7A]">Sub Products &amp; Accessories:</span>
+                                  <ul className="list-disc list-inside pl-1 text-[10px] text-slate-600 space-y-0.5">
+                                    {it.subProducts.map((sub, sIdx) => (
+                                      <li key={sIdx}>{sub}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                               {it.detail && (<div className="text-[10.5px] text-slate-600 mt-0.5 leading-snug">
                                   {it.detail}
                                 </div>)}
@@ -2533,24 +3436,24 @@ export function AdminInvoices() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
-                      <div className="bg-white p-2 rounded-lg border border-teal-100">
+                      <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
                         <span className="text-[10px] text-slate-500 font-semibold block">Bank</span>
-                        <span className="font-bold text-slate-900 text-[11px] truncate block">{workflowBankName || companyForm.bankName}</span>
+                        <span className="font-bold text-slate-900 text-[11px] block leading-snug">{workflowBankName || companyForm.bankName}</span>
                       </div>
 
-                      <div className="bg-white p-2 rounded-lg border border-teal-100">
+                      <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
                         <span className="text-[10px] text-slate-500 font-semibold block">Account Name</span>
-                        <span className="font-bold text-slate-900 text-[11px] truncate block">{workflowAccountName || companyForm.accountName}</span>
+                        <span className="font-bold text-slate-900 text-[11px] block leading-snug">{workflowAccountName || companyForm.accountName}</span>
                       </div>
 
-                      <div className="bg-white p-2 rounded-lg border border-teal-100">
+                      <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
                         <span className="text-[10px] text-slate-500 font-semibold block">BSB</span>
-                        <span className="font-mono font-black text-slate-900">{workflowBsb || companyForm.bsb}</span>
+                        <span className="font-mono font-black text-slate-900 text-xs block">{workflowBsb || companyForm.bsb}</span>
                       </div>
 
-                      <div className="bg-white p-2 rounded-lg border border-teal-100">
+                      <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
                         <span className="text-[10px] text-slate-500 font-semibold block">Account Number</span>
-                        <span className="font-mono font-black text-slate-900">{workflowAccountNumber || companyForm.accountNumber}</span>
+                        <span className="font-mono font-black text-slate-900 text-xs block">{workflowAccountNumber || companyForm.accountNumber}</span>
                       </div>
                     </div>
                   </div>
@@ -2669,8 +3572,8 @@ export function AdminInvoices() {
       {/* ========================================================================= */}
       {/* TAB 2: PDF DOCUMENT TEMPLATES CENTRALIZED EDITOR */}
       {/* ========================================================================= */}
-      {activeTab === 'pdf_templates' && (<div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-          <div className="xl:col-span-6 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+      {activeTab === 'pdf_templates' && (<div className="grid grid-cols-1 lg:grid-cols-12 gap-5 xl:gap-6 items-start">
+          <div className="lg:col-span-5 xl:col-span-5 2xl:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h2 className="text-base font-black text-slate-900">PDF Document Template Editor</h2>
@@ -2699,18 +3602,29 @@ export function AdminInvoices() {
             </div>
 
             {/* Template Selector Arranged by 3 Sessions */}
-            <div className="space-y-2 pt-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                Select Template Session to Edit:
-              </span>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Select Template Session to Edit:
+                </span>
+                <span className="text-[11px] font-bold text-[#147A7A] bg-teal-50 px-2.5 py-0.5 rounded-lg border border-teal-200/60">
+                  Active: {CANONICAL_TEMPLATES.find((t) => t.id === selectedPdfType)?.shortTitle}
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
                 {/* Session 1: NDIS Quotation & NDIS Invoice */}
-                <div className="p-2.5 bg-teal-50/50 border border-teal-200/80 rounded-xl space-y-1.5">
-                  <div className="text-[10px] font-extrabold text-[#0F766E] uppercase tracking-wider flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Session 1: NDIS Quotation &amp; NDIS Invoice</span>
+                <div className="p-3 bg-teal-50/50 border border-teal-200/80 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10.5px] font-extrabold text-[#0F766E] uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Session 1: NDIS Funding &amp; PACE Claims</span>
+                    </div>
+                    <span className="text-[9.5px] font-bold text-teal-700 bg-teal-100/70 px-2 py-0.5 rounded">
+                      NDIS Item 05 &bull; ATO Compliant
+                    </span>
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     {['ndis_quote', 'order'].map((tid) => {
                       const t = CANONICAL_TEMPLATES.find((x) => x.id === tid)!;
                       const isSel = selectedPdfType === tid;
@@ -2719,13 +3633,14 @@ export function AdminInvoices() {
                           key={t.id}
                           type="button"
                           onClick={() => handleSelectPdfType(t.id)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                          className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 ${
                             isSel
-                              ? 'bg-[#147A7A] text-white shadow-xs'
+                              ? 'bg-[#147A7A] text-white shadow-xs ring-2 ring-[#147A7A]/30'
                               : 'bg-white hover:bg-teal-100/60 text-slate-700 border border-teal-200/60'
                           }`}
                         >
-                          {t.shortTitle}
+                          {isSel && <Check className="w-3.5 h-3.5" />}
+                          <span>{t.shortTitle}</span>
                         </button>
                       );
                     })}
@@ -2733,12 +3648,17 @@ export function AdminInvoices() {
                 </div>
 
                 {/* Session 2: EQUIPMENT HIRE & EQUIPMENT INVOICE */}
-                <div className="p-2.5 bg-amber-50/50 border border-amber-200/80 rounded-xl space-y-1.5">
-                  <div className="text-[10px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1">
-                    <Truck className="w-3.5 h-3.5" />
-                    <span>Session 2: EQUIPMENT HIRE &amp; EQUIPMENT INVOICE</span>
+                <div className="p-3 bg-amber-50/50 border border-amber-200/80 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10.5px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>Session 2: Equipment Rental Fleet &amp; Commercial</span>
+                    </div>
+                    <span className="text-[9.5px] font-bold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded">
+                      Sanitized Fleet &bull; Commercial
+                    </span>
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     {['hire', 'quote'].map((tid) => {
                       const t = CANONICAL_TEMPLATES.find((x) => x.id === tid)!;
                       const isSel = selectedPdfType === tid;
@@ -2747,27 +3667,33 @@ export function AdminInvoices() {
                           key={t.id}
                           type="button"
                           onClick={() => handleSelectPdfType(t.id)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                          className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 ${
                             isSel
-                              ? 'bg-amber-600 text-white shadow-xs'
+                              ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-600/30'
                               : 'bg-white hover:bg-amber-100/60 text-slate-700 border border-amber-200/60'
                           }`}
                         >
-                          {t.shortTitle}
+                          {isSel && <Check className="w-3.5 h-3.5" />}
+                          <span>{t.shortTitle}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Session 3: EQUIPMENT TRIAL & Clinical Advisory */}
-                <div className="p-2.5 bg-emerald-50/50 border border-emerald-200/80 rounded-xl space-y-1.5">
-                  <div className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Session 3: EQUIPMENT TRIAL &amp; Clinical Advisory</span>
+                {/* Session 3: Clinical Advisory */}
+                <div className="p-3 bg-emerald-50/50 border border-emerald-200/80 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10.5px] font-extrabold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Session 3: Clinical Advisory &amp; OT Consultation</span>
+                    </div>
+                    <span className="text-[9.5px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded">
+                      Specialist Advice
+                    </span>
                   </div>
-                  <div className="flex gap-1.5">
-                    {['trial', 'contact'].map((tid) => {
+                  <div>
+                    {['contact'].map((tid) => {
                       const t = CANONICAL_TEMPLATES.find((x) => x.id === tid)!;
                       const isSel = selectedPdfType === tid;
                       return (
@@ -2775,13 +3701,14 @@ export function AdminInvoices() {
                           key={t.id}
                           type="button"
                           onClick={() => handleSelectPdfType(t.id)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                          className={`w-full py-2 px-2.5 rounded-lg text-xs font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 ${
                             isSel
-                              ? 'bg-emerald-600 text-white shadow-xs'
+                              ? 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-600/30'
                               : 'bg-white hover:bg-emerald-100/60 text-slate-700 border border-emerald-200/60'
                           }`}
                         >
-                          {t.shortTitle}
+                          {isSel && <Check className="w-3.5 h-3.5" />}
+                          <span>{t.shortTitle} (Clinical Advisory &amp; OT Consultation)</span>
                         </button>
                       );
                     })}
@@ -2928,8 +3855,8 @@ export function AdminInvoices() {
           </div>
 
           {/* LIVE A4 PREVIEW OF EDITED TEMPLATE (EXACT PREVIOUS DESIGN) */}
-          <div className="xl:col-span-6 bg-slate-100 p-4 sm:p-6 rounded-2xl border border-slate-200/80 max-h-[850px] overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-8 text-black space-y-4 max-w-[620px] mx-auto text-xs font-sans leading-normal">
+          <div className="lg:col-span-7 xl:col-span-7 2xl:col-span-8 bg-slate-100/90 p-4 sm:p-6 lg:p-7 rounded-2xl border border-slate-200/80 max-h-[920px] overflow-y-auto lg:sticky lg:top-4 self-start shadow-inner">
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8 lg:p-9 text-black space-y-5 max-w-[880px] mx-auto text-xs font-sans leading-normal">
               {/* Header Bar */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-slate-900 pb-3">
                 <img
@@ -3027,22 +3954,22 @@ export function AdminInvoices() {
                   <Building2 className="w-3.5 h-3.5" />
                   <span>{pdfEditState.bankTitle || 'Direct Bank Transfer (EFT) Remittance Details:'}</span>
                 </div>
-                <div className="grid grid-cols-4 gap-2 pt-1 text-[10px]">
-                  <div className="bg-white p-1.5 rounded border border-teal-100">
-                    <span className="text-slate-500 block text-[9px]">Bank</span>
-                    <span className="font-bold truncate block">{pdfEditState.bankName || companyForm.bankName}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+                  <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
+                    <span className="text-[10px] text-slate-500 font-semibold block">Bank</span>
+                    <span className="font-bold text-slate-900 text-[11px] block leading-snug">{pdfEditState.bankName || companyForm.bankName}</span>
                   </div>
-                  <div className="bg-white p-1.5 rounded border border-teal-100">
-                    <span className="text-slate-500 block text-[9px]">Account</span>
-                    <span className="font-bold truncate block">{pdfEditState.accountName || companyForm.accountName}</span>
+                  <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
+                    <span className="text-[10px] text-slate-500 font-semibold block">Account Name</span>
+                    <span className="font-bold text-slate-900 text-[11px] block leading-snug">{pdfEditState.accountName || companyForm.accountName}</span>
                   </div>
-                  <div className="bg-white p-1.5 rounded border border-teal-100">
-                    <span className="text-slate-500 block text-[9px]">BSB</span>
-                    <span className="font-mono font-bold block">{pdfEditState.bsb || companyForm.bsb}</span>
+                  <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
+                    <span className="text-[10px] text-slate-500 font-semibold block">BSB</span>
+                    <span className="font-mono font-black text-slate-900 text-xs block">{pdfEditState.bsb || companyForm.bsb}</span>
                   </div>
-                  <div className="bg-white p-1.5 rounded border border-teal-100">
-                    <span className="text-slate-500 block text-[9px]">Acc #</span>
-                    <span className="font-mono font-bold block">{pdfEditState.accountNumber || companyForm.accountNumber}</span>
+                  <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
+                    <span className="text-[10px] text-slate-500 font-semibold block">Account Number</span>
+                    <span className="font-mono font-black text-slate-900 text-xs block">{pdfEditState.accountNumber || companyForm.accountNumber}</span>
                   </div>
                 </div>
               </div>
@@ -3078,12 +4005,12 @@ export function AdminInvoices() {
       {/* ========================================================================= */}
       {/* TAB 3: EMAIL TEMPLATES CENTRALIZED EDITOR */}
       {/* ========================================================================= */}
-      {activeTab === 'email_templates' && (<div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-          <div className="xl:col-span-6 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+      {activeTab === 'email_templates' && (<div className="grid grid-cols-1 lg:grid-cols-12 gap-5 xl:gap-6 items-start">
+          <div className="lg:col-span-5 xl:col-span-5 2xl:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h2 className="text-base font-black text-slate-900">Email Format &amp; Template Editor</h2>
-                <p className="text-xs text-slate-500">Customize email subject lines, greeting text, and CTA buttons.</p>
+                <h2 className="text-base font-black text-slate-900">Customer Website Request Templates</h2>
+                <p className="text-xs text-slate-500">Configure master empty response formats automatically triggered by customer actions on the website.</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -3102,25 +4029,47 @@ export function AdminInvoices() {
                   className="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#147A7A] hover:bg-[#106262] text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Save Template</span>
+                  <span>Save Format</span>
                 </button>
               </div>
+            </div>
+
+            {/* Informational Guidance Notice */}
+            <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-amber-900 text-[11.5px]">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Customer Website Request Formats Only</span>
+              </div>
+              <p className="text-[11px] text-amber-800 leading-normal">
+                These templates are the master formats dispatched when a <strong>customer submits a request or order on your website</strong>. Configure the format schema below — it will work accordingly when triggered. To compose and send a custom document directly to an individual customer, use <strong>Send Document to Customer (Tab 1)</strong>.
+              </p>
             </div>
 
             {/* Template Selector Arranged by 3 Sessions */}
-            <div className="space-y-2 pt-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                Select Template Session to Edit:
-              </span>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {/* Session 1: NDIS Quotation & NDIS Invoice */}
-                <div className="p-2.5 bg-teal-50/50 border border-teal-200/80 rounded-xl space-y-1.5">
-                  <div className="text-[10px] font-extrabold text-[#0F766E] uppercase tracking-wider flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Session 1: NDIS Quotation &amp; NDIS Invoice</span>
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Select Customer Request Format:
+                </span>
+                <span className="text-[11px] font-bold text-[#147A7A] bg-teal-50 px-2.5 py-0.5 rounded-lg border border-teal-200/60">
+                  Active: {CANONICAL_TEMPLATES.find((t) => t.id === selectedMailType)?.shortTitle}
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {/* Session 1: NDIS Invoice (Customer Order Receipt) */}
+                <div className="p-3 bg-teal-50/50 border border-teal-200/80 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10.5px] font-extrabold text-[#0F766E] uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>Session 1: NDIS Funding &amp; Claims (Customer Request)</span>
+                    </div>
+                    <span className="text-[9.5px] font-bold text-teal-700 bg-teal-100/70 px-2 py-0.5 rounded">
+                      Customer Action
+                    </span>
                   </div>
-                  <div className="flex gap-1.5">
-                    {['ndis_quote', 'order'].map((tid) => {
+                  <div>
+                    {['order'].map((tid) => {
                       const t = CANONICAL_TEMPLATES.find((x) => x.id === tid)!;
                       const isSel = selectedMailType === tid;
                       return (
@@ -3128,27 +4077,33 @@ export function AdminInvoices() {
                           key={t.id}
                           type="button"
                           onClick={() => handleSelectMailType(t.id)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                          className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 ${
                             isSel
-                              ? 'bg-[#147A7A] text-white shadow-xs'
+                              ? 'bg-[#147A7A] text-white shadow-xs ring-2 ring-[#147A7A]/30'
                               : 'bg-white hover:bg-teal-100/60 text-slate-700 border border-teal-200/60'
                           }`}
                         >
-                          {t.shortTitle}
+                          {isSel && <Check className="w-3.5 h-3.5" />}
+                          <span>NDIS Invoice (Customer Online Order Receipt)</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Session 2: EQUIPMENT HIRE & EQUIPMENT INVOICE */}
-                <div className="p-2.5 bg-amber-50/50 border border-amber-200/80 rounded-xl space-y-1.5">
-                  <div className="text-[10px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1">
-                    <Truck className="w-3.5 h-3.5" />
-                    <span>Session 2: EQUIPMENT HIRE &amp; EQUIPMENT INVOICE</span>
+                {/* Session 2: EQUIPMENT INVOICE (Customer Commercial Quote) */}
+                <div className="p-3 bg-amber-50/50 border border-amber-200/80 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10.5px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <Truck className="w-3.5 h-3.5" />
+                      <span>Session 2: Equipment Rental &amp; Commercial (Customer Request)</span>
+                    </div>
+                    <span className="text-[9.5px] font-bold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded">
+                      Customer Action
+                    </span>
                   </div>
-                  <div className="flex gap-1.5">
-                    {['hire', 'quote'].map((tid) => {
+                  <div>
+                    {['quote'].map((tid) => {
                       const t = CANONICAL_TEMPLATES.find((x) => x.id === tid)!;
                       const isSel = selectedMailType === tid;
                       return (
@@ -3156,27 +4111,33 @@ export function AdminInvoices() {
                           key={t.id}
                           type="button"
                           onClick={() => handleSelectMailType(t.id)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                          className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 ${
                             isSel
-                              ? 'bg-amber-600 text-white shadow-xs'
+                              ? 'bg-amber-600 text-white shadow-xs ring-2 ring-amber-600/30'
                               : 'bg-white hover:bg-amber-100/60 text-slate-700 border border-amber-200/60'
                           }`}
                         >
-                          {t.shortTitle}
+                          {isSel && <Check className="w-3.5 h-3.5" />}
+                          <span>EQUIPMENT INVOICE (Customer Commercial Quote)</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Session 3: EQUIPMENT TRIAL & Clinical Advisory */}
-                <div className="p-2.5 bg-emerald-50/50 border border-emerald-200/80 rounded-xl space-y-1.5">
-                  <div className="text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Session 3: EQUIPMENT TRIAL &amp; Clinical Advisory</span>
+                {/* Session 3: Clinical Advisory */}
+                <div className="p-3 bg-emerald-50/50 border border-emerald-200/80 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10.5px] font-extrabold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Session 3: Clinical Advisory Consultation (Customer Request)</span>
+                    </div>
+                    <span className="text-[9.5px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded">
+                      Specialist Advice
+                    </span>
                   </div>
-                  <div className="flex gap-1.5">
-                    {['trial', 'contact'].map((tid) => {
+                  <div>
+                    {['contact'].map((tid) => {
                       const t = CANONICAL_TEMPLATES.find((x) => x.id === tid)!;
                       const isSel = selectedMailType === tid;
                       return (
@@ -3184,13 +4145,14 @@ export function AdminInvoices() {
                           key={t.id}
                           type="button"
                           onClick={() => handleSelectMailType(t.id)}
-                          className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center cursor-pointer ${
+                          className={`w-full py-2 px-2.5 rounded-lg text-xs font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1.5 ${
                             isSel
-                              ? 'bg-emerald-600 text-white shadow-xs'
+                              ? 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-600/30'
                               : 'bg-white hover:bg-emerald-100/60 text-slate-700 border border-emerald-200/60'
                           }`}
                         >
-                          {t.shortTitle}
+                          {isSel && <Check className="w-3.5 h-3.5" />}
+                          <span>Clinical Advisory (Consultation Inquiry)</span>
                         </button>
                       );
                     })}
@@ -3199,159 +4161,606 @@ export function AdminInvoices() {
               </div>
             </div>
 
-            {/* Variable Guide Chips */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-700 block">Available Dynamic Variables:</span>
-              <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-                <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-semibold">{`{{customer_name}}`}</span>
-                <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-semibold">{`{{document_id}}`}</span>
-                <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-semibold">{`{{total}}`}</span>
-                <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-semibold">{`{{company_name}}`}</span>
+            {/* SUB-TAB SWITCHER: EDIT EMAIL FORMAT VS EDIT PDF DOCUMENT FORMAT */}
+            <div className="pt-2">
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditSubTab('email');
+                    setMailPreviewMode('email');
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    editSubTab === 'email'
+                      ? 'bg-[#147A7A] text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-200/70'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>✉️ Edit Email Format</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditSubTab('pdf');
+                    setMailPreviewMode('document');
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    editSubTab === 'pdf'
+                      ? 'bg-[#147A7A] text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-200/70'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>📄 Edit PDF Document Format</span>
+                </button>
               </div>
             </div>
 
-            {/* Form Fields */}
-            <div className="space-y-3.5 pt-1">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Email Subject Line</label>
-                <input
-                  type="text"
-                  value={mailEditState.subject}
-                  onChange={(e) => setMailEditState({...mailEditState, subject: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-[#147A7A]"
-                />
-              </div>
+            {/* SUB-TAB 1: EMAIL FORMAT FIELDS */}
+            {editSubTab === 'email' && (
+              <div className="space-y-3.5 pt-1">
+                {/* Variable Guide Chips */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                  <span className="text-[11px] font-bold text-slate-700 block">Available Dynamic Variables:</span>
+                  <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+                    <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-semibold">{`{{customer_name}}`}</span>
+                    <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-semibold">{`{{document_id}}`}</span>
+                    <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-semibold">{`{{total}}`}</span>
+                    <span className="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 font-semibold">{`{{company_name}}`}</span>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Header Preheader Badge</label>
-                <input
-                  type="text"
-                  value={mailEditState.badge}
-                  onChange={(e) => setMailEditState({...mailEditState, badge: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Email Subject Line</label>
+                  <input
+                    type="text"
+                    value={mailEditState.subject}
+                    onChange={(e) => setMailEditState({ ...mailEditState, subject: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Main Heading</label>
-                <input
-                  type="text"
-                  value={mailEditState.headline}
-                  onChange={(e) => setMailEditState({...mailEditState, headline: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:bg-white focus:outline-none focus:border-[#147A7A]"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Header Preheader Badge</label>
+                  <input
+                    type="text"
+                    value={mailEditState.badge}
+                    onChange={(e) => setMailEditState({ ...mailEditState, badge: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Subtitle / Summary</label>
-                <input
-                  type="text"
-                  value={mailEditState.subtext}
-                  onChange={(e) => setMailEditState({...mailEditState, subtext: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Main Heading</label>
+                  <input
+                    type="text"
+                    value={mailEditState.headline}
+                    onChange={(e) => setMailEditState({ ...mailEditState, headline: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Email Message Body</label>
-                <textarea
-                  rows={5}
-                  value={mailEditState.body}
-                  onChange={(e) => setMailEditState({...mailEditState, body: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Subtitle / Summary</label>
+                  <input
+                    type="text"
+                    value={mailEditState.subtext}
+                    onChange={(e) => setMailEditState({ ...mailEditState, subtext: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Call-To-Action Button Text</label>
-                <input
-                  type="text"
-                  value={mailEditState.ctaText}
-                  onChange={(e) => setMailEditState({...mailEditState, ctaText: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:bg-white focus:outline-none focus:border-[#147A7A]"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Email Message Body</label>
+                  <textarea
+                    rows={5}
+                    value={mailEditState.body}
+                    onChange={(e) => setMailEditState({ ...mailEditState, body: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Footer Notice</label>
-                <input
-                  type="text"
-                  value={mailEditState.footerText}
-                  onChange={(e) => setMailEditState({...mailEditState, footerText: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Call-To-Action Button Text</label>
+                  <input
+                    type="text"
+                    value={mailEditState.ctaText}
+                    onChange={(e) => setMailEditState({ ...mailEditState, ctaText: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
 
-            </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Footer Notice</label>
+                  <input
+                    type="text"
+                    value={mailEditState.footerText}
+                    onChange={(e) => setMailEditState({ ...mailEditState, footerText: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: PDF DOCUMENT FORMAT FIELDS */}
+            {editSubTab === 'pdf' && (
+              <div className="space-y-3.5 pt-1">
+                <div className="p-3 bg-teal-50/70 border border-teal-200 rounded-xl text-xs space-y-1">
+                  <div className="font-bold text-[#0F766E] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Official PDF Document Layout Configuration</span>
+                  </div>
+                  <p className="text-[11px] text-teal-800 leading-normal">
+                    Adjust the document title, subtitle, validity terms, compliance notes, and EFT remittance coordinates for this customer receiving format.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Document Main Title</label>
+                  <input
+                    type="text"
+                    value={pdfEditState.title || ''}
+                    onChange={(e) => setPdfEditState({ ...pdfEditState, title: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Subtitle / Clinical Classification</label>
+                  <input
+                    type="text"
+                    value={pdfEditState.subtitle || ''}
+                    onChange={(e) => setPdfEditState({ ...pdfEditState, subtitle: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Tagline Badge Text</label>
+                  <input
+                    type="text"
+                    value={pdfEditState.tagline || ''}
+                    onChange={(e) => setPdfEditState({ ...pdfEditState, tagline: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Validity &amp; Terms Statement</label>
+                  <input
+                    type="text"
+                    value={pdfEditState.terms || ''}
+                    onChange={(e) => setPdfEditState({ ...pdfEditState, terms: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Clinical / Compliance Notes</label>
+                  <textarea
+                    rows={3}
+                    value={pdfEditState.notes || ''}
+                    onChange={(e) => setPdfEditState({ ...pdfEditState, notes: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
+
+                {/* Statutory Notice Toggle */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">Display Legal / GST Statutory Notice Box</span>
+                    <input
+                      type="checkbox"
+                      checked={pdfEditState.showStatutoryNotice || false}
+                      onChange={(e) => setPdfEditState({ ...pdfEditState, showStatutoryNotice: e.target.checked })}
+                      className="w-4 h-4 text-[#147A7A] rounded cursor-pointer"
+                    />
+                  </div>
+
+                  {pdfEditState.showStatutoryNotice && (
+                    <textarea
+                      rows={2}
+                      value={pdfEditState.statutoryNoticeText || ''}
+                      onChange={(e) => setPdfEditState({ ...pdfEditState, statutoryNoticeText: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-medium focus:outline-none focus:border-[#147A7A]"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Direct Bank Remittance Title</label>
+                  <input
+                    type="text"
+                    value={pdfEditState.bankTitle || ''}
+                    onChange={(e) => setPdfEditState({ ...pdfEditState, bankTitle: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
+
+                {/* Remittance Bank Account Coordinates */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <span className="text-xs font-bold text-slate-800 block">Template EFT Remittance Coordinates</span>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Bank Name</label>
+                      <input
+                        type="text"
+                        value={pdfEditState.bankName ?? companyForm.bankName}
+                        onChange={(e) => setPdfEditState({ ...pdfEditState, bankName: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Account Name</label>
+                      <input
+                        type="text"
+                        value={pdfEditState.accountName ?? companyForm.accountName}
+                        onChange={(e) => setPdfEditState({ ...pdfEditState, accountName: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-medium"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-0.5">BSB Code</label>
+                      <input
+                        type="text"
+                        value={pdfEditState.bsb ?? companyForm.bsb}
+                        onChange={(e) => setPdfEditState({ ...pdfEditState, bsb: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-0.5">Account Number</label>
+                      <input
+                        type="text"
+                        value={pdfEditState.accountNumber ?? companyForm.accountNumber}
+                        onChange={(e) => setPdfEditState({ ...pdfEditState, accountNumber: e.target.value })}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Document Footer Notice</label>
+                  <input
+                    type="text"
+                    value={pdfEditState.footerText || ''}
+                    onChange={(e) => setPdfEditState({ ...pdfEditState, footerText: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:bg-white focus:outline-none focus:border-[#147A7A]"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* LIVE EMAIL PREVIEW */}
-          <div className="xl:col-span-6 bg-slate-100 p-4 sm:p-6 rounded-2xl border border-slate-200/80 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-700">Live Rendered Email Layout</span>
-              <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setMailEditorDevice('desktop')}
-                  className={`p-1.5 rounded ${
-                    mailEditorDevice === 'desktop' ? 'bg-[#147A7A] text-white' : 'text-slate-500'
-                  }`}
-                >
-                  <Monitor className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMailEditorDevice('mobile')}
-                  className={`p-1.5 rounded ${
-                    mailEditorDevice === 'mobile' ? 'bg-[#147A7A] text-white' : 'text-slate-500'
-                  }`}
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                </button>
+          {/* DUAL PREVIEW: CUSTOMER EMAIL VIEW OR VIEW DOCUMENT FORMAT */}
+          <div className="lg:col-span-7 xl:col-span-7 2xl:col-span-8 bg-slate-100/90 p-4 sm:p-6 lg:p-7 rounded-2xl border border-slate-200/80 space-y-4 lg:sticky lg:top-4 self-start shadow-inner max-h-[920px] overflow-y-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-700">Preview Mode:</span>
+                <div className="flex items-center bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setMailPreviewMode('email')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      mailPreviewMode === 'email'
+                        ? 'bg-[#147A7A] text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Customer Email View</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMailPreviewMode('document')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      mailPreviewMode === 'document'
+                        ? 'bg-[#147A7A] text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>View Document Format</span>
+                  </button>
+                </div>
               </div>
+
+              {mailPreviewMode === 'email' ? (
+                <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setMailEditorDevice('desktop')}
+                    className={`p-1.5 rounded ${
+                      mailEditorDevice === 'desktop' ? 'bg-[#147A7A] text-white' : 'text-slate-500'
+                    }`}
+                    title="Desktop Inbox View"
+                  >
+                    <Monitor className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMailEditorDevice('mobile')}
+                    className={`p-1.5 rounded ${
+                      mailEditorDevice === 'mobile' ? 'bg-[#147A7A] text-white' : 'text-slate-500'
+                    }`}
+                    title="Mobile View"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <span className="text-[11px] font-mono font-bold text-[#147A7A] bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg self-start sm:self-auto">
+                  A4 Document Format &bull; {CANONICAL_TEMPLATES.find((t) => t.id === selectedMailType)?.shortTitle}
+                </span>
+              )}
             </div>
 
-            <ExactEmailPreview
-              templateId={selectedMailType}
-              previewDevice={mailEditorDevice}
-              docId="NDIS-QT-SAMPLE"
-              customerName="Eleanor Vance"
-              customerEmail="client@example.com.au"
-              items={CANONICAL_TEMPLATES.find((t) => t.id === selectedMailType)?.items || []}
-              subtotal={3500}
-              deliveryFee={0}
-              total={3500}
-              extraMeta={{
-                subject: (mailEditState?.subject || '').replace(/\{\{document_id\}\}/g, 'NDIS-QT-SAMPLE').replace(/\{\{customer_name\}\}/g, 'Eleanor Vance'),
-                badge: mailEditState?.badge || '',
-                headline: mailEditState?.headline || '',
-                subtext: mailEditState?.subtext || '',
-                responseMessage: (mailEditState?.body || '').replace(/\{\{customer_name\}\}/g, 'Eleanor Vance').replace(/\{\{document_id\}\}/g, 'NDIS-QT-SAMPLE'),
-                mailSubject: (mailEditState?.subject || '').replace(/\{\{document_id\}\}/g, 'NDIS-QT-SAMPLE').replace(/\{\{customer_name\}\}/g, 'Eleanor Vance'),
-                mailBody: (mailEditState?.body || '').replace(/\{\{customer_name\}\}/g, 'Eleanor Vance').replace(/\{\{document_id\}\}/g, 'NDIS-QT-SAMPLE'),
-                ctaText: mailEditState?.ctaText || '',
-                footerText: mailEditState?.footerText || '',
-                prescribingClinician: mailEditState?.prescribingClinician,
-                assessmentRef: mailEditState?.assessmentRef,
-                validityPeriod: mailEditState?.validityPeriod,
-                deliveryTimeframe: mailEditState?.deliveryTimeframe,
-                planType: mailEditState?.planType,
-              }}
-              customSettings={{
-                companyName: companyForm.companyName,
-                abn: companyForm.abn,
-                ndisProviderNo: companyForm.ndisRegistrationNumber,
-                phone: companyForm.phone,
-                email: companyForm.email,
-                bankName: companyForm.bankName,
-                accountName: companyForm.accountName,
-                bsb: companyForm.bsb,
-                accountNumber: companyForm.accountNumber,
-                footerText: mailEditState.footerText,
-                mailTemplate: mailEditState,
-              }}
-              showEnvelope={true}
-            />
+            {/* PREVIEW 1: CUSTOMER EMAIL VIEW */}
+            {mailPreviewMode === 'email' && (
+              <ExactEmailPreview
+                templateId={selectedMailType}
+                previewDevice={mailEditorDevice}
+                docId="{{document_id}}"
+                customerName="{{customer_name}}"
+                customerEmail="{{customer_email}}"
+                items={[]}
+                subtotal={0}
+                deliveryFee={0}
+                total={0}
+                onViewDocumentClick={() => setMailPreviewMode('document')}
+                isTemplateFormat={true}
+                extraMeta={{
+                  subject: mailEditState?.subject || '',
+                  badge: mailEditState?.badge || '',
+                  headline: mailEditState?.headline || '',
+                  subtext: mailEditState?.subtext || '',
+                  responseMessage: mailEditState?.body || '',
+                  mailSubject: mailEditState?.subject || '',
+                  mailBody: mailEditState?.body || '',
+                  ctaText: mailEditState?.ctaText || '',
+                  footerText: mailEditState?.footerText || '',
+                  prescribingClinician: mailEditState?.prescribingClinician,
+                  assessmentRef: mailEditState?.assessmentRef,
+                  validityPeriod: mailEditState?.validityPeriod,
+                  deliveryTimeframe: mailEditState?.deliveryTimeframe,
+                  planType: mailEditState?.planType,
+                }}
+                customSettings={{
+                  companyName: companyForm.companyName,
+                  abn: companyForm.abn,
+                  ndisProviderNo: companyForm.ndisRegistrationNumber,
+                  phone: companyForm.phone,
+                  email: companyForm.email,
+                  bankName: companyForm.bankName,
+                  accountName: companyForm.accountName,
+                  bsb: companyForm.bsb,
+                  accountNumber: companyForm.accountNumber,
+                  footerText: mailEditState.footerText,
+                  mailTemplate: mailEditState,
+                }}
+                showEnvelope={true}
+              />
+            )}
+
+            {/* PREVIEW 2: CORRESPONDING A4 VIEW DOCUMENT FORMAT */}
+            {mailPreviewMode === 'document' && (() => {
+              const currentPdf = pdfEditState || invoiceSettings.pdfTemplates?.[selectedMailType] || DEFAULT_PDF_CONFIGS[selectedMailType];
+              const canonical = CANONICAL_TEMPLATES.find((t) => t.id === selectedMailType);
+              return (
+                <div className="space-y-3">
+                  {/* Schema Guidance Banner */}
+                  <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 flex items-start gap-2.5 text-xs text-teal-900 shadow-2xs">
+                    <Sparkles className="w-4 h-4 text-[#147A7A] shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-[#0F766E]">Master Document Format Schema (Customer Request)</p>
+                      <p className="text-[11px] text-teal-800 leading-normal">
+                        This empty schema format is what you fix here. When a customer submits an action or order on the website, this official document layout automatically populates with their exact name, address, chosen equipment, and calculated total.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8 lg:p-9 text-black space-y-5 max-w-[880px] mx-auto text-xs font-sans leading-normal">
+                    {/* Header Bar */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-slate-900 pb-3">
+                      <img
+                        src={logoHeaderImg}
+                        crossOrigin="anonymous"
+                        alt={companyForm.companyName}
+                        className="h-12 sm:h-14 w-auto object-contain"
+                      />
+                      <div className="text-left sm:text-right text-[10.5px] leading-tight space-y-0.5">
+                        <p className="font-bold text-[#147A7A]">NDIS Provider</p>
+                        <p className="font-mono font-bold text-black">ABN: {companyForm.abn}</p>
+                        <p className="text-slate-700">{companyForm.address}</p>
+                        <p className="text-slate-700">Phone: <span className="font-mono">{companyForm.phone}</span> &bull; Web: {(companyForm as any).website || 'atspecialists.com.au'}</p>
+                      </div>
+                    </div>
+
+                    {/* Document Title & Reference */}
+                    <div className="flex justify-between items-center gap-2 pt-1 border-b border-slate-200 pb-2">
+                      <div>
+                        <h1 className="text-base font-black text-black tracking-tight uppercase">
+                          {currentPdf?.title || canonical?.name}
+                        </h1>
+                        <div className="text-[10px] text-slate-500 mt-0.5">{currentPdf?.subtitle || 'Official Healthcare Equipment Schedule'}</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-mono font-bold text-xs bg-slate-100 border border-slate-300 px-2.5 py-1 rounded inline-block text-slate-800">
+                          #&#123;&#123;document_id&#125;&#125;
+                        </span>
+                        <div className="text-[9.5px] text-slate-400 font-mono mt-0.5">Date: &#123;&#123;request_date&#125;&#125;</div>
+                      </div>
+                    </div>
+
+                    {/* 2-Column Info Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-black">
+                      <div className="border border-slate-300 p-3 rounded-xl bg-slate-50/70 space-y-1">
+                        <div className="font-bold text-[10px] uppercase text-black border-b border-slate-200 pb-1 flex justify-between">
+                          <span>Customer Request Recipient:</span>
+                          <span className="text-[#147A7A] font-bold text-[9px] bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded">
+                            Auto-Populated
+                          </span>
+                        </div>
+                        <p className="font-mono font-bold text-slate-900">&#123;&#123;customer_name&#125;&#125;</p>
+                        <p className="text-slate-600 text-[10.5px] font-mono">&#123;&#123;delivery_address&#125;&#125;</p>
+                        <p className="text-slate-600 text-[10.5px] font-mono">Email: &#123;&#123;customer_email&#125;&#125; &bull; Phone: &#123;&#123;customer_phone&#125;&#125;</p>
+                        {(selectedMailType === 'ndis_quote' || selectedMailType === 'order') && (
+                          <p className="text-[#0F766E] text-[10px] font-mono pt-1 border-t border-slate-200">
+                            NDIS #: &#123;&#123;ndis_number&#125;&#125; &bull; Plan: &#123;&#123;plan_type&#125;&#125;
+                          </p>
+                        )}
+                      </div>
+                      <div className="border border-slate-300 p-3 rounded-xl bg-slate-50/70 space-y-1">
+                        <div className="font-bold text-[10px] uppercase text-black border-b border-slate-200 pb-1 flex justify-between">
+                          <span>Validity &amp; Terms:</span>
+                          <span className="text-[10px] text-teal-800 font-bold">{currentPdf?.tagline || canonical?.badge}</span>
+                        </div>
+                        <p className="font-bold text-slate-900">{currentPdf?.terms || 'Strictly 14 Days Net (ATO & NDIS Standard)'}</p>
+                        <p className="text-[10px] text-slate-500">Document Type: {canonical?.shortTitle} &bull; ATSA Compliance</p>
+                        <p className="text-[10px] text-[#147A7A] font-semibold">Trigger: Customer Website Request Submission</p>
+                      </div>
+                    </div>
+
+                    {/* Empty Dynamic Items Table */}
+                    <div className="overflow-x-auto space-y-2">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr className="border-t-2 border-b-2 border-slate-900 font-bold uppercase text-[10px] text-black">
+                            <th className="py-2 text-left">Code / Support #</th>
+                            <th className="py-2 text-left">Customer Requested Equipment / Specifications</th>
+                            <th className="py-2 text-center w-12">Qty</th>
+                            <th className="py-2 text-right w-24">Rate</th>
+                            <th className="py-2 text-right w-24">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-[10.5px] font-mono">
+                          <tr>
+                            <td className="py-2.5 font-bold text-[#147A7A]">&#123;&#123;support_item_code_1&#125;&#125;</td>
+                            <td className="py-2.5 font-sans">
+                              <span className="font-bold text-slate-900 block font-mono">&#123;&#123;customer_requested_item_1&#125;&#125;</span>
+                              <span className="text-[10px] text-slate-500 block font-mono">&#123;&#123;item_1_clinical_specifications_size_and_options&#125;&#125;</span>
+                            </td>
+                            <td className="py-2.5 text-center font-bold">&#123;&#123;qty_1&#125;&#125;</td>
+                            <td className="py-2.5 text-right font-mono">&#123;&#123;unit_rate_1&#125;&#125;</td>
+                            <td className="py-2.5 text-right font-mono font-bold">&#123;&#123;item_total_1&#125;&#125;</td>
+                          </tr>
+                          <tr>
+                            <td className="py-2.5 font-bold text-[#147A7A]">&#123;&#123;support_item_code_2&#125;&#125;</td>
+                            <td className="py-2.5 font-sans">
+                              <span className="font-bold text-slate-900 block font-mono">&#123;&#123;customer_requested_item_2&#125;&#125;</span>
+                              <span className="text-[10px] text-slate-500 block font-mono">&#123;&#123;item_2_clinical_specifications_size_and_options&#125;&#125;</span>
+                            </td>
+                            <td className="py-2.5 text-center font-bold">&#123;&#123;qty_2&#125;&#125;</td>
+                            <td className="py-2.5 text-right font-mono">&#123;&#123;unit_rate_2&#125;&#125;</td>
+                            <td className="py-2.5 text-right font-mono font-bold">&#123;&#123;item_total_2&#125;&#125;</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-2 border-t-2 border-slate-900 items-center">
+                      <div className="sm:col-span-7 text-[10px] text-slate-600">
+                        {currentPdf?.notes && <p className="font-medium text-slate-700">{currentPdf.notes}</p>}
+                        {currentPdf?.showStatutoryNotice && (<p className="text-[9.5px] text-teal-900 pt-1 border-t border-slate-200">{currentPdf.statutoryNoticeText}</p>)}
+                      </div>
+                      <div className="sm:col-span-5 text-right text-xs space-y-1">
+                        <div className="flex justify-between text-slate-600">
+                          <span>Subtotal:</span>
+                          <span className="font-mono font-bold text-black">&#123;&#123;subtotal&#125;&#125; AUD</span>
+                        </div>
+                        <div className="flex justify-between text-slate-600">
+                          <span>Delivery / Freight:</span>
+                          <span className="font-mono font-bold text-black">&#123;&#123;delivery_fee&#125;&#125; AUD</span>
+                        </div>
+                        <div className="flex justify-between text-slate-600">
+                          <span>GST:</span>
+                          <span className="font-mono text-emerald-800">$0.00 (GST-Free)</span>
+                        </div>
+                        <div className="flex justify-between border-t-2 border-slate-900 pt-1 text-sm font-black text-black">
+                          <span>TOTAL:</span>
+                          <span className="font-mono text-[#147A7A]">&#123;&#123;total&#125;&#125; AUD</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* EFT Remittance Card */}
+                    <div className="border border-teal-200 bg-teal-50/60 rounded-xl p-3 text-xs space-y-1.5">
+                      <div className="font-bold text-xs text-[#147A7A] flex items-center gap-1.5 border-b border-teal-200/80 pb-1">
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span>{currentPdf?.bankTitle || 'Direct Bank Transfer (EFT) Remittance Details:'}</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+                        <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
+                          <span className="text-[10px] text-slate-500 font-semibold block">Bank</span>
+                          <span className="font-bold text-slate-900 text-[11px] block leading-snug">{(currentPdf as any)?.bankName || companyForm.bankName}</span>
+                        </div>
+                        <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
+                          <span className="text-[10px] text-slate-500 font-semibold block">Account Name</span>
+                          <span className="font-bold text-slate-900 text-[11px] block leading-snug">{(currentPdf as any)?.accountName || companyForm.accountName}</span>
+                        </div>
+                        <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
+                          <span className="text-[10px] text-slate-500 font-semibold block">BSB</span>
+                          <span className="font-mono font-black text-slate-900 text-xs block">{(currentPdf as any)?.bsb || companyForm.bsb}</span>
+                        </div>
+                        <div className="bg-white p-2.5 rounded-lg border border-teal-100 shadow-2xs">
+                          <span className="text-[10px] text-slate-500 font-semibold block">Account Number</span>
+                          <span className="font-mono font-black text-slate-900 text-xs block">{(currentPdf as any)?.accountNumber || companyForm.accountNumber}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Acceptance Slip */}
+                    <div className="pt-1">
+                      <div className="text-center text-[8.5px] font-mono text-slate-400 border-b border-dashed border-slate-300 pb-0.5 mb-1.5">
+                        &#9986; --- DOCUMENT ACCEPTANCE SLIP (RETURN COPY) --- &#9986;
+                      </div>
+                      <div className="border border-slate-200 p-2.5 rounded-xl text-[10.5px] bg-slate-50 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+                          <span className="font-bold text-slate-700 block mb-1">
+                            {selectedMailType === 'ndis_quote'
+                              ? 'Participant / Nominee Approval'
+                              : selectedMailType === 'hire'
+                              ? 'Hirer / Client Agreement'
+                              : selectedMailType === 'order'
+                              ? 'Recipient Confirmation'
+                              : 'Authorized Client Approval'}
+                          </span>
+                          <span className="font-mono text-slate-900 block mt-1">&#123;&#123;customer_name&#125;&#125;</span>
+                          <div className="pt-3 border-b border-slate-300" />
+                          <div className="flex justify-between text-[9px] text-slate-400 mt-1">
+                            <span>Authorized Signature</span>
+                            <span>Date: ____ / ____ / 2026</span>
+                          </div>
+                        </div>
+                        <div className="bg-white p-2.5 rounded-lg border border-slate-200">
+                          <span className="font-bold text-slate-700 block mb-1">
+                            {selectedMailType === 'ndis_quote'
+                              ? 'Plan Manager Sign-Off / Claim Ref'
+                              : 'Purchase Order / Claim Reference'}
+                          </span>
+                          <div className="text-slate-600 font-mono text-[10px]">PO / Claim Ref: ______________________</div>
+                          <div className="pt-2 border-b border-slate-300" />
+                          <div className="flex justify-between text-[9px] text-slate-400 mt-1">
+                            <span>Authorized Officer Signature</span>
+                            <span>Date: ____ / ____ / 2026</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer Bar */}
+                    <div className="border-t border-slate-200 pt-2 flex flex-col sm:flex-row justify-between text-[9.5px] text-slate-500">
+                      <span>{currentPdf?.footerText || (companyForm as any).footerNotice || 'Assistive Technology Specialists Australia Pty Ltd'}</span>
+                      <span className="font-bold text-[#147A7A]">Verified Official ATSA Record</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>)}
 
@@ -3398,7 +4807,6 @@ export function AdminInvoices() {
               <option value="order">NDIS Invoice</option>
               <option value="hire">EQUIPMENT HIRE</option>
               <option value="quote">EQUIPMENT INVOICE</option>
-              <option value="trial">EQUIPMENT TRIAL</option>
               <option value="contact">Clinical Advisory</option>
             </select>
           </div>
@@ -3434,9 +4842,9 @@ export function AdminInvoices() {
                     <td className="py-3 px-3 text-right font-bold text-slate-900">
                       ${Number(doc.total || 0).toFixed(2)}
                     </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <Check className="w-3 h-3" />
+                    <td className="py-3 px-3 text-center whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                        <Check className="w-3.5 h-3.5" />
                         Dispatched
                       </span>
                     </td>

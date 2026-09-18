@@ -133,13 +133,13 @@ export function AdminOrders() {
                 <span className={`px-3 py-0.5 rounded-full text-xs font-bold ${cfg.badgeColor}`}>
                   {cfg.label}
                 </span>
-                {isMixed ? (<span className="px-3 py-0.5 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                    Mixed Order: {buyItems.reduce((s, i) => s + (i.quantity || 1), 0)} Buy + {hireItems.reduce((s, i) => s + (i.quantity || 1), 0)} Hire
-                  </span>) : hireItems.length > 0 ? (<span className="px-3 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                    Equipment Hire ({hireItems.reduce((s, i) => s + (i.quantity || 1), 0)} items)
-                  </span>) : (<span className="px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Outright Purchase ({buyItems.reduce((s, i) => s + (i.quantity || 1), 0)} items)
-                  </span>)}
+                <span className="text-xs font-semibold text-slate-600">
+                  {isMixed
+                    ? `Mixed Order: ${buyItems.reduce((s, i) => s + (i.quantity || 1), 0)} Buy + ${hireItems.reduce((s, i) => s + (i.quantity || 1), 0)} Hire`
+                    : hireItems.length > 0
+                    ? `Equipment Hire (${hireItems.reduce((s, i) => s + (i.quantity || 1), 0)} items)`
+                    : `Outright Purchase (${buyItems.reduce((s, i) => s + (i.quantity || 1), 0)} items)`}
+                </span>
               </div>
             </div>
           </div>
@@ -203,7 +203,7 @@ export function AdminOrders() {
                     </div>
                     <span>Outright Purchased Equipment ({buyItems.length})</span>
                   </h2>
-                  <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  <span className="text-xs font-semibold text-emerald-700">
                     Permanent Ownership / Capital AT
                   </span>
                 </div>
@@ -265,7 +265,7 @@ export function AdminOrders() {
                     </div>
                     <span>Equipment Hire & Rental Schedule ({hireItems.length})</span>
                   </h2>
-                  <span className="text-[11px] font-bold text-[#D97706] bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                  <span className="text-xs font-semibold text-amber-700">
                     Clinical Rental / Loan Scheme
                   </span>
                 </div>
@@ -642,23 +642,28 @@ export function AdminOrders() {
                         <p className="text-xs text-slate-500 font-mono font-medium">{o.customerEmail}</p>
                       </td>
                       <td className="px-3 sm:px-6 py-4 hidden md:table-cell whitespace-nowrap">
-                        {isMixed ? (<span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200 shadow-2xs">
-                            <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
-                            Mixed ({buyCount} Buy + {hireCount} Hire)
-                          </span>) : hireCount > 0 ? (<span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>
-                            Hire ({hireCount} {hireCount === 1 ? 'item' : 'items'})
-                          </span>) : (<span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                            Buy ({buyCount} {buyCount === 1 ? 'item' : 'items'})
-                          </span>)}
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
+                          isMixed ? 'text-purple-700' : hireCount > 0 ? 'text-amber-800' : 'text-emerald-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            isMixed ? 'bg-purple-600' : hireCount > 0 ? 'bg-amber-600' : 'bg-emerald-600'
+                          }`}></span>
+                          {isMixed
+                            ? `Mixed (${buyCount} Buy + ${hireCount} Hire)`
+                            : hireCount > 0
+                            ? `Hire (${hireCount} ${hireCount === 1 ? 'item' : 'items'})`
+                            : `Buy (${buyCount} ${buyCount === 1 ? 'item' : 'items'})`}
+                        </span>
                       </td>
                       <td className="px-3 sm:px-6 py-4 font-bold font-mono text-slate-900 text-sm whitespace-nowrap">
                         {formatCurrency(o.total)}
                       </td>
                       <td className="px-3 sm:px-6 py-4 hidden lg:table-cell whitespace-nowrap">
-                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase ${o.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
-                          {o.paymentStatus.toUpperCase()}
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase ${
+                          o.paymentStatus === 'paid' ? 'text-emerald-700' : 'text-amber-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${o.paymentStatus === 'paid' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                          {o.paymentStatus}
                         </span>
                       </td>
                       <td className="px-3 sm:px-6 py-4 whitespace-nowrap">

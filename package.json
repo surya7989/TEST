@@ -20,6 +20,7 @@
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.69.0",
     "@typescript-eslint/parser": "^8.69.0",
+    "sharp": "^0.35.4",
     "typescript": "^5.8.2"
   },
   "engines": {

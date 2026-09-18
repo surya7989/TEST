@@ -598,6 +598,7 @@ export function ProductPage() {
                   src={activeDisplayImage}
                   alt={product.name}
                   eager
+                  fetchPriority="high"
                   style={{
                     transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
                     transform: isHovered ? 'scale(1.85)' : 'scale(1)',

@@ -192,13 +192,15 @@ export function AdminDashboard() {
                           {order.customerName}
                         </td>
                         <td className="px-4 sm:px-6 py-3.5 hidden md:table-cell whitespace-nowrap">
-                          {isMixed ? (<span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-50 text-purple-800 border border-purple-200">
-                              Mixed ({buyCount}B + {hireCount}H)
-                            </span>) : hireCount > 0 ? (<span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
-                              Hire ({hireCount})
-                            </span>) : (<span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              Buy ({buyCount})
-                            </span>)}
+                          <span className={`text-xs font-semibold ${
+                            isMixed ? 'text-purple-700' : hireCount > 0 ? 'text-amber-800' : 'text-emerald-700'
+                          }`}>
+                            {isMixed
+                              ? `Mixed (${buyCount}B + ${hireCount}H)`
+                              : hireCount > 0
+                              ? `Hire (${hireCount})`
+                              : `Buy (${buyCount})`}
+                          </span>
                         </td>
                         <td className="px-4 sm:px-6 py-3.5 font-medium font-mono text-slate-900 whitespace-nowrap">
                           {formatCurrency(order.total)}

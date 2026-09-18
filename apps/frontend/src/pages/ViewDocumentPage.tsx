@@ -112,8 +112,8 @@ export function ViewDocumentPage() {
   const isHire = docData?.templateId === 'hire' || docData?.templateId === 'ndis_hire' || (docId && (docId.toUpperCase().startsWith('HIR') || docId.toUpperCase().includes('HIRE')));
   const isNdis = !isHire && (docData?.templateId === 'ndis_quote' || (docId && docId.toUpperCase().includes('NDIS')));
   const isInvoice = !isHire && (docData?.templateId === 'order' || (docId && (docId.startsWith('INV') || docId.startsWith('ORD'))));
-  const isTrial = docData?.templateId === 'trial' || docData?.templateId === 'ndis_trial' || docData?.templateId === 'booking' || (docId && docId.toUpperCase().includes('TRL'));
   const isQuote = !isHire && !isNdis && (docData?.templateId === 'quote' || docData?.templateId === 'product_quote' || (docId && docId.toUpperCase().includes('QT')));
+  const isContact = docData?.templateId === 'contact' || (docId && (docId.toUpperCase().startsWith('CON') || docId.toUpperCase().includes('ADV')));
   const isReferral = docData?.templateId === 'referral';
 
   const customTitle = docData?.customSettings?.pdfTemplate?.title || docData?.title;
@@ -124,8 +124,8 @@ export function ViewDocumentPage() {
       ? 'NDIS QUOTATION'
       : isInvoice
       ? 'NDIS INVOICE'
-      : isTrial
-      ? 'EQUIPMENT TRIAL'
+      : isContact
+      ? 'CLINICAL ADVISORY'
       : isReferral
       ? 'NDIS CLINICAL REFERRAL & INTAKE'
       : 'EQUIPMENT INVOICE'
@@ -301,15 +301,15 @@ export function ViewDocumentPage() {
                     ? 'Hire Tenure & Agreement Schedule:'
                     : isNdis
                     ? 'Plan Management & Remittance:'
-                    : isTrial
-                    ? 'Clinical Evaluation Details:'
+                    : isContact
+                    ? 'Clinical Advisory & Specialist Consultation:'
                     : 'Quotation Terms & Validity:'}
                 </span>
                 <span className="text-[10px] font-bold text-[#147A7A]">
                   {isHire
                     ? `${docData?.extraMeta?.hireDurationWeeks || 2} Weeks Initial`
-                    : isTrial
-                    ? 'COMPLIMENTARY ($0.00)'
+                    : isContact
+                    ? 'SPECIALIST ADVICE'
                     : isNdis
                     ? docData?.extraMeta?.planType || 'NDIS'
                     : docData?.extraMeta?.validityPeriod || '30 Days Validity'}
@@ -320,8 +320,8 @@ export function ViewDocumentPage() {
                   ? (docData?.extraMeta?.hireLocationType === 'hospital' ? 'Hospital Inpatient Handover' : 'Residential Equipment Hire')
                   : isNdis
                   ? docData?.extraMeta?.planManager || docData?.extraMeta?.planType || 'Self-Managed Participant'
-                  : isTrial
-                  ? docData?.extraMeta?.prescribingClinician || 'Clinical Evaluation Team'
+                  : isContact
+                  ? docData?.extraMeta?.prescribingClinician || 'Clinical Advisory Team'
                   : docData?.extraMeta?.customerCompany || 'Commercial Purchasing Entity'}
               </p>
               {isHire && (
@@ -356,10 +356,10 @@ export function ViewDocumentPage() {
                   <strong className="text-black font-mono">{docData.extraMeta.planManagerEmail}</strong>
                 </p>
               )}
-              {isTrial && (
+              {isContact && (
                 <p>
-                  <span className="text-slate-600">Scheduled Slot:</span>{' '}
-                  <strong className="text-black">{docData?.extraMeta?.trialDate || 'Within 5 Business Days'}</strong>
+                  <span className="text-slate-600">Consultation Schedule:</span>{' '}
+                  <strong className="text-black">{docData?.extraMeta?.consultationDate || 'Priority Clinical Advisory'}</strong>
                 </p>
               )}
               {docData?.extraMeta?.paymentStatus && (
@@ -388,8 +388,8 @@ export function ViewDocumentPage() {
                 <strong>
                   {isHire
                     ? '2-Week Min Hire • Ongoing weekly rental until collection booked'
-                    : isTrial
-                    ? 'Complimentary Clinical Evaluation ($0.00 Fee)'
+                    : isContact
+                    ? 'Specialist Clinical Advice • Confidential Assessment'
                     : isNdis
                     ? 'Quote Valid for 60 Days (NDIA Price Arrangements Compliant)'
                     : 'Strictly 14 Days Net (ATO & Commercial Standard)'}
@@ -544,7 +544,7 @@ export function ViewDocumentPage() {
 
               <div className="bg-white p-2 rounded-lg border border-teal-100">
                 <span className="text-[10px] text-slate-500 font-semibold block">Account Name</span>
-                <span className="font-bold text-slate-900 text-[11px] truncate block">{provider.accountName}</span>
+                <span className="font-bold text-slate-900 text-[11px] block leading-snug">{provider.accountName}</span>
               </div>
 
               <div className="bg-white p-2 rounded-lg border border-teal-100 flex items-center justify-between">
@@ -594,8 +594,8 @@ export function ViewDocumentPage() {
                     ? 'NDIS Quotation Participant & Plan Manager Authorization'
                     : isInvoice
                     ? 'NDIS Invoice & Payment Confirmation'
-                    : isTrial
-                    ? 'EQUIPMENT TRIAL Handover Authorization'
+                    : isContact
+                    ? 'Clinical Advisory & Specialist Consultation Acceptance'
                     : 'EQUIPMENT INVOICE Purchase Authorization'}
                 </span>
                 <span className="font-mono text-[11px] text-slate-700">
@@ -612,8 +612,8 @@ export function ViewDocumentPage() {
                       ? 'Participant / Plan Manager Approval:'
                       : isInvoice
                       ? 'Recipient Confirmation:'
-                      : isTrial
-                      ? 'Clinical Handover Signature:'
+                      : isContact
+                      ? 'Client / Clinician Acceptance:'
                       : 'Purchasing Entity Approval Signature:'}
                   </span>
                   {isHire && (

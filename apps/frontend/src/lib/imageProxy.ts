@@ -1,40 +1,48 @@
 /**
- * Image Proxy Utility
+ * Image Asset Helper for AT Specialists Australia
  * 
- * Rehab Hire (rehabhire.com.au) blocks hotlinking of images (returns 403).
- * This utility routes all external product images through our own server-side
- * proxy so they load correctly in the browser.
- * 
- * In development: Vite dev server proxy at /img-proxy/
- * In production: PHP backend proxy at /api/img-proxy.php
+ * All 4,300+ product photos, gallery views, and variant swatches are stored
+ * locally in /images/products/.
+ * No external proxy or hotlinking is used.
  */
 
-const PROXY_PREFIX = '/img-proxy/';
+export const FALLBACK_PRODUCT_IMAGE = '/images/products/Configura-Comfort-Black-Upright-2026.webp';
 
 /**
- * Placeholder SVG data URI for when images fail to load.
- * Shows a clean product placeholder icon.
+ * Clean clinical product placeholder SVG for when no image is available.
+ * Elegant assistive medical technology device design (clean, modern, no cartoon faces).
  */
-export const PLACEHOLDER_IMAGE = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23F1F5F9'/%3E%3Cg transform='translate(150,140)'%3E%3Cpath d='M50 0C22.4 0 0 22.4 0 50v20c0 27.6 22.4 50 50 50s50-22.4 50-50V50C100 22.4 77.6 0 50 0z' fill='%23CBD5E1'/%3E%3Ccircle cx='35' cy='45' r='5' fill='%2394A3B8'/%3E%3Ccircle cx='65' cy='45' r='5' fill='%2394A3B8'/%3E%3Cpath d='M35 70c0 0 5 10 15 10s15-10 15-10' stroke='%2394A3B8' fill='none' stroke-width='3' stroke-linecap='round'/%3E%3C/g%3E%3Ctext x='200' y='250' text-anchor='middle' font-family='Arial,sans-serif' font-size='14' fill='%2394A3B8'%3EProduct Image%3C/text%3E%3C/svg%3E`;
+export const PLACEHOLDER_IMAGE = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23F8FAFC'/%3E%3Crect x='1' y='1' width='398' height='398' rx='16' fill='none' stroke='%23E2E8F0' stroke-width='2'/%3E%3Cg transform='translate(160,140)' stroke='%230F766E' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='10' y='20' width='60' height='50' rx='6'/%3E%3Cpath d='M25 20V12a8 8 0 0 1 16 0v8'/%3E%3Cpath d='M40 38v14M33 45h14'/%3E%3C/g%3E%3Ctext x='200' y='245' text-anchor='middle' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif' font-size='13' font-weight='600' fill='%230F766E'%3EAT SPECIALISTS%3C/text%3E%3Ctext x='200' y='265' text-anchor='middle' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif' font-size='11' fill='%2394A3B8'%3EAssistive Technology Equipment%3C/text%3E%3C/svg%3E`;
 
 /**
- * Convert an external image URL to go through our proxy.
- * Only proxies rehabhire.com.au URLs; other URLs pass through unchanged.
+ * Return the direct image URL.
+ * Automatically resolves any legacy URLs to the local /images/products/ file.
+ * Completely bypasses any external or internal image proxy.
  */
 export function proxyImageUrl(url: string | undefined | null): string {
-  if (!url) return PLACEHOLDER_IMAGE;
+  if (!url) return FALLBACK_PRODUCT_IMAGE;
   
-  // Only proxy rehabhire.com.au URLs
-  if (url.includes('rehabhire.com.au')) {
-    // Strip upstream scheme and host to avoid triggering WAF / ModSecurity RFI rules
-    const cleanPath = url.replace(/^https?:\/\/(?:www\.)?rehabhire\.com\.au/i, '');
-    if (cleanPath.startsWith('/')) {
-      return `${PROXY_PREFIX}?path=${encodeURIComponent(cleanPath)}`;
-    }
-    return `${PROXY_PREFIX}?url=${encodeURIComponent(url)}`;
+  // Return local image path directly
+  if (url.startsWith('/')) {
+    return url;
   }
   
-  // Return other URLs as-is (local images, unsplash, etc.)
+  // If an old legacy external URL is passed from local storage / cache, map to local image
+  if (url.includes('rehabhire.com.au')) {
+    try {
+      const u = new URL(url);
+      const parts = u.pathname.split('/');
+      const base = parts[parts.length - 1];
+      const cleanBase = base ? base.replace(/[^a-zA-Z0-9._-]/g, '_') : '';
+      if (cleanBase && cleanBase !== '.') {
+        return `/images/products/${cleanBase}`;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  
+  // Return URL directly without any proxy
   return url;
 }
 
@@ -42,16 +50,21 @@ export function proxyImageUrl(url: string | undefined | null): string {
  * Get a fallback image URL for when the primary image fails to load.
  */
 export function getFallbackImage(): string {
-  return PLACEHOLDER_IMAGE;
+  return FALLBACK_PRODUCT_IMAGE;
 }
 
 /**
  * Image error handler for <img> elements.
- * Sets the src to the placeholder on error.
+ * Gracefully falls back to the flagship equipment photo or clean placeholder.
  */
 export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event>): void {
   const target = e.currentTarget;
-  // Prevent infinite loop if placeholder also fails
+  // If the specific image failed, fallback to the verified local flagship product photo
+  if (!target.src.includes('Configura-Comfort-Black-Upright-2026.webp') && !target.src.startsWith('data:')) {
+    target.src = FALLBACK_PRODUCT_IMAGE;
+    return;
+  }
+  // If even that fails, show the clean AT Specialists vector banner
   if (!target.src.startsWith('data:')) {
     target.src = PLACEHOLDER_IMAGE;
   }

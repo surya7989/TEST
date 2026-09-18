@@ -79,19 +79,21 @@ export interface ExactEmailPreviewProps {
     accountName?: string;
     bsb?: string;
     accountNumber?: string;
-    brandColor?: string;
     footerText?: string;
+    mailTemplate?: any;
     mailTemplates?: Record<string, any>;
     [key: string]: any;
   };
   showEnvelope?: boolean;
+  onViewDocumentClick?: () => void;
+  isTemplateFormat?: boolean;
 }
 
 export function ExactEmailPreview({
   templateId,
   recipientType = 'customer',
   previewDevice = 'desktop',
-  docId,
+  docId = 'SAMPLE-DOC',
   customerName,
   customerEmail,
   customerPhone,
@@ -105,6 +107,8 @@ export function ExactEmailPreview({
   extraMeta = {},
   customSettings = {},
   showEnvelope = true,
+  onViewDocumentClick,
+  isTemplateFormat = false,
 }: ExactEmailPreviewProps) {
   const companyName = customSettings.companyName || 'AT Specialists Australia Pty Ltd';
   const abn = customSettings.abn || '48 123 456 789';
@@ -158,12 +162,40 @@ export function ExactEmailPreview({
   const viewDocumentUrl = `/view-document/${encodeURIComponent(docId)}`;
 
   // Determine Subject, Status Badge, Headline, Subtext
+  // Determine Subject, Status Badge, Headline, Subtext
   let subject = '';
   let statusBadge = '';
   let headline = '';
   let subtext = '';
 
-  if (tId === 'order' || tId === 'order_invoice' || tId === 'product_buy') {
+  if (isTemplateFormat) {
+    if (tId === 'order' || tId === 'order_invoice' || tId === 'product_buy') {
+      subject = `NDIS Invoice #{{document_id}} — ${companyName}`;
+      statusBadge = '✓ NDIS INVOICE • REF #{{document_id}}';
+      headline = 'Thank you for your order, {{customer_name}}';
+      subtext = 'Your payment has been processed and your official NDIS Invoice is ready and viewable online below.';
+    } else if (tId === 'quote' || tId === 'product_quote') {
+      subject = `EQUIPMENT INVOICE #{{document_id}} — ${companyName}`;
+      statusBadge = '📋 COMMERCIAL QUOTATION • REF #{{document_id}}';
+      headline = 'Equipment Quotation for {{customer_name}}';
+      subtext = 'Thank you for requesting an equipment quotation. Your itemized schedule and verified digital document link are provided below.';
+    } else if (tId === 'ndis_quote') {
+      subject = `NDIS Quotation #{{document_id}} — ${companyName}`;
+      statusBadge = '✓ NDIS QUOTATION • REF #{{document_id}}';
+      headline = 'Your NDIS Quotation is Ready, {{customer_name}}';
+      subtext = 'Prepared according to NDIA Price Arrangements with line-item support codes and verified digital document link below.';
+    } else if (tId === 'hire' || tId === 'ndis_hire') {
+      subject = `EQUIPMENT HIRE Agreement #{{document_id}} — ${companyName}`;
+      statusBadge = '✓ HIRE AGREEMENT CONFIRMED • REF #{{document_id}}';
+      headline = 'Equipment Hire Agreement • {{customer_name}}';
+      subtext = 'Your equipment rental booking has been scheduled for delivery. Full hire terms and schedule are viewable below.';
+    } else {
+      subject = `Clinical Advisory #{{document_id}} — ${companyName}`;
+      statusBadge = '✓ CLINICAL ADVISORY • REF #{{document_id}}';
+      headline = 'Specialist Clinical Advice & Suitability Matrix for {{customer_name}}';
+      subtext = 'Our clinical occupational therapy team has reviewed your inquiry and prepared recommendations below.';
+    }
+  } else if (tId === 'order' || tId === 'order_invoice' || tId === 'product_buy') {
     subject = isReceiver
       ? `Order Confirmation & Tax Invoice #${docId} — ${companyName}`
       : `[New Order Alert] #${docId} — ${customerName} ($${formattedTotal} AUD)`;
@@ -196,14 +228,6 @@ export function ExactEmailPreview({
     subtext = isReceiver
       ? 'Thank you for requesting an Assistive Technology quotation. Your verified digital document link and breakdown are provided below.'
       : `NDIS participant ${customerName} has submitted a quotation request. Review line items and forward to plan manager.`;
-  } else if (tId === 'trial' || tId === 'ndis_trial' || tId === 'booking') {
-    subject = isReceiver
-      ? `Home Equipment Trial & Clinical Evaluation Schedule #${docId} — ${customerName} — ${companyName}`
-      : `[Equipment Trial Scheduled] ${customerName} — Ref #${docId}`;
-    statusBadge = `📅 IN-HOME EQUIPMENT TRIAL SCHEDULED • REF #${docId}`;
-    headline = `Home Equipment Trial & Evaluation: ${customerName}`;
-    subtext =
-      'In-home clinical equipment evaluation scheduled with prescribing Occupational Therapist. Scripted equipment trial details and clinical schedule are detailed below.';
   } else if (tId === 'hire' || tId === 'ndis_hire') {
     subject = isReceiver
       ? `Equipment Hire Agreement & Schedule #${docId} — ${companyName}`
@@ -235,6 +259,12 @@ export function ExactEmailPreview({
   const customTmpl = (customSettings as any)?.mailTemplates?.[tId] || (customSettings as any)?.mailTemplate;
   const replaceTokens = (val?: string) => {
     if (!val) return '';
+    if (isTemplateFormat) {
+      // In master template format schema, keep dynamic placeholders visible
+      return val
+        .replace(/\{\{companyName\}\}/g, companyName)
+        .replace(/\{\{company_name\}\}/g, companyName);
+    }
     return val
       .replace(/\{\{docId\}\}/g, docId || '')
       .replace(/\{\{document_id\}\}/g, docId || '')
@@ -246,7 +276,7 @@ export function ExactEmailPreview({
       .replace(/\{\{total\}\}/g, `$${formattedTotal} AUD`);
   };
 
-  if (isReceiver && customTmpl?.subject) {
+  if ((isReceiver || isTemplateFormat) && customTmpl?.subject) {
     subject = replaceTokens(customTmpl.subject);
   } else if (extraMeta.subject) {
     subject = replaceTokens(extraMeta.subject);
@@ -272,8 +302,7 @@ export function ExactEmailPreview({
     subtext = replaceTokens(extraMeta.subtext);
   }
 
-  const isPdfTopic = tId !== 'contact';
-  const showPdfActionCard = extraMeta.generatePdf !== false && isPdfTopic;
+  const showPdfActionCard = extraMeta.generatePdf !== false;
 
   const isMobile = previewDevice === 'mobile';
 
@@ -282,7 +311,7 @@ export function ExactEmailPreview({
       {showEnvelope && (<div className="bg-slate-900 text-slate-200 rounded-xl p-3 text-xs space-y-1 font-mono shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1.5">
             <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-teal-400">
-              ✉️ {recipientType === 'customer' ? 'Customer Inbox View' : 'Internal Staff Alert View'}
+              ✉️ {isTemplateFormat ? 'Master Customer Email Format (Automated Trigger)' : recipientType === 'customer' ? 'Customer Inbox View' : 'Internal Staff Alert View'}
             </span>
             <span className="text-[10px] text-slate-400 font-sans">
               Format: {previewDevice === 'mobile' ? 'Mobile (390px)' : 'Desktop (640px)'}
@@ -293,7 +322,11 @@ export function ExactEmailPreview({
           </div>
           <div>
             <strong className="text-slate-400">To:</strong>{' '}
-            {isReceiver ? customerEmail || 'customer@example.com' : 'admin@atspecialists.com.au'}
+            {isTemplateFormat
+              ? '{{customer_email}} (Automated response to customer request)'
+              : isReceiver
+              ? customerEmail || 'customer@example.com'
+              : 'admin@atspecialists.com.au'}
           </div>
           <div>
             <strong className="text-slate-400">Subject:</strong> {subject}
@@ -349,10 +382,8 @@ export function ExactEmailPreview({
                 rawBody = 'Dear {{customer_name}},\n\nYour EQUIPMENT HIRE agreement has been scheduled. All equipment in our rental fleet undergoes clinical hospital-grade terminal sanitation and thorough safety inspection prior to dispatch.\n\nPlease review your hire agreement terms and handover schedule below.';
               } else if (tId === 'quote' || tId === 'product_quote') {
                 rawBody = 'Dear {{customer_name}},\n\nPlease review your EQUIPMENT INVOICE. We have itemized specifications, freight delivery allowances, and clinical warranty terms for your review.\n\nTo proceed with purchase approval or if you require an amended invoice, please let us know.';
-              } else if (tId === 'trial' || tId === 'ndis_trial' || tId === 'booking') {
-                rawBody = 'Dear {{customer_name}},\n\nYour EQUIPMENT TRIAL evaluation has been scheduled with our senior clinician. We will arrive with the requested equipment for ergonomic trial and prescription assessment.\n\nPlease review your trial schedule details in the attached document.';
               } else {
-                rawBody = 'Dear {{customer_name}},\n\nThank you for contacting AT Specialists Australia. Our clinical equipment team has reviewed your request. We have tailored assistive equipment options available to support your mobility and rehabilitation goals.';
+                rawBody = 'Dear {{customer_name}},\n\nThank you for contacting AT Specialists Australia. Our clinical equipment team has reviewed your request. We have tailored assistive equipment options available to support your mobility and rehabilitation goals.\n\nPlease review your specialist advisory and consultation summary via the document viewer link below.';
               }
             }
             return (
@@ -368,30 +399,46 @@ export function ExactEmailPreview({
           {/* Click & Visit PDF Document Action Card */}
           {showPdfActionCard && (<div className="mb-5 bg-[#F0FDFA] border-1.5 border-[#0D9488] rounded-xl p-4 text-center space-y-2.5">
               <div className="text-[11px] font-black uppercase tracking-wider text-[#0F766E]">
-                📄 Verified Digital Document
+                {tId === 'contact' ? '📄 Verified Clinical Advisory Document' : '📄 Verified Digital Document'}
               </div>
               <div className="text-sm sm:text-base font-extrabold text-slate-900">
                 Document Reference: #{docId}
               </div>
               <p className="text-xs text-slate-600 max-w-md mx-auto leading-normal">
-                Click below to open and review your itemized document &amp; printable PDF directly in your browser.
+                {tId === 'contact'
+                  ? 'Click below to review your clinical advisory recommendations & official printable document format.'
+                  : 'Click below to open and review your itemized document & printable PDF directly in your browser.'}
               </p>
               <div className="pt-1">
                 <a
                   href={viewDocumentUrl}
-                  target="_blank"
+                  target={onViewDocumentClick ? '_self' : '_blank'}
                   rel="noopener noreferrer"
-                  className="inline-block bg-[#147A7A] hover:bg-[#106262] text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-lg shadow-sm transition-transform hover:scale-102"
+                  onClick={(e) => {
+                    if (onViewDocumentClick) {
+                      e.preventDefault();
+                      onViewDocumentClick();
+                    }
+                  }}
+                  className="inline-block bg-[#147A7A] hover:bg-[#106262] text-white font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-lg shadow-sm transition-transform hover:scale-102 cursor-pointer"
                 >
-                  {customTmpl?.ctaText || extraMeta?.ctaText || '👉 Click & Visit: View PDF Document →'}
+                  {customTmpl?.ctaText ||
+                    extraMeta?.ctaText ||
+                    (tId === 'contact'
+                      ? '👉 Click & Visit: View Clinical Advisory Document →'
+                      : tId === 'ndis_quote'
+                      ? '👉 Click & Visit: View NDIS Quotation →'
+                      : tId === 'order'
+                      ? '👉 Click & Visit: View NDIS Tax Invoice →'
+                      : tId === 'hire'
+                      ? '👉 Click & Visit: View Equipment Hire Agreement →'
+                      : '👉 Click & Visit: View Equipment Invoice →')}
                 </a>
               </div>
               <div className="text-[11px] text-slate-500">
                 Instant browser view &bull; No download required &bull; ATSA Record
               </div>
             </div>)}
-
-
 
           {/* Inquiry Reference (For contact/inquiry responses) */}
           {extraMeta.originalInquiry && (

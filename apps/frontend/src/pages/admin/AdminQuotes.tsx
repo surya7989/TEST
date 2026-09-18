@@ -121,10 +121,10 @@ export function AdminQuotes() {
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-semibold text-gray-900 font-mono">{q.id}</span>
-                          <span className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase tracking-wider ${
-                            isHire ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-teal-100 text-teal-900 border border-teal-300'
+                          <span className={`text-xs font-semibold ${
+                            isHire ? 'text-amber-700' : 'text-[#147A7A]'
                           }`}>
-                            {isHire ? 'Hire Quote' : 'NDIS Quote'}
+                            &middot; {isHire ? 'Hire Quote' : 'NDIS Quote'}
                           </span>
                         </div>
                         <p className="text-[11px] text-gray-400 mt-0.5">

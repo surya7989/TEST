@@ -30,15 +30,7 @@ export function PopularProducts() {
 
     const flagship: Product[] = [];
 
-    // 1. Any product explicitly marked with a badge, featured, or custom-added by admin
-    source.forEach((p) => {
-      const isSpecial = (p as any).badge || (p as any).featured || (p as any).isFeatured;
-      if (isSpecial && p.image && p.image.trim().length > 0 && !flagship.some((s) => s.id === p.id)) {
-        flagship.push(p);
-      }
-    });
-
-    // 2. Match flagship products cleanly (normalized so removal of ® or minor title edits don't break them)
+    // 1. Match flagship clinical hero equipment products first
     flagshipKeywords.forEach((kw) => {
       const match = source.find((p) =>
         p.image &&
@@ -48,6 +40,14 @@ export function PopularProducts() {
       );
       if (match && !flagship.some((s) => s.id === match.id)) {
         flagship.push(match);
+      }
+    });
+
+    // 2. Any product explicitly marked as featured by admin
+    source.forEach((p) => {
+      const isSpecial = (p as any).featured || (p as any).isFeatured;
+      if (isSpecial && p.image && p.image.trim().length > 0 && !flagship.some((s) => s.id === p.id)) {
+        flagship.push(p);
       }
     });
 
@@ -103,7 +103,7 @@ export function PopularProducts() {
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>) : (<div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-            {products.map((product) => {
+            {products.map((product, idx) => {
               const inWishlist = isInWishlist(product.id);
               const priceInfo = getVariantPriceInfo(product as any);
               const isHireOnly = priceInfo.isHireOnly;
@@ -125,6 +125,7 @@ export function PopularProducts() {
                         <ProductImage
                           src={product.image}
                           alt={product.name}
+                          eager={idx < 4}
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                       </Link>

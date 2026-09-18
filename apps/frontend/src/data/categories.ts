@@ -10,7 +10,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/shower-commodes",
     "description": "Attendant propelled, self propelled and tilt in space shower commodes for safe bathing and toileting.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp",
+    "image": "/images/products/Ocean-Ergo-VIP-Main.webp",
     "productCount": 97
   },
   {
@@ -21,7 +21,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bedroom/bed-accessories",
     "description": "Explore our extensive range of clinical bed accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/07/Aspire_ComfiMotion_Battery_Backup.png",
+    "image": "/images/products/Aspire_ComfiMotion_Battery_Backup.png",
     "productCount": 4
   },
   {
@@ -32,7 +32,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "buy",
     "description": "Explore our extensive range of clinical buy engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/11/Configura-Comfort-Black-Upright-2026.webp",
+    "image": "/images/products/Configura-Comfort-Black-Upright-2026.webp",
     "productCount": 0
   },
   {
@@ -43,7 +43,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "clearance-2026",
     "description": "Explore our extensive range of clinical clearance 2026 engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Aspire-Activ-Care-Bed-Rail-Clearance-50.webp",
+    "image": "/images/products/Aspire-Activ-Care-Bed-Rail-Clearance-50.webp",
     "productCount": 17
   },
   {
@@ -54,7 +54,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "arjo-products",
     "description": "Explore our extensive range of clinical arjo products engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
+    "image": "/images/products/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
     "productCount": 27
   },
   {
@@ -65,7 +65,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "arjo-products/arjo-bathroom",
     "description": "Explore our extensive range of clinical arjo bathroom engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Carendo-08.webp",
+    "image": "/images/products/Arjo-Carendo-08.webp",
     "productCount": 3
   },
   {
@@ -76,7 +76,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "arjo-products/arjo-bathroom/arjo-bath-aids",
     "description": "Explore our extensive range of clinical arjo bath aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/05/Arjo-Carevo-Badge.webp",
+    "image": "/images/products/Arjo-Carevo-Badge.webp",
     "productCount": 1
   },
   {
@@ -87,7 +87,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "arjo-products/arjo-bathroom/arjo-shower-aids",
     "description": "Explore our extensive range of clinical arjo shower aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Carendo-08.webp",
+    "image": "/images/products/Arjo-Carendo-08.webp",
     "productCount": 2
   },
   {
@@ -98,7 +98,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "arjo-products/arjo-bedroom",
     "description": "Explore our extensive range of clinical arjo bedroom engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Alpha-Active-4-Badge.webp",
+    "image": "/images/products/Arjo-Alpha-Active-4-Badge.webp",
     "productCount": 2
   },
   {
@@ -109,7 +109,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "arjo-products/arjo-bedroom/arjo-sleep-surfaces",
     "description": "Explore our extensive range of clinical arjo sleep surfaces engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Alpha-Active-4-Badge.webp",
+    "image": "/images/products/Arjo-Alpha-Active-4-Badge.webp",
     "productCount": 2
   },
   {
@@ -120,7 +120,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "arjo-products/arjo-patient-handling",
     "description": "Explore our extensive range of clinical arjo patient handling engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
+    "image": "/images/products/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
     "productCount": 21
   },
   {
@@ -131,7 +131,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "arjo-products/arjo-patient-handling/arjo-standing-and-raising-aids",
     "description": "Explore our extensive range of clinical arjo standing and raising aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Sara-Flex-Badge.webp",
+    "image": "/images/products/Arjo-Sara-Flex-Badge.webp",
     "productCount": 5
   },
   {
@@ -142,7 +142,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "arjo-products/arjo-patient-handling/arjo-floor-lifts",
     "description": "Explore our extensive range of clinical arjo floor lifts engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/08/Arjo-Maxi-Twin-Badge.webp",
+    "image": "/images/products/Arjo-Maxi-Twin-Badge.webp",
     "productCount": 4
   },
   {
@@ -153,7 +153,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "arjo-products/arjo-patient-handling/arjo-gantry-systems",
     "description": "Explore our extensive range of clinical arjo gantry systems engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/09/Arjo-Gantry-System-Badge.webp",
+    "image": "/images/products/Arjo-Gantry-System-Badge.webp",
     "productCount": 1
   },
   {
@@ -164,7 +164,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "arjo-products/arjo-patient-handling/arjo-slings",
     "description": "Explore our extensive range of clinical arjo slings engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
+    "image": "/images/products/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
     "productCount": 11
   },
   {
@@ -175,7 +175,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "arjo-products/arjo-patient-handling/arjo-slings/arjo-slings-for-standing-and-raising-aids",
     "description": "Explore our extensive range of clinical arjo slings for standing and raising aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/04/Arjo-Sara-Plus-EPS-Sling-Badge.webp",
+    "image": "/images/products/Arjo-Sara-Plus-EPS-Sling-Badge.webp",
     "productCount": 4
   },
   {
@@ -186,7 +186,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "arjo-products/arjo-patient-handling/arjo-slings/arjo-slings-for-floor-lifts",
     "description": "Explore our extensive range of clinical arjo slings for floor lifts engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
+    "image": "/images/products/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
     "productCount": 7
   },
   {
@@ -197,7 +197,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "arjo-products/arjo-wellness-chairs",
     "description": "Explore our extensive range of clinical arjo wellness chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Wellness-Nordic-Relax-Chair-06.jpg",
+    "image": "/images/products/Wellness-Nordic-Relax-Chair-06.jpg",
     "productCount": 1
   },
   {
@@ -208,7 +208,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "bariatric",
     "description": "Explore our extensive range of clinical bariatric engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/03/Configura-Bariatric-Black-01-Badge.webp",
+    "image": "/images/products/Configura-Bariatric-Black-01-Badge.webp",
     "productCount": 153
   },
   {
@@ -219,7 +219,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-bathroom-toilet",
     "description": "Explore our extensive range of clinical bariatric bathroom toilet engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/05/Arjo-Carevo-Badge.webp",
+    "image": "/images/products/Arjo-Carevo-Badge.webp",
     "productCount": 17
   },
   {
@@ -230,7 +230,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-bathroom-toilet/bariatric-bath-aids",
     "description": "Explore our extensive range of clinical bariatric bath aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/05/Arjo-Carevo-Badge.webp",
+    "image": "/images/products/Arjo-Carevo-Badge.webp",
     "productCount": 2
   },
   {
@@ -241,7 +241,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-bathroom-toilet/bariatric-shower-aids",
     "description": "Explore our extensive range of clinical bariatric shower aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire-Maxi-Adjustable-Shower-Chair-Badge.webp",
+    "image": "/images/products/Aspire-Maxi-Adjustable-Shower-Chair-Badge.webp",
     "productCount": 2
   },
   {
@@ -252,7 +252,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-bathroom-toilet/bariatric-shower-commodes",
     "description": "Explore our extensive range of clinical bariatric shower commodes engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/08/Aspire-530mm-SA-AP-TIS-SC-BTC066040-Badge.webp",
+    "image": "/images/products/Aspire-530mm-SA-AP-TIS-SC-BTC066040-Badge.webp",
     "productCount": 12
   },
   {
@@ -263,7 +263,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bariatric/bariatric-bathroom-toilet/bariatric-shower-commodes/bariatric-shower-commode-accessories",
     "description": "Explore our extensive range of clinical bariatric shower commode accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/08/Aspire-Pressure-Reducing-Commode-Closed-Seat.webp",
+    "image": "/images/products/Aspire-Pressure-Reducing-Commode-Closed-Seat.webp",
     "productCount": 3
   },
   {
@@ -274,7 +274,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bariatric/bariatric-bathroom-toilet/bariatric-shower-commodes/prescription-complex-shower-commodes-bariatric",
     "description": "Explore our extensive range of clinical prescription complex shower commodes bariatric engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/07/RAZ-AT600-Badge.webp",
+    "image": "/images/products/RAZ-AT600-Badge.webp",
     "productCount": 3
   },
   {
@@ -285,7 +285,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-bathroom-toilet/bariatric-toilet-aids",
     "description": "Explore our extensive range of clinical bariatric toilet aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire-Maxi-Adjustable-Over-Toilet-Aid-Badge.webp",
+    "image": "/images/products/Aspire-Maxi-Adjustable-Over-Toilet-Aid-Badge.webp",
     "productCount": 1
   },
   {
@@ -296,7 +296,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-bedroom",
     "description": "Explore our extensive range of clinical bariatric bedroom engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp",
+    "image": "/images/products/Empresa-LTC-Bed-Main-Badge.webp",
     "productCount": 50
   },
   {
@@ -307,7 +307,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-bedroom/bariatric-beds",
     "description": "Explore our extensive range of clinical bariatric beds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp",
+    "image": "/images/products/Empresa-LTC-Bed-Main-Badge.webp",
     "productCount": 7
   },
   {
@@ -318,7 +318,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bariatric/bariatric-bedroom/bariatric-beds/bariatric-floorline-beds",
     "description": "Explore our extensive range of clinical bariatric floorline beds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp",
+    "image": "/images/products/Empresa-LTC-Bed-Main-Badge.webp",
     "productCount": 3
   },
   {
@@ -329,7 +329,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bariatric/bariatric-bedroom/bariatric-beds/bariatric-homecare-beds",
     "description": "Explore our extensive range of clinical bariatric homecare beds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/09/Aspire-Lifestyle-Community-Bed-Badge.webp",
+    "image": "/images/products/Aspire-Lifestyle-Community-Bed-Badge.webp",
     "productCount": 4
   },
   {
@@ -340,7 +340,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-bedroom/bariatric-sleep-surfaces",
     "description": "Explore our extensive range of clinical bariatric sleep surfaces engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Alpha-Active-4-Badge.webp",
+    "image": "/images/products/Arjo-Alpha-Active-4-Badge.webp",
     "productCount": 39
   },
   {
@@ -351,7 +351,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bariatric/bariatric-bedroom/bariatric-sleep-surfaces/bariatric-air-mattresses",
     "description": "Explore our extensive range of clinical bariatric air mattresses engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Alpha-Active-4-Badge.webp",
+    "image": "/images/products/Arjo-Alpha-Active-4-Badge.webp",
     "productCount": 8
   },
   {
@@ -362,7 +362,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bariatric/bariatric-bedroom/bariatric-sleep-surfaces/bariatric-hybrid-mattresses",
     "description": "Explore our extensive range of clinical bariatric hybrid mattresses engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/10/Aspire-Hybrid-Comfort-Mattress-Badge.webp",
+    "image": "/images/products/Aspire-Hybrid-Comfort-Mattress-Badge.webp",
     "productCount": 4
   },
   {
@@ -373,7 +373,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bariatric/bariatric-bedroom/bariatric-sleep-surfaces/bariatric-overlays",
     "description": "Explore our extensive range of clinical bariatric overlays engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Icare-ActiveFloat™-Overlay-Badge.webp",
+    "image": "/images/products/Icare-ActiveFloat_-Overlay-Badge.webp",
     "productCount": 3
   },
   {
@@ -384,7 +384,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bariatric/bariatric-bedroom/bariatric-sleep-surfaces/bariatric-static-mattresses",
     "description": "Explore our extensive range of clinical bariatric static mattresses engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Arjo-ComfortFlx-Badge.webp",
+    "image": "/images/products/Arjo-ComfortFlx-Badge.webp",
     "productCount": 24
   },
   {
@@ -395,7 +395,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-bedroom/bariatric-bedroom-toileting",
     "description": "Explore our extensive range of clinical bariatric bedroom toileting engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Maxi-Adjustable-Bedside-Commode-BEC045125-Badge.webp",
+    "image": "/images/products/Aspire-Maxi-Adjustable-Bedside-Commode-BEC045125-Badge.webp",
     "productCount": 4
   },
   {
@@ -406,7 +406,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-chairs",
     "description": "Explore our extensive range of clinical bariatric chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/03/Configura-Bariatric-Black-01-Badge.webp",
+    "image": "/images/products/Configura-Bariatric-Black-01-Badge.webp",
     "productCount": 15
   },
   {
@@ -417,7 +417,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-chairs/bariatric-day-chairs",
     "description": "Explore our extensive range of clinical bariatric day chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Age-Prepcare-Low-Back-Day-Chair-Bariatric-Badge.webp",
+    "image": "/images/products/Age-Prepcare-Low-Back-Day-Chair-Bariatric-Badge.webp",
     "productCount": 8
   },
   {
@@ -428,7 +428,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-chairs/bariatric-lift-chairs",
     "description": "Explore our extensive range of clinical bariatric lift chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/03/Configura-Bariatric-Black-01-Badge.webp",
+    "image": "/images/products/Configura-Bariatric-Black-01-Badge.webp",
     "productCount": 4
   },
   {
@@ -439,7 +439,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-chairs/bariatric-pressure-relief-chairs",
     "description": "Explore our extensive range of clinical bariatric pressure relief chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/10/Cobalt-Health-Air-Chair-Bariatric-Badge.webp",
+    "image": "/images/products/Cobalt-Health-Air-Chair-Bariatric-Badge.webp",
     "productCount": 3
   },
   {
@@ -450,7 +450,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-medical-health-scales",
     "description": "Explore our extensive range of clinical bariatric medical health scales engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/05/AND-BCS-Bariatric-Chair-Scale-Badge.webp",
+    "image": "/images/products/AND-BCS-Bariatric-Chair-Scale-Badge.webp",
     "productCount": 3
   },
   {
@@ -461,7 +461,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-mobility",
     "description": "Explore our extensive range of clinical bariatric mobility engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Aspire-XL-Seat-Walker-WAF750020SL-Badge.webp",
+    "image": "/images/products/Aspire-XL-Seat-Walker-WAF750020SL-Badge.webp",
     "productCount": 12
   },
   {
@@ -472,7 +472,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-mobility/bariatric-pick-up-frames",
     "description": "Explore our extensive range of clinical bariatric pick up frames engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Breezy-Heavy-Duty-Walking-Frame-BE3637-Badge.webp",
+    "image": "/images/products/Breezy-Heavy-Duty-Walking-Frame-BE3637-Badge.webp",
     "productCount": 2
   },
   {
@@ -483,7 +483,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-mobility/bariatric-seat-walkers",
     "description": "Explore our extensive range of clinical bariatric seat walkers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Aspire-XL-Seat-Walker-WAF750020SL-Badge.webp",
+    "image": "/images/products/Aspire-XL-Seat-Walker-WAF750020SL-Badge.webp",
     "productCount": 4
   },
   {
@@ -494,7 +494,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-mobility/bariatric-forearm-walkers",
     "description": "Explore our extensive range of clinical bariatric forearm walkers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/09/Cobi-Rehab-XXL-Stand-Tall-Walking-Frame-Badge.webp",
+    "image": "/images/products/Cobi-Rehab-XXL-Stand-Tall-Walking-Frame-Badge.webp",
     "productCount": 2
   },
   {
@@ -505,7 +505,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-mobility/bariatric-mobility-scooters",
     "description": "Explore our extensive range of clinical bariatric mobility scooters engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/03/Comet-Ultra-Diamond-Silver-Badge.webp",
+    "image": "/images/products/Comet-Ultra-Diamond-Silver-Badge.webp",
     "productCount": 1
   },
   {
@@ -516,7 +516,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-mobility/bariatric-crutches",
     "description": "Explore our extensive range of clinical bariatric crutches engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/BE-Underarm-Crutches-Bariatric-Badge.webp",
+    "image": "/images/products/BE-Underarm-Crutches-Bariatric-Badge.webp",
     "productCount": 2
   },
   {
@@ -527,7 +527,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-mobility/bariatric-walking-sticks",
     "description": "Explore our extensive range of clinical bariatric walking sticks engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Breezy-Everday-Bariatric-Walking-Cane-BE71066-Badge.webp",
+    "image": "/images/products/Breezy-Everday-Bariatric-Walking-Cane-BE71066-Badge.webp",
     "productCount": 1
   },
   {
@@ -538,7 +538,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-patient-handling",
     "description": "Explore our extensive range of clinical bariatric patient handling engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/04/Arjo-Special-Purpose-All-Day-Unpadded-Clip-Sling-Badge.webp",
+    "image": "/images/products/Arjo-Special-Purpose-All-Day-Unpadded-Clip-Sling-Badge.webp",
     "productCount": 23
   },
   {
@@ -549,7 +549,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-patient-handling/bariatric-transfer-equipment",
     "description": "Explore our extensive range of clinical bariatric transfer equipment engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Q2-Motility-Board-Badge.webp",
+    "image": "/images/products/Q2-Motility-Board-Badge.webp",
     "productCount": 1
   },
   {
@@ -560,7 +560,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-patient-handling/bariatric-standing-raising-aids",
     "description": "Explore our extensive range of clinical bariatric standing raising aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Sara-Flex-Badge.webp",
+    "image": "/images/products/Arjo-Sara-Flex-Badge.webp",
     "productCount": 4
   },
   {
@@ -571,7 +571,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-patient-handling/bariatric-floor-lifts",
     "description": "Explore our extensive range of clinical bariatric floor lifts engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/08/Arjo-Maxi-Twin-Badge.webp",
+    "image": "/images/products/Arjo-Maxi-Twin-Badge.webp",
     "productCount": 4
   },
   {
@@ -582,7 +582,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-patient-handling/bariatric-gantry-systems",
     "description": "Explore our extensive range of clinical bariatric gantry systems engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/09/Arjo-Gantry-System-Badge.webp",
+    "image": "/images/products/Arjo-Gantry-System-Badge.webp",
     "productCount": 1
   },
   {
@@ -593,7 +593,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-patient-handling/bariatric-lifting-cushions",
     "description": "Explore our extensive range of clinical bariatric lifting cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/07/Camel-Main-Badge.webp",
+    "image": "/images/products/Camel-Main-Badge.webp",
     "productCount": 2
   },
   {
@@ -604,7 +604,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-patient-handling/bariatric-slings",
     "description": "Explore our extensive range of clinical bariatric slings engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/04/Arjo-Special-Purpose-All-Day-Unpadded-Clip-Sling-Badge.webp",
+    "image": "/images/products/Arjo-Special-Purpose-All-Day-Unpadded-Clip-Sling-Badge.webp",
     "productCount": 11
   },
   {
@@ -615,7 +615,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-pressure-care-cushions",
     "description": "Explore our extensive range of clinical bariatric pressure care cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/03/Jay-Fusion-Badge.webp",
+    "image": "/images/products/Jay-Fusion-Badge.webp",
     "productCount": 11
   },
   {
@@ -626,7 +626,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-pressure-care-cushions/bariatric-air-cushions",
     "description": "Explore our extensive range of clinical bariatric air cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/09/Quadtro-Select-High-Profile-02-Flattened.png",
+    "image": "/images/products/Quadtro-Select-High-Profile-02-Flattened.png",
     "productCount": 8
   },
   {
@@ -637,7 +637,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-pressure-care-cushions/bariatric-hybrid-cushions",
     "description": "Explore our extensive range of clinical bariatric hybrid cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/03/Jay-Fusion-Badge.webp",
+    "image": "/images/products/Jay-Fusion-Badge.webp",
     "productCount": 2
   },
   {
@@ -648,7 +648,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-pressure-care-cushions/bariatric-scripted-cushions",
     "description": "Explore our extensive range of clinical bariatric scripted cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/XLella-Cushion-Standard-Contour-Badge.webp",
+    "image": "/images/products/XLella-Cushion-Standard-Contour-Badge.webp",
     "productCount": 1
   },
   {
@@ -659,7 +659,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-seating-and-positioning",
     "description": "Explore our extensive range of clinical bariatric seating and positioning engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Spex-XLella-Classic-Back-Support-Main-Badge.webp",
+    "image": "/images/products/Spex-XLella-Classic-Back-Support-Main-Badge.webp",
     "productCount": 1
   },
   {
@@ -670,7 +670,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bariatric/bariatric-wheelchairs",
     "description": "Explore our extensive range of clinical bariatric wheelchairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/09/Breezy-EC-2000-HD-Bariatric-Badge.webp",
+    "image": "/images/products/Breezy-EC-2000-HD-Bariatric-Badge.webp",
     "productCount": 21
   },
   {
@@ -681,7 +681,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-wheelchairs/bariatric-manual-wheelchairs-standard",
     "description": "Explore our extensive range of clinical bariatric manual wheelchairs standard engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/09/Breezy-EC-2000-HD-Bariatric-Badge.webp",
+    "image": "/images/products/Breezy-EC-2000-HD-Bariatric-Badge.webp",
     "productCount": 4
   },
   {
@@ -692,7 +692,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-wheelchairs/bariatric-manual-wheelchairs-lightweight",
     "description": "Explore our extensive range of clinical bariatric manual wheelchairs lightweight engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Breezy-RubiX2-Badge-NOTE.webp",
+    "image": "/images/products/Breezy-RubiX2-Badge-NOTE.webp",
     "productCount": 3
   },
   {
@@ -703,7 +703,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-wheelchairs/bariatric-manual-wheelchairs-prescription",
     "description": "Explore our extensive range of clinical bariatric manual wheelchairs prescription engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/04/Avantgarde-XXL-2-Badge.webp",
+    "image": "/images/products/Avantgarde-XXL-2-Badge.webp",
     "productCount": 1
   },
   {
@@ -714,7 +714,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-wheelchairs/bariatric-power-wheelchairs-front-wheel-drive",
     "description": "Explore our extensive range of clinical bariatric power wheelchairs front wheel drive engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/05/Pride-Jazzy-1450-Badge.webp",
+    "image": "/images/products/Pride-Jazzy-1450-Badge.webp",
     "productCount": 2
   },
   {
@@ -725,7 +725,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-wheelchairs/bariatric-power-wheelchairs-mid-wheel-drive",
     "description": "Explore our extensive range of clinical bariatric power wheelchairs mid wheel drive engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/09/Merits-Maverick-12-Badge.webp",
+    "image": "/images/products/Merits-Maverick-12-Badge.webp",
     "productCount": 2
   },
   {
@@ -736,7 +736,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-wheelchairs/bariatric-power-wheelchairs-prescription-complex",
     "description": "Explore our extensive range of clinical bariatric power wheelchairs prescription complex engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/05/Meyra-iChair-XXL-and-XXL-HD-SWL-Badges.webp",
+    "image": "/images/products/Meyra-iChair-XXL-and-XXL-HD-SWL-Badges.webp",
     "productCount": 5
   },
   {
@@ -747,7 +747,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bariatric/bariatric-wheelchairs/bariatric-wheelchair-accessories",
     "description": "Explore our extensive range of clinical bariatric wheelchair accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Drive-Sentra-Breezy-EC-2000-HD-Bariatric-ELRs.webp",
+    "image": "/images/products/Drive-Sentra-Breezy-EC-2000-HD-Bariatric-ELRs.webp",
     "productCount": 4
   },
   {
@@ -758,7 +758,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "bathroom-and-toilet",
     "description": "Explore our extensive range of clinical bathroom and toilet engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp",
+    "image": "/images/products/Ocean-Ergo-VIP-Main.webp",
     "productCount": 153
   },
   {
@@ -769,7 +769,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/bath-aids",
     "description": "Explore our extensive range of clinical bath aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/08/Aspire-Transfer-Bench-with-Rotating-Seat-01-Flipped-BTS150310.webp",
+    "image": "/images/products/Aspire-Transfer-Bench-with-Rotating-Seat-01-Flipped-BTS150310.webp",
     "productCount": 13
   },
   {
@@ -780,7 +780,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/bath-aids/bath-lifts",
     "description": "Explore our extensive range of clinical bath lifts engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/06/Dietz-Kanjo-Eco-Bathlift-01.webp",
+    "image": "/images/products/Dietz-Kanjo-Eco-Bathlift-01.webp",
     "productCount": 1
   },
   {
@@ -791,7 +791,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/bath-aids/bath-boards",
     "description": "Explore our extensive range of clinical bath boards engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Breezy®-Everyday-Adjustable-Bath-Board.webp",
+    "image": "/images/products/Breezy_-Everyday-Adjustable-Bath-Board.webp",
     "productCount": 1
   },
   {
@@ -802,7 +802,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/bath-aids/bath-mats",
     "description": "Explore our extensive range of clinical bath mats engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/bath-mat-1.jpg",
+    "image": "/images/products/bath-mat-1.jpg",
     "productCount": 2
   },
   {
@@ -813,7 +813,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/bath-aids/bath-transfer-benches",
     "description": "Explore our extensive range of clinical bath transfer benches engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/08/Aspire-Transfer-Bench-with-Rotating-Seat-01-Flipped-BTS150310.webp",
+    "image": "/images/products/Aspire-Transfer-Bench-with-Rotating-Seat-01-Flipped-BTS150310.webp",
     "productCount": 5
   },
   {
@@ -824,7 +824,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/bath-aids/hand-held-shower-hoses",
     "description": "Explore our extensive range of clinical hand held shower hoses engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/hhsh-single-outlet.jpg",
+    "image": "/images/products/hhsh-single-outlet.jpg",
     "productCount": 1
   },
   {
@@ -835,7 +835,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/bath-aids/swivel-bathers",
     "description": "Explore our extensive range of clinical swivel bathers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Myco-Ultra-Swivel-Bather.webp",
+    "image": "/images/products/Myco-Ultra-Swivel-Bather.webp",
     "productCount": 1
   },
   {
@@ -846,7 +846,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/shower-aids",
     "description": "Explore our extensive range of clinical shower aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/10/Aspire-Homecare-Shower-Chair-BTS118025-01.webp",
+    "image": "/images/products/Aspire-Homecare-Shower-Chair-BTS118025-01.webp",
     "productCount": 16
   },
   {
@@ -857,7 +857,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-aids/shower-chairs",
     "description": "Explore our extensive range of clinical shower chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/10/Aspire-Homecare-Shower-Chair-BTS118025-01.webp",
+    "image": "/images/products/Aspire-Homecare-Shower-Chair-BTS118025-01.webp",
     "productCount": 7
   },
   {
@@ -868,7 +868,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-aids/shower-stools",
     "description": "Explore our extensive range of clinical shower stools engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/10/Aspire-Homecare-Shower-Stool-BTS119035.webp",
+    "image": "/images/products/Aspire-Homecare-Shower-Stool-BTS119035.webp",
     "productCount": 8
   },
   {
@@ -879,7 +879,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-aids/shower-mats",
     "description": "Explore our extensive range of clinical shower mats engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Shower-Mat-BTS109600.webp",
+    "image": "/images/products/Aspire-Shower-Mat-BTS109600.webp",
     "productCount": 1
   },
   {
@@ -890,7 +890,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/portable-showers",
     "description": "Explore our extensive range of clinical portable showers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/08/Shower-Bay-Hero.webp",
+    "image": "/images/products/Shower-Bay-Hero.webp",
     "productCount": 1
   },
   {
@@ -901,7 +901,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-commodes/prescription-complex-shower-commodes-paediatric",
     "description": "Explore our extensive range of clinical prescription complex shower commodes paediatric engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/07/Raz-CAT-Main.webp",
+    "image": "/images/products/Raz-CAT-Main.webp",
     "productCount": 1
   },
   {
@@ -912,7 +912,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-commodes/accessories-shower-commode",
     "description": "Explore our extensive range of clinical accessories shower commode engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/BTC082900-1.jpg",
+    "image": "/images/products/BTC082900-1.jpg",
     "productCount": 49
   },
   {
@@ -923,7 +923,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bathroom-and-toilet/shower-commodes/accessories-shower-commode/etac-shower-commode-accessories",
     "description": "Explore our extensive range of clinical etac shower commode accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/04/Etac-Amputee-Legrest-80209510.webp",
+    "image": "/images/products/Etac-Amputee-Legrest-80209510.webp",
     "productCount": 38
   },
   {
@@ -934,7 +934,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-commodes/attendant-propelled",
     "description": "Explore our extensive range of clinical attendant propelled engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/BTC065900-e1631257025326.jpg",
+    "image": "/images/products/BTC065900-e1631257025326.jpg",
     "productCount": 27
   },
   {
@@ -945,7 +945,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-commodes/self-propelled",
     "description": "Explore our extensive range of clinical self propelled engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/BTC068020.jpg",
+    "image": "/images/products/BTC068020.jpg",
     "productCount": 9
   },
   {
@@ -956,7 +956,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-commodes/tilt-in-space-shower-commodes",
     "description": "Explore our extensive range of clinical tilt in space shower commodes engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp",
+    "image": "/images/products/Ocean-Ergo-VIP-Main.webp",
     "productCount": 10
   },
   {
@@ -967,7 +967,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-commodes/shower-commode-seats",
     "description": "Explore our extensive range of clinical shower commode seats engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/08/Aspire-Pressure-Reducing-Commode-Closed-Seat.webp",
+    "image": "/images/products/Aspire-Pressure-Reducing-Commode-Closed-Seat.webp",
     "productCount": 3
   },
   {
@@ -978,7 +978,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/shower-commodes/shower-commode-bowls-and-pans",
     "description": "Explore our extensive range of clinical shower commode bowls and pans engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Bed-Pan.png",
+    "image": "/images/products/Aspire-Bed-Pan.png",
     "productCount": 2
   },
   {
@@ -989,7 +989,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/prescription-complex-shower-commodes",
     "description": "Explore our extensive range of clinical prescription complex shower commodes engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/07/RAZ-AP-Main.webp",
+    "image": "/images/products/RAZ-AP-Main.webp",
     "productCount": 5
   },
   {
@@ -1000,7 +1000,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/shower-trolleys",
     "description": "Explore our extensive range of clinical shower trolleys engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/05/Arjo-Carevo-Badge.webp",
+    "image": "/images/products/Arjo-Carevo-Badge.webp",
     "productCount": 1
   },
   {
@@ -1011,7 +1011,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/toilet-aids",
     "description": "Explore our extensive range of clinical toilet aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Toilet-Surround-Frame.jpg",
+    "image": "/images/products/Aspire-Toilet-Surround-Frame.jpg",
     "productCount": 12
   },
   {
@@ -1022,7 +1022,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/toilet-aids/over-toilet-aids",
     "description": "Explore our extensive range of clinical over toilet aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Homecare-OTA-BTT145025.webp",
+    "image": "/images/products/Aspire-Homecare-OTA-BTT145025.webp",
     "productCount": 7
   },
   {
@@ -1033,7 +1033,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/toilet-aids/toilet-seat-raisers",
     "description": "Explore our extensive range of clinical toilet seat raisers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Toilet-Seat-Raiser-with-Lid-01.webp",
+    "image": "/images/products/Aspire-Toilet-Seat-Raiser-with-Lid-01.webp",
     "productCount": 3
   },
   {
@@ -1044,7 +1044,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/toilet-aids/toilet-surrounds",
     "description": "Explore our extensive range of clinical toilet surrounds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Toilet-Surround-Frame.jpg",
+    "image": "/images/products/Aspire-Toilet-Surround-Frame.jpg",
     "productCount": 1
   },
   {
@@ -1055,7 +1055,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/toilet-aids/toilet-supports",
     "description": "Explore our extensive range of clinical toilet supports engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/03/Etac-Cloo-01.webp",
+    "image": "/images/products/Etac-Cloo-01.webp",
     "productCount": 3
   },
   {
@@ -1066,7 +1066,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/hygiene-accessories",
     "description": "Explore our extensive range of clinical hygiene accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/06/Aspire-Recovery-Essentials-Pack.webp",
+    "image": "/images/products/Aspire-Recovery-Essentials-Pack.webp",
     "productCount": 12
   },
   {
@@ -1077,7 +1077,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/hygiene-accessories/bathroom-hygiene",
     "description": "Explore our extensive range of clinical bathroom hygiene engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/06/Aspire-Recovery-Essentials-Pack.webp",
+    "image": "/images/products/Aspire-Recovery-Essentials-Pack.webp",
     "productCount": 8
   },
   {
@@ -1088,7 +1088,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bathroom-and-toilet/hygiene-accessories/toilet-hygiene",
     "description": "Explore our extensive range of clinical toilet hygiene engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Buckingham-EasyWipe-01.png",
+    "image": "/images/products/Buckingham-EasyWipe-01.png",
     "productCount": 4
   },
   {
@@ -1099,7 +1099,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bathroom-and-toilet/grab-rails",
     "description": "Explore our extensive range of clinical grab rails engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/01/Breezy-Everyday-Bathtub-Grab-Rail.webp",
+    "image": "/images/products/Breezy-Everyday-Bathtub-Grab-Rail.webp",
     "productCount": 2
   },
   {
@@ -1110,7 +1110,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "bedroom",
     "description": "Explore our extensive range of clinical bedroom engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/10/Pillow.jpg",
+    "image": "/images/products/Pillow.jpg",
     "productCount": 208
   },
   {
@@ -1121,7 +1121,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bedroom/toileting-bedroom",
     "description": "Explore our extensive range of clinical toileting bedroom engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Bed-Pan.png",
+    "image": "/images/products/Aspire-Bed-Pan.png",
     "productCount": 11
   },
   {
@@ -1132,7 +1132,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/toileting-bedroom/commode-bowls-bed-pans-and-urinal",
     "description": "Explore our extensive range of clinical commode bowls bed pans and urinal engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Bed-Pan.png",
+    "image": "/images/products/Aspire-Bed-Pan.png",
     "productCount": 7
   },
   {
@@ -1143,7 +1143,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/toileting-bedroom/bedside-commodes",
     "description": "Explore our extensive range of clinical bedside commodes engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Classic-Bedside-Commode-Champagne.png",
+    "image": "/images/products/Aspire-Classic-Bedside-Commode-Champagne.png",
     "productCount": 4
   },
   {
@@ -1154,7 +1154,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bedroom/beds",
     "description": "Explore our extensive range of clinical beds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp",
+    "image": "/images/products/Empresa-LTC-Bed-Main-Badge.webp",
     "productCount": 35
   },
   {
@@ -1165,7 +1165,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/beds/companion-beds",
     "description": "Explore our extensive range of clinical companion beds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/07/Aspire-ComfiMotion-Companion-Bed-Lifestyle.webp",
+    "image": "/images/products/Aspire-ComfiMotion-Companion-Bed-Lifestyle.webp",
     "productCount": 5
   },
   {
@@ -1176,7 +1176,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/beds/homecare-beds",
     "description": "Explore our extensive range of clinical homecare beds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp",
+    "image": "/images/products/Empresa-LTC-Bed-Main-Badge.webp",
     "productCount": 17
   },
   {
@@ -1187,7 +1187,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/beds/floorline-beds",
     "description": "Explore our extensive range of clinical floorline beds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp",
+    "image": "/images/products/Empresa-LTC-Bed-Main-Badge.webp",
     "productCount": 7
   },
   {
@@ -1198,7 +1198,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/beds/hospital-beds",
     "description": "Explore our extensive range of clinical hospital beds engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Novis-BetterLiving-Community-Bed-Badge.webp",
+    "image": "/images/products/Novis-BetterLiving-Community-Bed-Badge.webp",
     "productCount": 3
   },
   {
@@ -1209,7 +1209,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bedroom/sleep-surfaces",
     "description": "Explore our extensive range of clinical sleep surfaces engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/03/AirTec-5-Single-Alternating-Air-Overlay-2026.webp",
+    "image": "/images/products/AirTec-5-Single-Alternating-Air-Overlay-2026.webp",
     "productCount": 59
   },
   {
@@ -1220,7 +1220,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/sleep-surfaces/bolsters",
     "description": "Explore our extensive range of clinical bolsters engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/10/Icare-Mattress-Bolster-01.png",
+    "image": "/images/products/Icare-Mattress-Bolster-01.png",
     "productCount": 2
   },
   {
@@ -1231,7 +1231,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/sleep-surfaces/air-mattresses",
     "description": "Explore our extensive range of clinical air mattresses engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Alpha-Active-4-Badge.webp",
+    "image": "/images/products/Arjo-Alpha-Active-4-Badge.webp",
     "productCount": 9
   },
   {
@@ -1242,7 +1242,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/sleep-surfaces/hybrid-mattresses",
     "description": "Explore our extensive range of clinical hybrid mattresses engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/10/Aspire-Hybrid-Comfort-Mattress-Badge.webp",
+    "image": "/images/products/Aspire-Hybrid-Comfort-Mattress-Badge.webp",
     "productCount": 9
   },
   {
@@ -1253,7 +1253,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/sleep-surfaces/static-mattresses",
     "description": "Explore our extensive range of clinical static mattresses engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Arjo-ComfortFlx-Badge.webp",
+    "image": "/images/products/Arjo-ComfortFlx-Badge.webp",
     "productCount": 28
   },
   {
@@ -1264,7 +1264,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/sleep-surfaces/overlays-underlays-and-toppers",
     "description": "Explore our extensive range of clinical overlays underlays and toppers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/03/AirTec-5-Single-Alternating-Air-Overlay-2026.webp",
+    "image": "/images/products/AirTec-5-Single-Alternating-Air-Overlay-2026.webp",
     "productCount": 12
   },
   {
@@ -1275,7 +1275,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bedroom/bedding-bedroom",
     "description": "Explore our extensive range of clinical bedding bedroom engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/10/Brolly-Sheets-Cooling-Sheet.webp",
+    "image": "/images/products/Brolly-Sheets-Cooling-Sheet.webp",
     "productCount": 14
   },
   {
@@ -1286,7 +1286,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedding-bedroom/sheets",
     "description": "Explore our extensive range of clinical sheets engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/10/Brolly-Sheets-Cooling-Sheet.webp",
+    "image": "/images/products/Brolly-Sheets-Cooling-Sheet.webp",
     "productCount": 11
   },
   {
@@ -1297,7 +1297,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedding-bedroom/mattress-protectors",
     "description": "Explore our extensive range of clinical mattress protectors engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Icare-Fully-Enclosed-Mattress-Cover.webp",
+    "image": "/images/products/Icare-Fully-Enclosed-Mattress-Cover.webp",
     "productCount": 3
   },
   {
@@ -1308,7 +1308,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bedroom/pillows-and-pillow-accessories",
     "description": "Explore our extensive range of clinical pillows and pillow accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/10/Pillow.jpg",
+    "image": "/images/products/Pillow.jpg",
     "productCount": 33
   },
   {
@@ -1319,7 +1319,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/pillows-and-pillow-accessories/pillows",
     "description": "Explore our extensive range of clinical pillows engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/10/Pillow.jpg",
+    "image": "/images/products/Pillow.jpg",
     "productCount": 33
   },
   {
@@ -1330,7 +1330,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bedroom/pillows-and-pillow-accessories/pillows/pillow-protectors",
     "description": "Explore our extensive range of clinical pillow protectors engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Conni-Premium-Pillow-Protector-Pack-Front.webp",
+    "image": "/images/products/Conni-Premium-Pillow-Protector-Pack-Front.webp",
     "productCount": 2
   },
   {
@@ -1341,7 +1341,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "bedroom/pillows-and-pillow-accessories/pillows/pillow-cases",
     "description": "Explore our extensive range of clinical pillow cases engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/10/Pillow.jpg",
+    "image": "/images/products/Pillow.jpg",
     "productCount": 3
   },
   {
@@ -1352,7 +1352,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bedroom/bedroom-aids-and-accessories",
     "description": "Explore our extensive range of clinical bedroom aids and accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-Bed-Rails-Main.webp",
+    "image": "/images/products/Empresa-Bed-Rails-Main.webp",
     "productCount": 47
   },
   {
@@ -1363,7 +1363,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/beds/headboards-and-footboards",
     "description": "Explore our extensive range of clinical headboards and footboards engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire_ComfiMotion_Chesterfield_Headboard_Small-e1647915634809.png",
+    "image": "/images/products/Aspire_ComfiMotion_Chesterfield_Headboard_Small-e1647915634809.png",
     "productCount": 11
   },
   {
@@ -1374,7 +1374,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedroom-aids-and-accessories/bed-rails-and-rail-protectors",
     "description": "Explore our extensive range of clinical bed rails and rail protectors engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-Bed-Rails-Main.webp",
+    "image": "/images/products/Empresa-Bed-Rails-Main.webp",
     "productCount": 23
   },
   {
@@ -1385,7 +1385,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedroom-aids-and-accessories/bed-sticks",
     "description": "Explore our extensive range of clinical bed sticks engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Clamp-on-Bed-Pole.webp",
+    "image": "/images/products/Aspire-Clamp-on-Bed-Pole.webp",
     "productCount": 8
   },
   {
@@ -1396,7 +1396,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedroom-aids-and-accessories/self-help-poles",
     "description": "Explore our extensive range of clinical self help poles engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Self-Help-Pole.webp",
+    "image": "/images/products/Empresa-LTC-Bed-Self-Help-Pole.webp",
     "productCount": 5
   },
   {
@@ -1407,7 +1407,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedroom-aids-and-accessories/iv-poles",
     "description": "Explore our extensive range of clinical iv poles engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Endeavour-Mobile-IV-Pole-01.webp",
+    "image": "/images/products/Endeavour-Mobile-IV-Pole-01.webp",
     "productCount": 2
   },
   {
@@ -1418,7 +1418,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedroom-aids-and-accessories/bed-cradles",
     "description": "Explore our extensive range of clinical bed cradles engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Height-Adjustable-Bed-Cradle.png",
+    "image": "/images/products/Aspire-Height-Adjustable-Bed-Cradle.png",
     "productCount": 2
   },
   {
@@ -1429,7 +1429,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedroom-aids-and-accessories/bed-wedges",
     "description": "Explore our extensive range of clinical bed wedges engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/01/Icare-Large-Bed-Wedge.webp",
+    "image": "/images/products/Icare-Large-Bed-Wedge.webp",
     "productCount": 4
   },
   {
@@ -1440,7 +1440,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "bedroom/bedroom-aids-and-accessories/safety-mats",
     "description": "Explore our extensive range of clinical safety mats engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/03/Alerta-Crash-Mat.webp",
+    "image": "/images/products/Alerta-Crash-Mat.webp",
     "productCount": 3
   },
   {
@@ -1451,7 +1451,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "bedroom/bed-tables",
     "description": "Explore our extensive range of clinical bed tables engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire_Over_Chair_Table.png",
+    "image": "/images/products/Aspire_Over_Chair_Table.png",
     "productCount": 5
   },
   {
@@ -1462,7 +1462,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "chairs",
     "description": "Explore our extensive range of clinical chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp",
+    "image": "/images/products/Able-Life-Universal-Stand-Assist.webp",
     "productCount": 79
   },
   {
@@ -1473,7 +1473,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "chairs/chair-accessories",
     "description": "Explore our extensive range of clinical chair accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp",
+    "image": "/images/products/Able-Life-Universal-Stand-Assist.webp",
     "productCount": 4
   },
   {
@@ -1484,7 +1484,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "chairs/wellness-chairs",
     "description": "Explore our extensive range of clinical wellness chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Wellness-Nordic-Relax-Chair-06.jpg",
+    "image": "/images/products/Wellness-Nordic-Relax-Chair-06.jpg",
     "productCount": 1
   },
   {
@@ -1495,7 +1495,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "chairs/day-chairs-and-stools",
     "description": "Explore our extensive range of clinical day chairs and stools engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Age-Prepcare-Comfort-Chair.webp",
+    "image": "/images/products/Age-Prepcare-Comfort-Chair.webp",
     "productCount": 23
   },
   {
@@ -1506,7 +1506,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "chairs/lift-chairs",
     "description": "Explore our extensive range of clinical lift chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/11/Configura-Comfort-Black-Upright-2026.webp",
+    "image": "/images/products/Configura-Comfort-Black-Upright-2026.webp",
     "productCount": 30
   },
   {
@@ -1517,7 +1517,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "chairs/over-chair-tables",
     "description": "Explore our extensive range of clinical over chair tables engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire_Over_Chair_Table.png",
+    "image": "/images/products/Aspire_Over_Chair_Table.png",
     "productCount": 5
   },
   {
@@ -1528,7 +1528,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "chairs/pressure-relief-chairs",
     "description": "Explore our extensive range of clinical pressure relief chairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/08/Configura-Advance-01.webp",
+    "image": "/images/products/Configura-Advance-01.webp",
     "productCount": 16
   },
   {
@@ -1539,7 +1539,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "compression-therapy",
     "description": "Explore our extensive range of clinical compression therapy engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/09/Venosan-Compression-Sockings.png",
+    "image": "/images/products/Venosan-Compression-Sockings.png",
     "productCount": 1
   },
   {
@@ -1550,7 +1550,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "daily-living-aids",
     "description": "Explore our extensive range of clinical daily living aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/07/Active-Hands-Nimble.webp",
+    "image": "/images/products/Active-Hands-Nimble.webp",
     "productCount": 91
   },
   {
@@ -1561,7 +1561,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/automobile-aids",
     "description": "Explore our extensive range of clinical automobile aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Assist-Bar.webp",
+    "image": "/images/products/Aspire-Assist-Bar.webp",
     "productCount": 4
   },
   {
@@ -1572,7 +1572,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/clocks",
     "description": "Explore our extensive range of clinical clocks engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/08/KCare-Digital-Alarm-Clock-01.webp",
+    "image": "/images/products/KCare-Digital-Alarm-Clock-01.webp",
     "productCount": 2
   },
   {
@@ -1583,7 +1583,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/dining-aids",
     "description": "Explore our extensive range of clinical dining aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/GoodGrips-Cutlery.png",
+    "image": "/images/products/GoodGrips-Cutlery.png",
     "productCount": 24
   },
   {
@@ -1594,7 +1594,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "daily-living-aids/dining-aids/crockery",
     "description": "Explore our extensive range of clinical crockery engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/12/Haines-SmartBarrier®-Reusable-Adult-Bib-Blue.webp",
+    "image": "/images/products/Haines-SmartBarrier_-Reusable-Adult-Bib-Blue.webp",
     "productCount": 7
   },
   {
@@ -1605,7 +1605,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "daily-living-aids/dining-aids/cutlery",
     "description": "Explore our extensive range of clinical cutlery engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/GoodGrips-Cutlery.png",
+    "image": "/images/products/GoodGrips-Cutlery.png",
     "productCount": 14
   },
   {
@@ -1616,7 +1616,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/gripping-aids",
     "description": "Explore our extensive range of clinical gripping aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/09/utensil-holder.jpg",
+    "image": "/images/products/utensil-holder.jpg",
     "productCount": 3
   },
   {
@@ -1627,7 +1627,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/hydration-aids",
     "description": "Explore our extensive range of clinical hydration aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/08/Dysphagia-Cup.jpg",
+    "image": "/images/products/Dysphagia-Cup.jpg",
     "productCount": 4
   },
   {
@@ -1638,7 +1638,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/non-slip-mats",
     "description": "Explore our extensive range of clinical non slip mats engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/09/Conni-Anti-Slip-Floor-Mat-Pebble.webp",
+    "image": "/images/products/Conni-Anti-Slip-Floor-Mat-Pebble.webp",
     "productCount": 6
   },
   {
@@ -1649,7 +1649,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/general-aids",
     "description": "Explore our extensive range of clinical general aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/06/Aspire-Recovery-Essentials-Pack.webp",
+    "image": "/images/products/Aspire-Recovery-Essentials-Pack.webp",
     "productCount": 5
   },
   {
@@ -1660,7 +1660,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/dressing-aids",
     "description": "Explore our extensive range of clinical dressing aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/06/Aspire-Recovery-Essentials-Pack.webp",
+    "image": "/images/products/Aspire-Recovery-Essentials-Pack.webp",
     "productCount": 14
   },
   {
@@ -1671,7 +1671,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/kitchen",
     "description": "Explore our extensive range of clinical kitchen engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/07/Active-Hands-Nimble.webp",
+    "image": "/images/products/Active-Hands-Nimble.webp",
     "productCount": 21
   },
   {
@@ -1682,7 +1682,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "daily-living-aids/kitchen/kettles",
     "description": "Explore our extensive range of clinical kettles engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/12/Gilia-Kettle.webp",
+    "image": "/images/products/Gilia-Kettle.webp",
     "productCount": 4
   },
   {
@@ -1693,7 +1693,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "daily-living-aids/kitchen/container-opening-aids",
     "description": "Explore our extensive range of clinical container opening aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/07/Active-Hands-Nimble.webp",
+    "image": "/images/products/Active-Hands-Nimble.webp",
     "productCount": 8
   },
   {
@@ -1704,7 +1704,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "daily-living-aids/kitchen/food-preparation",
     "description": "Explore our extensive range of clinical food preparation engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/04/Combination_Cutting_Board-01.png",
+    "image": "/images/products/Combination_Cutting_Board-01.png",
     "productCount": 6
   },
   {
@@ -1715,7 +1715,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "daily-living-aids/reachers",
     "description": "Explore our extensive range of clinical reachers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/06/Aspire-Recovery-Essentials-Pack.webp",
+    "image": "/images/products/Aspire-Recovery-Essentials-Pack.webp",
     "productCount": 3
   },
   {
@@ -1726,7 +1726,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "health-monitoring",
     "description": "Explore our extensive range of clinical health monitoring engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/05/HVL-CS-Chair-Scale-02.webp",
+    "image": "/images/products/HVL-CS-Chair-Scale-02.webp",
     "productCount": 9
   },
   {
@@ -1737,7 +1737,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "health-monitoring/blood-pressure-monitors",
     "description": "Explore our extensive range of clinical blood pressure monitors engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/06/UA-651SL-BPM.webp",
+    "image": "/images/products/UA-651SL-BPM.webp",
     "productCount": 3
   },
   {
@@ -1748,7 +1748,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "health-monitoring/medical-health-scales",
     "description": "Explore our extensive range of clinical medical health scales engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/05/HVL-CS-Chair-Scale-02.webp",
+    "image": "/images/products/HVL-CS-Chair-Scale-02.webp",
     "productCount": 6
   },
   {
@@ -1759,7 +1759,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "incontinence-aids",
     "description": "Explore our extensive range of clinical incontinence aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Brolly-Sheets-Recliner-Protector-Main.webp",
+    "image": "/images/products/Brolly-Sheets-Recliner-Protector-Main.webp",
     "productCount": 28
   },
   {
@@ -1770,7 +1770,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "incontinence-aids/incontinence-aids-bedding",
     "description": "Explore our extensive range of clinical incontinence aids bedding engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/05/Conni-Bed-Pad-Aussie-Animals-Box.webp",
+    "image": "/images/products/Conni-Bed-Pad-Aussie-Animals-Box.webp",
     "productCount": 24
   },
   {
@@ -1781,7 +1781,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "incontinence-aids/incontinence-aids-seating",
     "description": "Explore our extensive range of clinical incontinence aids seating engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Brolly-Sheets-Recliner-Protector-Main.webp",
+    "image": "/images/products/Brolly-Sheets-Recliner-Protector-Main.webp",
     "productCount": 4
   },
   {
@@ -1792,7 +1792,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "mobility-aids",
     "description": "Explore our extensive range of clinical mobility aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Airgo-Comfort-Plus-Aluminium-Cane-Derby-Charcoal.webp",
+    "image": "/images/products/Airgo-Comfort-Plus-Aluminium-Cane-Derby-Charcoal.webp",
     "productCount": 107
   },
   {
@@ -1803,7 +1803,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "mobility-aids/walking-frames",
     "description": "Explore our extensive range of clinical walking frames engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire_4_WW_Red_Test.png",
+    "image": "/images/products/Aspire_4_WW_Red_Test.png",
     "productCount": 55
   },
   {
@@ -1814,7 +1814,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/walking-frames/paediatric-walking-frames",
     "description": "Explore our extensive range of clinical paediatric walking frames engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/06/Walk-On-Walking-Frame.webp",
+    "image": "/images/products/Walk-On-Walking-Frame.webp",
     "productCount": 3
   },
   {
@@ -1825,7 +1825,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/walking-frames/pick-up-frames",
     "description": "Explore our extensive range of clinical pick up frames engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/08/Breezy-Walking-Frame-Stoppers-and-Castors-BE3621-2-3A.webp",
+    "image": "/images/products/Breezy-Walking-Frame-Stoppers-and-Castors-BE3621-2-3A.webp",
     "productCount": 8
   },
   {
@@ -1836,7 +1836,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/walking-frames/wheeled-walkers",
     "description": "Explore our extensive range of clinical wheeled walkers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire_4_WW_Red_Test.png",
+    "image": "/images/products/Aspire_4_WW_Red_Test.png",
     "productCount": 29
   },
   {
@@ -1847,7 +1847,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "mobility-aids/walking-frames/wheeled-walkers/indoor-walkers",
     "description": "Explore our extensive range of clinical indoor walkers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/08/Aspire-Meal-Tray-Walker-DLG272061.webp",
+    "image": "/images/products/Aspire-Meal-Tray-Walker-DLG272061.webp",
     "productCount": 6
   },
   {
@@ -1858,7 +1858,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "mobility-aids/walking-frames/wheeled-walkers/seat-walkers",
     "description": "Explore our extensive range of clinical seat walkers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire_4_WW_Red_Test.png",
+    "image": "/images/products/Aspire_4_WW_Red_Test.png",
     "productCount": 20
   },
   {
@@ -1869,7 +1869,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/walking-frames/forearm-walkers",
     "description": "Explore our extensive range of clinical forearm walkers engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-WAF699200-Heavy-Duty-Forearm-Walker.webp",
+    "image": "/images/products/Aspire-WAF699200-Heavy-Duty-Forearm-Walker.webp",
     "productCount": 3
   },
   {
@@ -1880,7 +1880,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/walking-frames/accessories-walking-frames",
     "description": "Explore our extensive range of clinical accessories walking frames engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/04/Aspire-Mobility-Accessory-Bag-Leopard-WAA696500.webp",
+    "image": "/images/products/Aspire-Mobility-Accessory-Bag-Leopard-WAA696500.webp",
     "productCount": 15
   },
   {
@@ -1891,7 +1891,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "mobility-aids/crutches",
     "description": "Explore our extensive range of clinical crutches engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Breezy-Comfy-Handle-Elbow-Crutches-Pair.webp",
+    "image": "/images/products/Breezy-Comfy-Handle-Elbow-Crutches-Pair.webp",
     "productCount": 6
   },
   {
@@ -1902,7 +1902,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/crutches/accessories-crutches",
     "description": "Explore our extensive range of clinical accessories crutches engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/12/Comfy-Crutches.webp",
+    "image": "/images/products/Comfy-Crutches.webp",
     "productCount": 2
   },
   {
@@ -1913,7 +1913,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "mobility-aids/walking-sticks",
     "description": "Explore our extensive range of clinical walking sticks engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Airgo-Comfort-Plus-Aluminium-Cane-Derby-Charcoal.webp",
+    "image": "/images/products/Airgo-Comfort-Plus-Aluminium-Cane-Derby-Charcoal.webp",
     "productCount": 13
   },
   {
@@ -1924,7 +1924,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/walking-sticks/accessories-walking-sticks",
     "description": "Explore our extensive range of clinical accessories walking sticks engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2019/03/rubber-crutch-stoppers.png",
+    "image": "/images/products/rubber-crutch-stoppers.png",
     "productCount": 2
   },
   {
@@ -1935,7 +1935,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "mobility-aids/mobility-boots",
     "description": "Explore our extensive range of clinical mobility boots engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2019/03/Darco-OrthoWedge™-Shoe.webp",
+    "image": "/images/products/Darco-OrthoWedge_-Shoe.webp",
     "productCount": 4
   },
   {
@@ -1946,7 +1946,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "mobility-aids/knee-scooters-accessories",
     "description": "Explore our extensive range of clinical knee scooters accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/12/KC2-AT-Electric-Blue.webp",
+    "image": "/images/products/KC2-AT-Electric-Blue.webp",
     "productCount": 3
   },
   {
@@ -1957,7 +1957,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "mobility-aids/mobility-scooters",
     "description": "Explore our extensive range of clinical mobility scooters engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/10/Loop-01.png",
+    "image": "/images/products/Loop-01.png",
     "productCount": 28
   },
   {
@@ -1968,7 +1968,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/mobility-scooters/accessories-mobility-scooters",
     "description": "Explore our extensive range of clinical accessories mobility scooters engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/10/Loop-01.png",
+    "image": "/images/products/Loop-01.png",
     "productCount": 14
   },
   {
@@ -1979,7 +1979,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-aids/mobility-scooters/transportable-mobility-scooters",
     "description": "Explore our extensive range of clinical transportable mobility scooters engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/03/Colibri-Scooter-Sunstone.webp",
+    "image": "/images/products/Colibri-Scooter-Sunstone.webp",
     "productCount": 4
   },
   {
@@ -1990,7 +1990,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "mobility-ramps",
     "description": "Explore our extensive range of clinical mobility ramps engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Invacare-EBL-Ramp-Main.webp",
+    "image": "/images/products/Invacare-EBL-Ramp-Main.webp",
     "productCount": 13
   },
   {
@@ -2001,7 +2001,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "mobility-ramps/rubber-ramps",
     "description": "Explore our extensive range of clinical rubber ramps engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/03/Tyrex-Rubber-Ramp-Wing.webp",
+    "image": "/images/products/Tyrex-Rubber-Ramp-Wing.webp",
     "productCount": 5
   },
   {
@@ -2012,7 +2012,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "mobility-ramps/portable-ramps",
     "description": "Explore our extensive range of clinical portable ramps engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Invacare-EBL-Ramp-Main.webp",
+    "image": "/images/products/Invacare-EBL-Ramp-Main.webp",
     "productCount": 7
   },
   {
@@ -2023,7 +2023,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-ramps/portable-ramps/folding-ramps",
     "description": "Explore our extensive range of clinical folding ramps engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Invacare-EBL-Ramp-Main.webp",
+    "image": "/images/products/Invacare-EBL-Ramp-Main.webp",
     "productCount": 5
   },
   {
@@ -2034,7 +2034,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-ramps/portable-ramps/personal-ramps",
     "description": "Explore our extensive range of clinical personal ramps engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/03/Tyrex-PPR-06.webp",
+    "image": "/images/products/Tyrex-PPR-06.webp",
     "productCount": 1
   },
   {
@@ -2045,7 +2045,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "mobility-ramps/portable-ramps/rubber-threshold-ramps",
     "description": "Explore our extensive range of clinical rubber threshold ramps engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/03/Pride-Rubber-Threshold-Ramp-01.jpg",
+    "image": "/images/products/Pride-Rubber-Threshold-Ramp-01.jpg",
     "productCount": 1
   },
   {
@@ -2056,7 +2056,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "patient-handling",
     "description": "Explore our extensive range of clinical patient handling engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
+    "image": "/images/products/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
     "productCount": 91
   },
   {
@@ -2067,7 +2067,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "patient-handling/lifting-cushions",
     "description": "Explore our extensive range of clinical lifting cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/07/Camel-Main-Badge.webp",
+    "image": "/images/products/Camel-Main-Badge.webp",
     "productCount": 2
   },
   {
@@ -2078,7 +2078,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "patient-handling/standing-and-raising-aids",
     "description": "Explore our extensive range of clinical standing and raising aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Sara-Flex-Badge.webp",
+    "image": "/images/products/Arjo-Sara-Flex-Badge.webp",
     "productCount": 21
   },
   {
@@ -2089,7 +2089,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "patient-handling/standing-and-raising-aids/accessories-standing-and-raising-aids",
     "description": "Explore our extensive range of clinical accessories standing and raising aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/07/Molift-Quick-Raiser-2-Adjustable-Footboard.png",
+    "image": "/images/products/Molift-Quick-Raiser-2-Adjustable-Footboard.png",
     "productCount": 12
   },
   {
@@ -2100,7 +2100,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "patient-handling/floor-lifts",
     "description": "Explore our extensive range of clinical floor lifts engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/08/Arjo-Maxi-Twin-Badge.webp",
+    "image": "/images/products/Arjo-Maxi-Twin-Badge.webp",
     "productCount": 21
   },
   {
@@ -2111,7 +2111,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "patient-handling/floor-lifts/accessories-floor-lifts",
     "description": "Explore our extensive range of clinical accessories floor lifts engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/03/Bardwell-Hoist-Mat-01.webp",
+    "image": "/images/products/Bardwell-Hoist-Mat-01.webp",
     "productCount": 12
   },
   {
@@ -2122,7 +2122,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "patient-handling/gantry-systems",
     "description": "Explore our extensive range of clinical gantry systems engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/09/Arjo-Gantry-System-Badge.webp",
+    "image": "/images/products/Arjo-Gantry-System-Badge.webp",
     "productCount": 1
   },
   {
@@ -2133,7 +2133,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "patient-handling/slings",
     "description": "Explore our extensive range of clinical slings engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
+    "image": "/images/products/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
     "productCount": 45
   },
   {
@@ -2144,7 +2144,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "patient-handling/slings/slings-for-floor-lifts",
     "description": "Explore our extensive range of clinical slings for floor lifts engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/05/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
+    "image": "/images/products/Arjo-4-Point-Mesh-Unpadded-Bathing-Clip-Sling-with-HS-Badge.webp",
     "productCount": 33
   },
   {
@@ -2155,7 +2155,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "patient-handling/slings/slings-for-standing-and-raising-aids",
     "description": "Explore our extensive range of clinical slings for standing and raising aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/04/Arjo-Sara-Plus-EPS-Sling-Badge.webp",
+    "image": "/images/products/Arjo-Sara-Plus-EPS-Sling-Badge.webp",
     "productCount": 12
   },
   {
@@ -2166,7 +2166,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "patient-handling/transfer-equipment",
     "description": "Explore our extensive range of clinical transfer equipment engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Aspire-Swivel-Cushion-02.webp",
+    "image": "/images/products/Aspire-Swivel-Cushion-02.webp",
     "productCount": 5
   },
   {
@@ -2177,7 +2177,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "physio-and-rehab",
     "description": "Explore our extensive range of clinical physio and rehab engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/ACTIPRO-Balance-Pad-01.webp",
+    "image": "/images/products/ACTIPRO-Balance-Pad-01.webp",
     "productCount": 51
   },
   {
@@ -2188,7 +2188,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "physio-and-rehab/supports",
     "description": "Explore our extensive range of clinical supports engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/07/Imak-SmartGlove-01.webp",
+    "image": "/images/products/Imak-SmartGlove-01.webp",
     "productCount": 4
   },
   {
@@ -2199,7 +2199,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "physio-and-rehab/fitness",
     "description": "Explore our extensive range of clinical fitness engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/12/ACTIPRO-Balance-Pad-01.webp",
+    "image": "/images/products/ACTIPRO-Balance-Pad-01.webp",
     "productCount": 26
   },
   {
@@ -2210,7 +2210,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "physio-and-rehab/heat-packs",
     "description": "Explore our extensive range of clinical heat packs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2019/05/flex-ice-e1556383497798-700x700.jpg",
+    "image": "/images/products/flex-ice-e1556383497798-700x700.jpg",
     "productCount": 8
   },
   {
@@ -2221,7 +2221,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "pressure-care-cushions",
     "description": "Explore our extensive range of clinical pressure care cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/02/ComfiGel-Cushion.webp",
+    "image": "/images/products/ComfiGel-Cushion.webp",
     "productCount": 48
   },
   {
@@ -2232,7 +2232,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "pressure-care-cushions/pressure-care-cushion-accessories",
     "description": "Explore our extensive range of clinical pressure care cushion accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Equagel-General-03.webp",
+    "image": "/images/products/Equagel-General-03.webp",
     "productCount": 6
   },
   {
@@ -2243,7 +2243,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "pressure-care-cushions/back-cushions",
     "description": "Explore our extensive range of clinical back cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2019/01/Vicair-Butterfly-01.webp",
+    "image": "/images/products/Vicair-Butterfly-01.webp",
     "productCount": 4
   },
   {
@@ -2254,7 +2254,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "pressure-care-cushions/foam-cushions",
     "description": "Explore our extensive range of clinical foam cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/07/JAY-Lowzone-Switch.webp",
+    "image": "/images/products/JAY-Lowzone-Switch.webp",
     "productCount": 3
   },
   {
@@ -2265,7 +2265,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "pressure-care-cushions/hybrid-cushions",
     "description": "Explore our extensive range of clinical hybrid cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2019/07/Jay-Fusion-Main.webp",
+    "image": "/images/products/Jay-Fusion-Main.webp",
     "productCount": 6
   },
   {
@@ -2276,7 +2276,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "pressure-care-cushions/scripted-cushions",
     "description": "Explore our extensive range of clinical scripted cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/08/Spex-SuperHigh-Contour-Cushion-Main.webp",
+    "image": "/images/products/Spex-SuperHigh-Contour-Cushion-Main.webp",
     "productCount": 4
   },
   {
@@ -2287,7 +2287,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "pressure-care-cushions/toileting-cushions",
     "description": "Explore our extensive range of clinical toileting cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/09/Vicair-Liberty-TC-Main.webp",
+    "image": "/images/products/Vicair-Liberty-TC-Main.webp",
     "productCount": 1
   },
   {
@@ -2298,7 +2298,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "pressure-care-cushions/air-cushions",
     "description": "Explore our extensive range of clinical air cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2025/06/Elata-E600C-Alternating-Air-Cushion-System.webp",
+    "image": "/images/products/Elata-E600C-Alternating-Air-Cushion-System.webp",
     "productCount": 18
   },
   {
@@ -2309,7 +2309,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "pressure-care-cushions/gel-cushions",
     "description": "Explore our extensive range of clinical gel cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/02/ComfiGel-Cushion.webp",
+    "image": "/images/products/ComfiGel-Cushion.webp",
     "productCount": 7
   },
   {
@@ -2320,7 +2320,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "safety",
     "description": "Explore our extensive range of clinical safety engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/03/Alerta-Crash-Mat.webp",
+    "image": "/images/products/Alerta-Crash-Mat.webp",
     "productCount": 71
   },
   {
@@ -2331,7 +2331,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "safety/crash-mats",
     "description": "Explore our extensive range of clinical crash mats engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/03/Alerta-Crash-Mat.webp",
+    "image": "/images/products/Alerta-Crash-Mat.webp",
     "productCount": 4
   },
   {
@@ -2342,7 +2342,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "safety/alarms",
     "description": "Explore our extensive range of clinical alarms engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Cura1-Cordless-Bed-Pad-Kit-Home-Care.jpg",
+    "image": "/images/products/Cura1-Cordless-Bed-Pad-Kit-Home-Care.jpg",
     "productCount": 12
   },
   {
@@ -2353,7 +2353,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "safety/hip-protectors",
     "description": "Explore our extensive range of clinical hip protectors engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/10/hipsaver-interim-34.jpg",
+    "image": "/images/products/hipsaver-interim-34.jpg",
     "productCount": 48
   },
   {
@@ -2364,7 +2364,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "safety/headsaver",
     "description": "Explore our extensive range of clinical headsaver engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2019/04/HeadSaver-Replacement-Chin-Strap.webp",
+    "image": "/images/products/HeadSaver-Replacement-Chin-Strap.webp",
     "productCount": 5
   },
   {
@@ -2375,7 +2375,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "seating-and-positioning",
     "description": "Explore our extensive range of clinical seating and positioning engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2019/09/Bodypoint-Calf-Panel-01.webp",
+    "image": "/images/products/Bodypoint-Calf-Panel-01.webp",
     "productCount": 30
   },
   {
@@ -2386,7 +2386,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "seating-and-positioning/back-supports",
     "description": "Explore our extensive range of clinical back supports engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/08/Matrx-E2S-Back.jpg",
+    "image": "/images/products/Matrx-E2S-Back.jpg",
     "productCount": 14
   },
   {
@@ -2397,7 +2397,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "seating-and-positioning/seating-aids",
     "description": "Explore our extensive range of clinical seating aids engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2019/09/Bodypoint-Calf-Panel-01.webp",
+    "image": "/images/products/Bodypoint-Calf-Panel-01.webp",
     "productCount": 16
   },
   {
@@ -2408,7 +2408,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "therapeutic-cushions",
     "description": "Explore our extensive range of clinical therapeutic cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/TPI-A130012304-Bottoms-Up-Childrens-Cushion-Main.webp",
+    "image": "/images/products/TPI-A130012304-Bottoms-Up-Childrens-Cushion-Main.webp",
     "productCount": 48
   },
   {
@@ -2419,7 +2419,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "therapeutic-cushions/therapeutic-back-cushions",
     "description": "Explore our extensive range of clinical therapeutic back cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/01/Icare-Back-Cushion-01.jpg",
+    "image": "/images/products/Icare-Back-Cushion-01.jpg",
     "productCount": 14
   },
   {
@@ -2430,7 +2430,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "therapeutic-cushions/therapeutic-bed-cushions",
     "description": "Explore our extensive range of clinical therapeutic bed cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/01/Icare-Knee-Cushion-1.png",
+    "image": "/images/products/Icare-Knee-Cushion-1.png",
     "productCount": 9
   },
   {
@@ -2441,7 +2441,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "therapeutic-cushions/therapeutic-leg-and-feet-cushions",
     "description": "Explore our extensive range of clinical therapeutic leg and feet cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/01/Icare-Knee-Cushion-1.png",
+    "image": "/images/products/Icare-Knee-Cushion-1.png",
     "productCount": 12
   },
   {
@@ -2452,7 +2452,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "therapeutic-cushions/therapeutic-maternity-cushions",
     "description": "Explore our extensive range of clinical therapeutic maternity cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/TPI-Banana-Body-Pillow.webp",
+    "image": "/images/products/TPI-Banana-Body-Pillow.webp",
     "productCount": 5
   },
   {
@@ -2463,7 +2463,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "therapeutic-cushions/therapeutic-seat-cushions",
     "description": "Explore our extensive range of clinical therapeutic seat cushions engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/TPI-A130012304-Bottoms-Up-Childrens-Cushion-Main.webp",
+    "image": "/images/products/TPI-A130012304-Bottoms-Up-Childrens-Cushion-Main.webp",
     "productCount": 14
   },
   {
@@ -2474,7 +2474,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "wearable-protection",
     "description": "Explore our extensive range of clinical wearable protection engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/09/Aspire-PTA503360-Heel-Protectors.webp",
+    "image": "/images/products/Aspire-PTA503360-Heel-Protectors.webp",
     "productCount": 19
   },
   {
@@ -2485,7 +2485,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "wheelchairs",
     "description": "Explore our extensive range of clinical wheelchairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Aspire-Anti-Tippers-WCA848270.webp",
+    "image": "/images/products/Aspire-Anti-Tippers-WCA848270.webp",
     "productCount": 156
   },
   {
@@ -2496,7 +2496,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "wheelchairs/paediatric-wheelchairs",
     "description": "Explore our extensive range of clinical paediatric wheelchairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/08/Rea-Azalea-Minor.webp",
+    "image": "/images/products/Rea-Azalea-Minor.webp",
     "productCount": 6
   },
   {
@@ -2507,7 +2507,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/paediatric-wheelchairs/paediatric-wheelchairs-prescription-manual",
     "description": "Explore our extensive range of clinical paediatric wheelchairs prescription manual engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/12/Ottobock-Start-MR-Junior-Red.webp",
+    "image": "/images/products/Ottobock-Start-MR-Junior-Red.webp",
     "productCount": 2
   },
   {
@@ -2518,7 +2518,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/paediatric-wheelchairs/paediatric-wheelchairs-prescription-power",
     "description": "Explore our extensive range of clinical paediatric wheelchairs prescription power engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/08/Quantum-Q6-Edge-3-Stretto-Raspberry-Beret.webp",
+    "image": "/images/products/Quantum-Q6-Edge-3-Stretto-Raspberry-Beret.webp",
     "productCount": 1
   },
   {
@@ -2529,7 +2529,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/paediatric-wheelchairs/paediatric-wheelchairs-prescription-manual-tilt-in-space",
     "description": "Explore our extensive range of clinical paediatric wheelchairs prescription manual tilt in space engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/08/Rea-Azalea-Minor.webp",
+    "image": "/images/products/Rea-Azalea-Minor.webp",
     "productCount": 2
   },
   {
@@ -2540,7 +2540,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/paediatric-wheelchairs/paediatric-wheelchairs-manual",
     "description": "Explore our extensive range of clinical paediatric wheelchairs manual engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/12/Ottobock-Start-MR-Junior-Green.webp",
+    "image": "/images/products/Ottobock-Start-MR-Junior-Green.webp",
     "productCount": 1
   },
   {
@@ -2551,7 +2551,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "wheelchairs/manual-wheelchairs",
     "description": "Explore our extensive range of clinical manual wheelchairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Aspire-Assist-mws017.webp",
+    "image": "/images/products/Aspire-Assist-mws017.webp",
     "productCount": 32
   },
   {
@@ -2562,7 +2562,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/manual-wheelchairs/manual-wheelchairs-lever-drive",
     "description": "Explore our extensive range of clinical manual wheelchairs lever drive engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/A3LD-RHD.jpg",
+    "image": "/images/products/A3LD-RHD.jpg",
     "productCount": 1
   },
   {
@@ -2573,7 +2573,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/manual-wheelchairs/manual-wheelchairs-transport",
     "description": "Explore our extensive range of clinical manual wheelchairs transport engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/07/Aspire-Socialite-Red-MWS449830.webp",
+    "image": "/images/products/Aspire-Socialite-Red-MWS449830.webp",
     "productCount": 6
   },
   {
@@ -2584,7 +2584,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/manual-wheelchairs/manual-wheelchairs-power-assist",
     "description": "Explore our extensive range of clinical manual wheelchairs power assist engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Pride-Mobility-Power-Assist-Heavy-Duty.jpg",
+    "image": "/images/products/Pride-Mobility-Power-Assist-Heavy-Duty.jpg",
     "productCount": 2
   },
   {
@@ -2595,7 +2595,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/manual-wheelchairs/manual-wheelchairs-transit",
     "description": "Explore our extensive range of clinical manual wheelchairs transit engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Aspire-Lite-Transit-MWS442301.webp",
+    "image": "/images/products/Aspire-Lite-Transit-MWS442301.webp",
     "productCount": 9
   },
   {
@@ -2606,7 +2606,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/manual-wheelchairs/manual-wheelchairs-standard",
     "description": "Explore our extensive range of clinical manual wheelchairs standard engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Aspire-Assist-mws017.webp",
+    "image": "/images/products/Aspire-Assist-mws017.webp",
     "productCount": 2
   },
   {
@@ -2617,7 +2617,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/manual-wheelchairs/manual-wheelchairs-lightweight",
     "description": "Explore our extensive range of clinical manual wheelchairs lightweight engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Breezy-BasiX2-Badge.webp",
+    "image": "/images/products/Breezy-BasiX2-Badge.webp",
     "productCount": 4
   },
   {
@@ -2628,7 +2628,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/manual-wheelchairs/manual-wheelchairs-tilt-in-space",
     "description": "Explore our extensive range of clinical manual wheelchairs tilt in space engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/Aspire-Rehab-RX.webp",
+    "image": "/images/products/Aspire-Rehab-RX.webp",
     "productCount": 6
   },
   {
@@ -2639,7 +2639,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "wheelchairs/prescription-complex-wheelchairs",
     "description": "Explore our extensive range of clinical prescription complex wheelchairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/06/Alber-e-fix-07.webp",
+    "image": "/images/products/Alber-e-fix-07.webp",
     "productCount": 49
   },
   {
@@ -2650,7 +2650,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/prescription-complex-wheelchairs/prescription-wheelchairs-sport",
     "description": "Explore our extensive range of clinical prescription wheelchairs sport engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/01/Ottobock-Invader-Pointer-Hero.webp",
+    "image": "/images/products/Ottobock-Invader-Pointer-Hero.webp",
     "productCount": 1
   },
   {
@@ -2661,7 +2661,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/prescription-complex-wheelchairs/prescription-wheelchairs-manual-tilt-in-space",
     "description": "Explore our extensive range of clinical prescription wheelchairs manual tilt in space engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/08/Rea-Azalea-Minor.webp",
+    "image": "/images/products/Rea-Azalea-Minor.webp",
     "productCount": 7
   },
   {
@@ -2672,7 +2672,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/prescription-complex-wheelchairs/prescription-wheelchairs-manual",
     "description": "Explore our extensive range of clinical prescription wheelchairs manual engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/06/Alber-e-fix-07.webp",
+    "image": "/images/products/Alber-e-fix-07.webp",
     "productCount": 24
   },
   {
@@ -2683,7 +2683,7 @@ export const CATEGORIES: Category[] = [
     "depth": 4,
     "path": "wheelchairs/prescription-complex-wheelchairs/prescription-wheelchairs-manual/prescription-wheelchairs-manual-power-assist",
     "description": "Explore our extensive range of clinical prescription wheelchairs manual power assist engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2023/06/Alber-e-fix-07.webp",
+    "image": "/images/products/Alber-e-fix-07.webp",
     "productCount": 6
   },
   {
@@ -2694,7 +2694,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/prescription-complex-wheelchairs/prescription-wheelchairs-power",
     "description": "Explore our extensive range of clinical prescription wheelchairs power engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2026/05/Meyra-MC2-Main.webp",
+    "image": "/images/products/Meyra-MC2-Main.webp",
     "productCount": 17
   },
   {
@@ -2705,7 +2705,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "wheelchairs/wheelchair-accessories",
     "description": "Explore our extensive range of clinical wheelchair accessories engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2024/11/Aspire-Anti-Tippers-WCA848270.webp",
+    "image": "/images/products/Aspire-Anti-Tippers-WCA848270.webp",
     "productCount": 56
   },
   {
@@ -2716,7 +2716,7 @@ export const CATEGORIES: Category[] = [
     "depth": 2,
     "path": "wheelchairs/power-wheelchairs",
     "description": "Explore our extensive range of clinical power wheelchairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/09/KP25.2-3-4-Front.webp",
+    "image": "/images/products/KP25.2-3-4-Front.webp",
     "productCount": 16
   },
   {
@@ -2727,7 +2727,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/power-wheelchairs/power-wheelchair-transportable",
     "description": "Explore our extensive range of clinical power wheelchair transportable engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/09/Ezi-Go-DLX-02.png",
+    "image": "/images/products/Ezi-Go-DLX-02.png",
     "productCount": 3
   },
   {
@@ -2738,7 +2738,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/power-wheelchairs/power-wheelchairs-folding",
     "description": "Explore our extensive range of clinical power wheelchairs folding engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/10/Merits-Fold-Go-P113-01.jpg",
+    "image": "/images/products/Merits-Fold-Go-P113-01.jpg",
     "productCount": 7
   },
   {
@@ -2749,7 +2749,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/power-wheelchairs/power-wheelchairs-mid-wheel-drive",
     "description": "Explore our extensive range of clinical power wheelchairs mid wheel drive engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2022/09/Maverick-10-Red.jpg",
+    "image": "/images/products/Maverick-10-Red.jpg",
     "productCount": 4
   },
   {
@@ -2760,7 +2760,7 @@ export const CATEGORIES: Category[] = [
     "depth": 3,
     "path": "wheelchairs/power-wheelchairs/power-wheelchairs-mid-wheel-drive-power-wheelchairs",
     "description": "Explore our extensive range of clinical power wheelchairs mid wheel drive power wheelchairs engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/09/KP25.2-3-4-Front.webp",
+    "image": "/images/products/KP25.2-3-4-Front.webp",
     "productCount": 3
   },
   {
@@ -2771,7 +2771,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "banksiapalliative",
     "description": "Explore our extensive range of clinical banksiapalliative engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Alpha-Active-4-Badge.webp",
+    "image": "/images/products/Arjo-Alpha-Active-4-Badge.webp",
     "productCount": 17
   },
   {
@@ -2782,7 +2782,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "banksia-consignment-stock",
     "description": "Explore our extensive range of clinical banksia consignment stock engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/11/Configura-Comfort-Black-Upright-2026.webp",
+    "image": "/images/products/Configura-Comfort-Black-Upright-2026.webp",
     "productCount": 0
   },
   {
@@ -2793,7 +2793,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "bph-consignment-stock",
     "description": "Explore our extensive range of clinical bph consignment stock engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Assist-Bar.webp",
+    "image": "/images/products/Aspire-Assist-Bar.webp",
     "productCount": 9
   },
   {
@@ -2804,7 +2804,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "cavalrybethlehem",
     "description": "Explore our extensive range of clinical cavalrybethlehem engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Configura_01.jpg",
+    "image": "/images/products/Configura_01.jpg",
     "productCount": 11
   },
   {
@@ -2815,7 +2815,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "delmonthospital",
     "description": "Explore our extensive range of clinical delmonthospital engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Assist-Bar.webp",
+    "image": "/images/products/Aspire-Assist-Bar.webp",
     "productCount": 11
   },
   {
@@ -2826,7 +2826,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "donvalerehab",
     "description": "Explore our extensive range of clinical donvalerehab engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/02/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
+    "image": "/images/products/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
     "productCount": 11
   },
   {
@@ -2837,7 +2837,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "easternpalliativecare",
     "description": "Explore our extensive range of clinical easternpalliativecare engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2020/04/Arjo-Alpha-Active-4-Badge.webp",
+    "image": "/images/products/Arjo-Alpha-Active-4-Badge.webp",
     "productCount": 8
   },
   {
@@ -2848,7 +2848,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "epworthbrighton",
     "description": "Explore our extensive range of clinical epworthbrighton engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/02/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
+    "image": "/images/products/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
     "productCount": 29
   },
   {
@@ -2859,7 +2859,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "epworthcamberwell",
     "description": "Explore our extensive range of clinical epworthcamberwell engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire_4_WW_Red_Test.png",
+    "image": "/images/products/Aspire_4_WW_Red_Test.png",
     "productCount": 12
   },
   {
@@ -2870,7 +2870,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "epworthhawthorn",
     "description": "Explore our extensive range of clinical epworthhawthorn engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/11/ActiPro-Dumbbells-Reduced-Range.webp",
+    "image": "/images/products/ActiPro-Dumbbells-Reduced-Range.webp",
     "productCount": 11
   },
   {
@@ -2881,7 +2881,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "epworthhawthornot",
     "description": "Explore our extensive range of clinical epworthhawthornot engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Toilet-Surround-Frame.jpg",
+    "image": "/images/products/Aspire-Toilet-Surround-Frame.jpg",
     "productCount": 18
   },
   {
@@ -2892,7 +2892,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "epworthrichmond",
     "description": "Explore our extensive range of clinical epworthrichmond engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/02/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
+    "image": "/images/products/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
     "productCount": 15
   },
   {
@@ -2903,7 +2903,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "holmesglenprivate",
     "description": "Explore our extensive range of clinical holmesglenprivate engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/10/Aspire-Over-Toilet-Aid.webp",
+    "image": "/images/products/Aspire-Over-Toilet-Aid.webp",
     "productCount": 4
   },
   {
@@ -2914,7 +2914,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "knoxprivate",
     "description": "Explore our extensive range of clinical knoxprivate engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire_4_WW_Red_Test.png",
+    "image": "/images/products/Aspire_4_WW_Red_Test.png",
     "productCount": 8
   },
   {
@@ -2925,7 +2925,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "johnfawknerprivatehospital",
     "description": "Explore our extensive range of clinical johnfawknerprivatehospital engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Sara-Stedy-Badge.webp",
+    "image": "/images/products/Sara-Stedy-Badge.webp",
     "productCount": 12
   },
   {
@@ -2936,7 +2936,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "masadaprivate",
     "description": "Explore our extensive range of clinical masadaprivate engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Configura_01.jpg",
+    "image": "/images/products/Configura_01.jpg",
     "productCount": 12
   },
   {
@@ -2947,7 +2947,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "northernprivate",
     "description": "Explore our extensive range of clinical northernprivate engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/02/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
+    "image": "/images/products/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
     "productCount": 14
   },
   {
@@ -2958,7 +2958,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "palliativecaresoutheast",
     "description": "Explore our extensive range of clinical palliativecaresoutheast engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Toilet-Surround-Frame.jpg",
+    "image": "/images/products/Aspire-Toilet-Surround-Frame.jpg",
     "productCount": 5
   },
   {
@@ -2969,7 +2969,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "southeasternprivate",
     "description": "Explore our extensive range of clinical southeasternprivate engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/02/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
+    "image": "/images/products/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
     "productCount": 33
   },
   {
@@ -2980,7 +2980,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "seph-consignment-stock",
     "description": "Explore our extensive range of clinical seph consignment stock engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/09/Aspire-Assist-Bar.webp",
+    "image": "/images/products/Aspire-Assist-Bar.webp",
     "productCount": 19
   },
   {
@@ -2991,7 +2991,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "stjohnofgod",
     "description": "Explore our extensive range of clinical stjohnofgod engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Toilet-Surround-Frame.jpg",
+    "image": "/images/products/Aspire-Toilet-Surround-Frame.jpg",
     "productCount": 12
   },
   {
@@ -3002,7 +3002,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "stjohnofgodfrankston",
     "description": "Explore our extensive range of clinical stjohnofgodfrankston engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/02/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
+    "image": "/images/products/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
     "productCount": 20
   },
   {
@@ -3013,7 +3013,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "stvincentprivate",
     "description": "Explore our extensive range of clinical stvincentprivate engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Aspire-Male-Urinal-BTT145700.webp",
+    "image": "/images/products/Aspire-Male-Urinal-BTT145700.webp",
     "productCount": 18
   },
   {
@@ -3024,7 +3024,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "stvincentwerribee",
     "description": "Explore our extensive range of clinical stvincentwerribee engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/02/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
+    "image": "/images/products/Age-Prepcare-King-Comfort-Low-Back-Chair-Ballet.webp",
     "productCount": 15
   },
   {
@@ -3035,7 +3035,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "theavenue",
     "description": "Explore our extensive range of clinical theavenue engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2021/06/Configura_01.jpg",
+    "image": "/images/products/Configura_01.jpg",
     "productCount": 15
   },
   {
@@ -3046,7 +3046,7 @@ export const CATEGORIES: Category[] = [
     "depth": 1,
     "path": "westernprivate",
     "description": "Explore our extensive range of clinical westernprivate engineered for comfort, independence, and mobility.",
-    "image": "https://www.rehabhire.com.au/wp-content/uploads/2018/08/Age-Prepcare-Royal-Comfort-High-Back-Chair.webp",
+    "image": "/images/products/Age-Prepcare-Royal-Comfort-High-Back-Chair.webp",
     "productCount": 16
   }
 ];

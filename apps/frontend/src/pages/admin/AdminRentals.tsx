@@ -501,7 +501,7 @@ export function AdminRentals() {
                         </div>
                         <div className="text-[11px] font-bold font-mono mt-0.5">
                           {isPending ? (
-                            <span className="text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                            <span className="text-xs font-semibold text-amber-700">
                               Awaiting Payment Confirmation
                             </span>
                           ) : (

@@ -360,181 +360,181 @@ export const clinicalCategoryMeta: Record<string, {
 }> = {
   'Chairs & Lift Chairs': {
     subtitle: 'Configura® posture & electric lift chairs',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2021/11/Configura-Comfort-Black-Upright-2026.webp',
+    preferredImage: '/images/products/Configura-Comfort-Black-Upright-2026.webp',
     group: 'mobility',
     tag: 'Seating & Lift',
   },
   'Beds & Pressure Care': {
     subtitle: 'Hi-lo hospital beds & dynamic air mattresses',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp',
+    preferredImage: '/images/products/Empresa-LTC-Bed-Main-Badge.webp',
     group: 'care',
     tag: 'Beds & Pressure',
   },
   'Wheelchairs & Power Mobility': {
     subtitle: 'Active manual, tilt-in-space & power wheelchairs',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/01/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp',
+    preferredImage: '/images/products/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp',
     group: 'mobility',
     tag: 'Mobility',
   },
   'Bathroom & Hygiene': {
     subtitle: 'Shower commodes, tilt chairs & bath safety',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp',
+    preferredImage: '/images/products/Ocean-Ergo-VIP-Main.webp',
     group: 'care',
     tag: 'Hygiene',
   },
   'Patient Handling & Hoists': {
     subtitle: 'Standing lifters, mobile hoists & transfer slings',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/08/Sara-Stedy-Badge.webp',
+    preferredImage: '/images/products/Sara-Stedy-Badge.webp',
     group: 'care',
     tag: 'Transfers',
   },
   'Daily Living & Continence': {
     subtitle: 'Adaptive dining, reachers & continence care',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2022/01/Uccello-Black-and-White-01.webp',
+    preferredImage: '/images/products/Uccello-Black-and-White-01.webp',
     group: 'care',
     tag: 'Daily Living',
   },
   'Paediatric & Specialized Rehab': {
     subtitle: 'Paediatric seating, gait trainers & therapy',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/ACTIPRO-Balance-Pad-01.webp',
+    preferredImage: '/images/products/ACTIPRO-Balance-Pad-01.webp',
     group: 'mobility',
     tag: 'Paediatric & Rehab',
   },
   'Meal Preparation Equipment': {
     subtitle: 'Adaptive openers, kettles & dining aids',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2022/01/Uccello-Black-and-White-01.webp',
+    preferredImage: '/images/products/Uccello-Black-and-White-01.webp',
     group: 'care',
     tag: 'Daily Living',
   },
   'Hip Protectors': {
     subtitle: 'Protective wear & day calendar clocks',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp',
+    preferredImage: '/images/products/Able-Life-Universal-Stand-Assist.webp',
     group: 'care',
     tag: 'Fall Safety',
   },
   'Vehicle Equipment': {
     subtitle: 'Car assist bars & transfer swivel seats',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-Self-Assist-Bar-Main.webp',
+    preferredImage: '/images/products/Empresa-Self-Assist-Bar-Main.webp',
     group: 'mobility',
     tag: 'Vehicle',
   },
   'Non slip equipment': {
     subtitle: 'Anti-slip bathroom mats & floor runners',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Conni-Anti-Slip-Floor-Mat-Pebble.webp',
+    preferredImage: '/images/products/Conni-Anti-Slip-Floor-Mat-Pebble.webp',
     group: 'care',
     tag: 'Non-Slip',
   },
   'Walkers': {
     subtitle: 'Carbon fibre & indoor seat rollators',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire-Vogue-Adventure-Walker-WAF705450.webp',
+    preferredImage: '/images/products/Aspire-Vogue-Adventure-Walker-WAF705450.webp',
     group: 'mobility',
     tag: 'Mobility',
   },
   'Single Point Sticks': {
     subtitle: 'Quad canes & folding walking sticks',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp',
+    preferredImage: '/images/products/Able-Life-Universal-Stand-Assist.webp',
     group: 'mobility',
     tag: 'Stability',
   },
   'Electric Bed and Mattress': {
     subtitle: 'Hi-lo profiling electric beds & mattresses',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp',
+    preferredImage: '/images/products/Empresa-LTC-Bed-Main-Badge.webp',
     group: 'care',
     tag: 'Hospital Bed',
   },
   'Long Handled Equipment': {
     subtitle: 'Reachers, stocking aids & toe washers',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2022/01/Uccello-Black-and-White-01.webp',
+    preferredImage: '/images/products/Uccello-Black-and-White-01.webp',
     group: 'care',
     tag: 'Assistance',
   },
   'Pillows': {
     subtitle: 'Ergonomic cervical & latex medical pillows',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2022/10/Pillow.jpg',
+    preferredImage: '/images/products/Pillow.jpg',
     group: 'care',
     tag: 'Ergonomic',
   },
   'Personal care equipment': {
     subtitle: 'Bedside commodes & toilet seat raisers',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp',
+    preferredImage: '/images/products/Ocean-Ergo-VIP-Main.webp',
     group: 'care',
     tag: 'Personal Care',
   },
   'Cushions': {
     subtitle: 'Roho air-cell & gel pressure cushions',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Quadtro-Select-High-Profile-02-Flattened.png',
+    preferredImage: '/images/products/Quadtro-Select-High-Profile-02-Flattened.png',
     group: 'mobility',
     tag: 'Pressure Care',
   },
   'Recliners': {
     subtitle: 'Single & quad motor electric lift chairs',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2022/08/Configura-Advance-01.webp',
+    preferredImage: '/images/products/Configura-Advance-01.webp',
     group: 'mobility',
     tag: 'Power Lift',
   },
   'Bed Side rails': {
     subtitle: 'King Cobra poles & U-assist safety rails',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Self-Help-Pole.webp',
+    preferredImage: '/images/products/Empresa-LTC-Bed-Self-Help-Pole.webp',
     group: 'care',
     tag: 'Bed Safety',
   },
   'Over Bed Table': {
     subtitle: 'EcoDry airers & mobile overbed tables',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp',
+    preferredImage: '/images/products/Able-Life-Universal-Stand-Assist.webp',
     group: 'care',
     tag: 'Convenience',
   },
   'Day Chairs': {
     subtitle: 'Classic ergonomic high & low back chairs',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2021/11/Configura-Comfort-Black-Upright-2026.webp',
+    preferredImage: '/images/products/Configura-Comfort-Black-Upright-2026.webp',
     group: 'care',
     tag: 'Postural',
   },
   'Wheelchairs': {
     subtitle: 'Ergonomic manual & transit folding chairs',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/01/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp',
+    preferredImage: '/images/products/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp',
     group: 'mobility',
     tag: 'Wheelchairs',
   },
   'Comfortshield Gold Cotton Terry Fitted Waterproof': {
     subtitle: 'Fitted waterproof bed sheets & protectors',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Conni-Anti-Slip-Floor-Mat-Pebble.webp',
+    preferredImage: '/images/products/Conni-Anti-Slip-Floor-Mat-Pebble.webp',
     group: 'continence',
     tag: 'Waterproof',
   },
   'Bathroom & Toilet': {
     subtitle: 'Shower chairs, stools & toilet surrounds',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp',
+    preferredImage: '/images/products/Ocean-Ergo-VIP-Main.webp',
     group: 'care',
     tag: 'Bathroom',
   },
   'Hire Equipment': {
     subtitle: 'Flexible weekly clinical rental equipment',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp',
+    preferredImage: '/images/products/Empresa-LTC-Bed-Main-Badge.webp',
     group: 'hire',
     tag: 'Rental',
   },
   'hire': {
     subtitle: 'Flexible weekly clinical rental equipment',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp',
+    preferredImage: '/images/products/Empresa-LTC-Bed-Main-Badge.webp',
     group: 'hire',
     tag: 'Rental',
   },
   'bag': {
     subtitle: 'Adaptive carry bags & wheelchair storage pouches',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/08/Pride-Single-Fold-Ramp-01.jpg',
+    preferredImage: '/images/products/Pride-Single-Fold-Ramp-01.jpg',
     group: 'care',
     tag: 'Accessories',
   },
   'Bag': {
     subtitle: 'Adaptive carry bags & wheelchair storage pouches',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/08/Pride-Single-Fold-Ramp-01.jpg',
+    preferredImage: '/images/products/Pride-Single-Fold-Ramp-01.jpg',
     group: 'care',
     tag: 'Accessories',
   },
   'Bags': {
     subtitle: 'Adaptive carry bags & wheelchair storage pouches',
-    preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/08/Pride-Single-Fold-Ramp-01.jpg',
+    preferredImage: '/images/products/Pride-Single-Fold-Ramp-01.jpg',
     group: 'care',
     tag: 'Accessories',
   },
@@ -677,7 +677,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('bag') || lower.includes('pouch') || lower.includes('carrier') || lower.includes('tote') || lower.includes('backpack')) {
     return {
       subtitle: 'Adaptive carry bags & mobility equipment pouches',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/08/Pride-Single-Fold-Ramp-01.jpg',
+      preferredImage: '/images/products/Pride-Single-Fold-Ramp-01.jpg',
       group: 'care' as const,
       tag: 'Accessories',
     };
@@ -685,7 +685,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('wheelchair') || lower.includes('transit')) {
     return {
       subtitle: 'Ergonomic manual & transit folding wheelchairs',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/01/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp',
+      preferredImage: '/images/products/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp',
       group: 'mobility' as const,
       tag: 'Wheelchairs',
     };
@@ -693,7 +693,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('bed') || lower.includes('mattress') || lower.includes('sleep') || lower.includes('cot')) {
     return {
       subtitle: 'Hi-lo profiling electric beds & mattresses',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp',
+      preferredImage: '/images/products/Empresa-LTC-Bed-Main-Badge.webp',
       group: 'care' as const,
       tag: 'Hospital Bed',
     };
@@ -701,7 +701,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('walker') || lower.includes('rollator') || lower.includes('frame')) {
     return {
       subtitle: 'Carbon fibre & indoor seat rollators',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire-Vogue-Adventure-Walker-WAF705450.webp',
+      preferredImage: '/images/products/Aspire-Vogue-Adventure-Walker-WAF705450.webp',
       group: 'mobility' as const,
       tag: 'Mobility',
     };
@@ -709,7 +709,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('cane') || lower.includes('stick') || lower.includes('crutch')) {
     return {
       subtitle: 'Quad canes & folding walking sticks',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp',
+      preferredImage: '/images/products/Able-Life-Universal-Stand-Assist.webp',
       group: 'mobility' as const,
       tag: 'Stability',
     };
@@ -717,7 +717,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('chair') || lower.includes('recliner') || lower.includes('seat')) {
     return {
       subtitle: lower.includes('recliner') ? 'Power lift electric armchairs' : 'Classic ergonomic patient day chairs',
-      preferredImage: lower.includes('recliner') ? 'https://www.rehabhire.com.au/wp-content/uploads/2022/08/Configura-Advance-01.webp' : 'https://www.rehabhire.com.au/wp-content/uploads/2021/11/Configura-Comfort-Black-Upright-2026.webp',
+      preferredImage: lower.includes('recliner') ? '/images/products/Configura-Advance-01.webp' : '/images/products/Configura-Comfort-Black-Upright-2026.webp',
       group: 'mobility' as const,
       tag: 'Seating',
     };
@@ -725,7 +725,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('cushion') || lower.includes('pad') || lower.includes('roho')) {
     return {
       subtitle: 'Roho air-cell & gel pressure cushions',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Quadtro-Select-High-Profile-02-Flattened.png',
+      preferredImage: '/images/products/Quadtro-Select-High-Profile-02-Flattened.png',
       group: 'mobility' as const,
       tag: 'Pressure Care',
     };
@@ -733,7 +733,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('bath') || lower.includes('shower') || lower.includes('toilet') || lower.includes('commode')) {
     return {
       subtitle: 'Shower chairs, stools & toilet surrounds',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp',
+      preferredImage: '/images/products/Ocean-Ergo-VIP-Main.webp',
       group: 'care' as const,
       tag: 'Bathroom',
     };
@@ -741,7 +741,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('kettle') || lower.includes('opener') || lower.includes('cutlery') || lower.includes('kitchen') || lower.includes('meal') || lower.includes('dining')) {
     return {
       subtitle: 'Adaptive openers, kettles & dining aids',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2022/01/Uccello-Black-and-White-01.webp',
+      preferredImage: '/images/products/Uccello-Black-and-White-01.webp',
       group: 'care' as const,
       tag: 'Daily Living',
     };
@@ -749,7 +749,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('slip') || lower.includes('grip') || lower.includes('mat')) {
     return {
       subtitle: 'Anti-slip bathroom mats & floor runners',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Conni-Anti-Slip-Floor-Mat-Pebble.webp',
+      preferredImage: '/images/products/Conni-Anti-Slip-Floor-Mat-Pebble.webp',
       group: 'care' as const,
       tag: 'Safety',
     };
@@ -757,7 +757,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('table') || lower.includes('desk') || lower.includes('overbed')) {
     return {
       subtitle: 'Overbed tables & convenience accessories',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp',
+      preferredImage: '/images/products/Able-Life-Universal-Stand-Assist.webp',
       group: 'care' as const,
       tag: 'Convenience',
     };
@@ -765,7 +765,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('pillow') || lower.includes('headrest') || lower.includes('cervical')) {
     return {
       subtitle: 'Ergonomic cervical & medical pillows',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2022/10/Pillow.jpg',
+      preferredImage: '/images/products/Pillow.jpg',
       group: 'care' as const,
       tag: 'Ergonomic',
     };
@@ -773,7 +773,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('rail') || lower.includes('pole') || lower.includes('guard')) {
     return {
       subtitle: 'King Cobra poles & bed safety rails',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Self-Help-Pole.webp',
+      preferredImage: '/images/products/Empresa-LTC-Bed-Self-Help-Pole.webp',
       group: 'care' as const,
       tag: 'Bed Safety',
     };
@@ -781,7 +781,7 @@ export function getCategoryMeta(key: string) {
   if (lower.includes('car') || lower.includes('vehicle') || lower.includes('auto')) {
     return {
       subtitle: 'Car assist bars & transfer swivel seats',
-      preferredImage: 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-Self-Assist-Bar-Main.webp',
+      preferredImage: '/images/products/Empresa-Self-Assist-Bar-Main.webp',
       group: 'mobility' as const,
       tag: 'Vehicle',
     };
@@ -810,46 +810,46 @@ export function getSmartProductImage(category: string, name: string): string {
   const combined = `${category} ${name}`.toLowerCase();
   
   if (combined.includes('bag') || combined.includes('pouch') || combined.includes('carrier') || combined.includes('tote') || combined.includes('backpack')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2018/08/Pride-Single-Fold-Ramp-01.jpg';
+    return '/images/products/Pride-Single-Fold-Ramp-01.jpg';
   }
   if (combined.includes('wheelchair') || combined.includes('transit')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2024/01/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp';
+    return '/images/products/Aspire-VIDA-X-Purple-MWS449868-Front-Angle.webp';
   }
   if (combined.includes('bed') || combined.includes('mattress') || combined.includes('sleep') || combined.includes('cot')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Main-Badge.webp';
+    return '/images/products/Empresa-LTC-Bed-Main-Badge.webp';
   }
   if (combined.includes('walker') || combined.includes('rollator') || combined.includes('frame')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2021/06/Aspire-Vogue-Adventure-Walker-WAF705450.webp';
+    return '/images/products/Aspire-Vogue-Adventure-Walker-WAF705450.webp';
   }
   if (combined.includes('cane') || combined.includes('stick') || combined.includes('crutch')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp';
+    return '/images/products/Able-Life-Universal-Stand-Assist.webp';
   }
   if (combined.includes('chair') || combined.includes('recliner') || combined.includes('seat')) {
-    return combined.includes('recliner') ? 'https://www.rehabhire.com.au/wp-content/uploads/2022/08/Configura-Advance-01.webp' : 'https://www.rehabhire.com.au/wp-content/uploads/2021/11/Configura-Comfort-Black-Upright-2026.webp';
+    return combined.includes('recliner') ? '/images/products/Configura-Advance-01.webp' : '/images/products/Configura-Comfort-Black-Upright-2026.webp';
   }
   if (combined.includes('cushion') || combined.includes('pad') || combined.includes('roho')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Quadtro-Select-High-Profile-02-Flattened.png';
+    return '/images/products/Quadtro-Select-High-Profile-02-Flattened.png';
   }
   if (combined.includes('bath') || combined.includes('shower') || combined.includes('toilet') || combined.includes('commode')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2023/04/Ocean-Ergo-VIP-Main.webp';
+    return '/images/products/Ocean-Ergo-VIP-Main.webp';
   }
   if (combined.includes('kettle') || combined.includes('opener') || combined.includes('cutlery') || combined.includes('kitchen') || combined.includes('meal') || combined.includes('dining')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2022/01/Uccello-Black-and-White-01.webp';
+    return '/images/products/Uccello-Black-and-White-01.webp';
   }
   if (combined.includes('slip') || combined.includes('grip') || combined.includes('mat')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2018/09/Conni-Anti-Slip-Floor-Mat-Pebble.webp';
+    return '/images/products/Conni-Anti-Slip-Floor-Mat-Pebble.webp';
   }
   if (combined.includes('table') || combined.includes('desk') || combined.includes('overbed')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2025/01/Able-Life-Universal-Stand-Assist.webp';
+    return '/images/products/Able-Life-Universal-Stand-Assist.webp';
   }
   if (combined.includes('pillow') || combined.includes('headrest') || combined.includes('cervical')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2022/10/Pillow.jpg';
+    return '/images/products/Pillow.jpg';
   }
   if (combined.includes('rail') || combined.includes('pole') || combined.includes('guard')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-LTC-Bed-Self-Help-Pole.webp';
+    return '/images/products/Empresa-LTC-Bed-Self-Help-Pole.webp';
   }
   if (combined.includes('car') || combined.includes('vehicle') || combined.includes('auto')) {
-    return 'https://www.rehabhire.com.au/wp-content/uploads/2024/12/Empresa-Self-Assist-Bar-Main.webp';
+    return '/images/products/Empresa-Self-Assist-Bar-Main.webp';
   }
 
   // If completely unknown, return general equipment placeholder or dynamic SVG

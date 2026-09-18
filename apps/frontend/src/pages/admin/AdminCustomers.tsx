@@ -824,20 +824,14 @@ export function AdminCustomers() {
                             <span className="font-black text-gray-900 text-sm">{ord.id}</span>
                             <span className="text-xs text-gray-300">&bull;</span>
                             <span className="text-xs text-gray-500 font-mono">{ord.createdAt}</span>
-                            {isMixed ? (
-                              <span className="px-2.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-bold rounded-full">
-                                Mixed Order
-                              </span>
-                            ) : hireItems.length > 0 ? (
-                              <span className="px-2.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold rounded-full">
-                                Equipment Hire
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold rounded-full">
-                                Outright Purchase
-                              </span>
-                            )}
-                            <span className="px-2.5 py-0.5 bg-gray-100 text-gray-700 text-[11px] font-bold rounded-full uppercase">
+                            <span className="text-xs text-gray-300">&bull;</span>
+                            <span className={`text-xs font-semibold ${
+                              isMixed ? 'text-purple-700' : hireItems.length > 0 ? 'text-amber-800' : 'text-emerald-700'
+                            }`}>
+                              {isMixed ? 'Mixed Order' : hireItems.length > 0 ? 'Equipment Hire' : 'Outright Purchase'}
+                            </span>
+                            <span className="text-xs text-gray-300">&bull;</span>
+                            <span className="text-xs font-semibold uppercase text-slate-600">
                               {ord.status}
                             </span>
                           </div>

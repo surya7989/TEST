@@ -23,7 +23,7 @@ export const articles: Article[] = [
     authorRole: 'Senior Occupational Therapist',
     publishedAt: '2024-11-15',
     readTime: 8,
-    featuredImage: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=400&fit=crop',
+    featuredImage: '/images/articles/article-wheelchair.jpg',
     tags: ['NDIS', 'Wheelchairs'],
   },
   {
@@ -36,7 +36,7 @@ export const articles: Article[] = [
     authorRole: 'Assistive Technology Specialist',
     publishedAt: '2024-11-08',
     readTime: 6,
-    featuredImage: 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&h=400&fit=crop',
+    featuredImage: '/images/articles/article-bathroom.jpg',
     tags: ['Bathroom', 'Safety'],
   },
   {
@@ -49,7 +49,7 @@ export const articles: Article[] = [
     authorRole: 'Clinical Nurse Consultant',
     publishedAt: '2024-11-01',
     readTime: 10,
-    featuredImage: 'https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?w=600&h=400&fit=crop',
+    featuredImage: '/images/articles/article-pressure.jpg',
     tags: ['Pressure Care', 'Clinical'],
   },
   {
@@ -62,7 +62,7 @@ export const articles: Article[] = [
     authorRole: 'NDIS Support Coordinator',
     publishedAt: '2024-10-21',
     readTime: 12,
-    featuredImage: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop',
+    featuredImage: '/images/articles/article-ndis.jpg',
     tags: ['NDIS', 'Funding'],
   },
 ];

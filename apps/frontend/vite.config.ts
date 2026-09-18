@@ -7,6 +7,25 @@ import { fileURLToPath } from 'url';
 import type { IncomingMessage, ServerResponse } from 'http';
 import https from 'https';
 
+/**
+ * Recursively copy files/dirs from src to dest, skipping listed skip dirs.
+ */
+function copyPublicSelective(src: string, dest: string, skipDirs: string[] = []) {
+  if (!fs.existsSync(src)) return;
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of entries) {
+    if (skipDirs.includes(entry.name)) continue;
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyPublicSelective(srcPath, destPath, skipDirs);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -30,6 +49,19 @@ function imgCachePaths(imageUrl: string) {
 export default defineConfig({
   plugins: [
     react(),
+    // Copy public assets to dist EXCEPT the large images/products folder
+    // (473 MB). The web server (Hostinger) serves images directly from
+    // public/images/products/ so they don't need to be in dist/.
+    {
+      name: 'copy-public-selective',
+      closeBundle() {
+        const publicDir = path.resolve(__dirname, 'public');
+        const distDir = path.resolve(__dirname, 'dist');
+        // Skip the heavy images directory — web server handles it
+        copyPublicSelective(publicDir, distDir, ['products']);
+        console.log('✅ Copied public assets (skipped images/products) → dist/');
+      },
+    },
     {
       name: 'image-proxy',
       configureServer(server) {
@@ -218,9 +250,9 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:4000',
+        target: 'https://new.atspecialists.com.au',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },
@@ -228,6 +260,10 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     chunkSizeWarningLimit: 1200,
+    // Do NOT let Vite bulk-copy ALL of public/ into dist/ — the images/products
+    // folder is 473 MB and is served directly by the web server (Hostinger).
+    // We copy only the small static assets we actually need in dist/.
+    copyPublicDir: false,
     // Homepage must NOT preload the 6MB+ catalog or the PDF engine — they load
     // on demand when shop/admin routes import them. Preloading them delays LCP.
     modulePreload: {

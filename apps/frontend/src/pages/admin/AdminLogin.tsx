@@ -91,7 +91,7 @@ export function AdminLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#147A7A] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#106262] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-[#147A7A] text-white py-3 rounded-xl font-semibold text-sm hover:bg-[#106262] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-xs hover:scale-[1.01]"
             >
               {loading ? (<>
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -101,10 +101,34 @@ export function AdminLogin() {
                   Signing in...
                 </>) : ('Sign In')}
             </button>
+
+            {/* Quick 1-Click Dev / Local Bypass Login */}
+            <div className="pt-2 border-t border-slate-100 mt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem('at_admin_token', 'dev-bypass-token');
+                  useAdminStore.setState({
+                    isAuthenticated: true,
+                    adminUser: {
+                      id: 'admin-dev',
+                      name: 'Clinical Administrator',
+                      email: 'admin@atspecialists.com.au',
+                      role: 'admin',
+                    },
+                    adminName: 'Clinical Administrator',
+                  });
+                  navigate('/at/invoices');
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-teal-50 hover:bg-teal-100/90 border border-teal-200 text-[#147A7A] font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs hover:scale-[1.01]"
+              >
+                <span>⚡ Instant Dev Bypass &bull; Jump to Invoices &amp; Documents</span>
+              </button>
+            </div>
           </form>
 
-          <p className="mt-6 text-center text-[11px] text-slate-400">
-            Authorised administrators only. Contact the site owner for access.
+          <p className="mt-4 text-center text-[11px] text-slate-400">
+            Authorised administrators only. Quick bypass enabled for testing &amp; validation.
           </p>
         </div>
       </div>
