@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import {
   adminLogin as apiAdminLogin,
   getAdminProfile as apiGetAdminProfile,
@@ -730,13 +730,131 @@ export function buildEffectiveProducts(overrides: Record<string, Partial<AdminPr
 }
 
 /**
+ * Sanitizes persisted product overrides so only genuine admin edits are retained.
+ * Prevents accidental full-catalogue dumps from blowing past the ~5MB browser localStorage quota.
+ */
+export function cleanPersistedOverrides(rawOverrides: any): Record<string, Partial<AdminProduct>> {
+  if (!rawOverrides || typeof rawOverrides !== 'object') return {};
+  const cleaned: Record<string, Partial<AdminProduct>> = {};
+  const baseMap = new Map((initialFallbackProducts || []).map((p: Product) => [p.id, p]));
+
+  for (const [id, o] of Object.entries(rawOverrides)) {
+    if (!o || typeof o !== 'object') continue;
+    const base = baseMap.get(id);
+    if (!base) {
+      cleaned[id] = o as Partial<AdminProduct>;
+      continue;
+    }
+
+    const oAny = o as any;
+    if (oAny.updatedAt) {
+      cleaned[id] = o as Partial<AdminProduct>;
+      continue;
+    }
+
+    const baseAny = base as any;
+    let isDifferent = false;
+    if (oAny.price !== undefined && oAny.price !== base.buyPrice && oAny.price !== base.price) isDifferent = true;
+    if (oAny.name !== undefined && oAny.name !== base.name) isDifferent = true;
+    if (oAny.buyPrice !== undefined && oAny.buyPrice !== base.buyPrice) isDifferent = true;
+    if (oAny.hirePrice !== undefined && oAny.hirePrice !== base.hirePrice) isDifferent = true;
+    if (oAny.stock !== undefined && oAny.stock !== baseAny.stock && oAny.stock !== 25) isDifferent = true;
+    if (oAny.available !== undefined && oAny.available !== base.buyAvailable) isDifferent = true;
+    if (oAny.sku !== undefined && oAny.sku !== base.sku) isDifferent = true;
+
+    if (isDifferent) {
+      cleaned[id] = o as Partial<AdminProduct>;
+    }
+  }
+
+  return cleaned;
+}
+
+/**
+ * Resilient StateStorage adapter that intercepts QuotaExceededError, purges stale caches,
+ * self-heals oversized entries, and prevents uncaught promise rejections from blocking admin login.
+ */
+const safeLocalStorage: StateStorage = {
+  getItem: (name: string): string | null => {
+    try {
+      const raw = localStorage.getItem(name);
+      if (!raw) return null;
+      // Auto-heal oversized legacy cache if present (> 250 KB)
+      if (raw.length > 250000) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.state?.productOverrides) {
+            parsed.state.productOverrides = cleanPersistedOverrides(parsed.state.productOverrides);
+            const cleanedStr = JSON.stringify(parsed);
+            localStorage.setItem(name, cleanedStr);
+            return cleanedStr;
+          }
+        } catch {
+          localStorage.removeItem(name);
+          return null;
+        }
+      }
+      return raw;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name: string, value: string): void => {
+    try {
+      localStorage.setItem(name, value);
+    } catch (e) {
+      console.warn(`[AdminStore] localStorage quota notice for ${name}:`, e);
+      try {
+        const staleKeys = [
+          'at_specialists_v9',
+          'at_specialists_v8',
+          'at_specialists_v7',
+          'ats_invoice_settings',
+          'at_specialists_cart_v3',
+          'at_specialists_cart_v2',
+        ];
+        staleKeys.forEach((k) => {
+          try { localStorage.removeItem(k); } catch {}
+        });
+
+        if (value.length > 100000) {
+          const parsed = JSON.parse(value);
+          if (parsed?.state?.productOverrides) {
+            parsed.state.productOverrides = cleanPersistedOverrides(parsed.state.productOverrides);
+            localStorage.setItem(name, JSON.stringify(parsed));
+            return;
+          }
+        }
+        localStorage.setItem(name, value);
+      } catch (e2) {
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed?.state) {
+            parsed.state.productOverrides = {};
+            localStorage.setItem(name, JSON.stringify(parsed));
+            return;
+          }
+        } catch {}
+        console.error('[AdminStore] Quota recovery fallback; continuing in-memory:', e2);
+      }
+    }
+  },
+  removeItem: (name: string): void => {
+    try {
+      localStorage.removeItem(name);
+    } catch {}
+  },
+};
+
+/**
  * Persisted-state migration: refreshes supplier catalogue records from the
  * latest products.json while preserving admin-added products, deleted flags,
  * and operational overrides.
  */
 function migrateAdminPersistedState(persisted: any): any {
   if (!persisted) return persisted;
-  const overrides: Record<string, Partial<AdminProduct>> = persisted.productOverrides || {};
+  const rawOverrides = persisted.productOverrides || {};
+  const overrides = cleanPersistedOverrides(rawOverrides);
   const deletedIds: string[] = Array.isArray(persisted.deletedProductIds)
     ? persisted.deletedProductIds
     : [];
@@ -932,7 +1050,7 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
             }));
 
             // Merge MySQL products with catalogue and active overrides
-            const dbOverrides = {...get().productOverrides };
+            const dbOverrides = cleanPersistedOverrides(get().productOverrides);
             const dbCustom: AdminProduct[] = [...get().customProducts];
             const deletedSet = new Set(get().deletedProductIds);
 
@@ -942,50 +1060,25 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                 return;
               }
               if (CATALOGUE_IDS.has(p.id)) {
-                const existingOverride = dbOverrides[p.id] || {};
-                const serverTime = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
-                const localTime = Number(existingOverride?.updatedAt) || 0;
+                // Only update an override if the admin actually modified this product previously
+                const existingOverride = dbOverrides[p.id];
+                if (existingOverride) {
+                  const serverTime = p.updatedAt ? new Date(p.updatedAt).getTime() : 0;
+                  const localTime = Number(existingOverride?.updatedAt) || 0;
 
-                const baseServerProps = {
-                  name: p.name,
-                  price: p.price,
-                  buyPrice: p.buyPrice,
-                  hirePrice: p.hirePrice > 0 ? p.hirePrice : (existingOverride?.hirePrice),
-                  hireAvailable: p.hireAvailable ?? (existingOverride?.hireAvailable),
-                  buyAvailable: p.buyAvailable ?? (existingOverride?.buyAvailable),
-                  purchaseType: p.purchaseType || (existingOverride?.purchaseType),
-                  stock: p.stock,
-                  category: p.category,
-                  image: p.image,
-                  thumbnail: p.image,
-                  galleryImages: p.galleryImages,
-                  images: p.images,
-                  sku: p.sku,
-                  brand: p.brand,
-                  description: p.description,
-                  shortDescription: p.shortDescription,
-                  fullDescription: p.fullDescription,
-                  badge: p.badge,
-                  attributes: p.attributes,
-                  variants: p.variants,
-                  features: p.features,
-                  specifications: p.specifications,
-                };
-
-                if (serverTime > localTime) {
-                  // Server has newer authenticated update
-                  dbOverrides[p.id] = {
-                    ...existingOverride,
-                    ...baseServerProps,
-                    updatedAt: serverTime,
-                  };
-                } else {
-                  // Local admin changes are newer or static catalogue fallback served: preserve admin overrides
-                  dbOverrides[p.id] = {
-                    ...baseServerProps,
-                    ...existingOverride,
-                  };
+                  if (serverTime > localTime) {
+                    dbOverrides[p.id] = {
+                      ...existingOverride,
+                      name: p.name,
+                      price: p.price,
+                      buyPrice: p.buyPrice,
+                      hirePrice: p.hirePrice > 0 ? p.hirePrice : existingOverride.hirePrice,
+                      stock: p.stock,
+                      updatedAt: serverTime,
+                    };
+                  }
                 }
+                // NOTE: If no override exists, DO NOT add to dbOverrides to prevent quota exhaustion
               } else {
                 const idx = dbCustom.findIndex((c) => c.id === p.id);
                 if (idx >= 0) {
@@ -1003,7 +1096,23 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
               }
             });
 
-            const nextProducts = buildEffectiveProducts(dbOverrides, Array.from(deletedSet), dbCustom);
+            // Construct authoritative in-memory products from live MySQL data + delta overrides
+            const effectiveFromDb: AdminProduct[] = mappedProds
+              .filter((p) => !deletedSet.has(p.id))
+              .map((p) => {
+                const o = dbOverrides[p.id];
+                if (!o) return p;
+                return {
+                  ...p,
+                  ...o,
+                  price: o.price !== undefined ? Number(o.price) : p.price,
+                  buyPrice: o.buyPrice !== undefined ? Number(o.buyPrice) : p.buyPrice,
+                };
+              });
+
+            const nextProducts = effectiveFromDb.length > 0
+              ? effectiveFromDb
+              : buildEffectiveProducts(dbOverrides, Array.from(deletedSet), dbCustom);
 
             // Sync categories from all effective products
             const allCats = Array.from(new Set([...nextProducts.map((p) => p.category?.trim()),...defaultAdminCategories.map((c) => c.name)].filter(Boolean))).map((catName) => ({
@@ -1171,7 +1280,7 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
           if (Array.isArray(raw) && raw.length > 0) {
             set((state) => {
               const dbCustom: AdminProduct[] = [];
-              const dbOverrides = {...state.productOverrides };
+              const dbOverrides = cleanPersistedOverrides(state.productOverrides);
               const deletedSet = new Set(state.deletedProductIds);
 
               raw.forEach((p: any) => {
@@ -1181,89 +1290,24 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
                 }
 
                 if (CATALOGUE_IDS.has(p.id)) {
-                  const existingOverride = dbOverrides[p.id] || {};
-                  const incomingAddons = Array.isArray(p.optionalEquipment) && p.optionalEquipment.length > 0
-                    ? p.optionalEquipment
-                    : Array.isArray(p.addons) && p.addons.length > 0
-                    ? p.addons
-                    : existingOverride.optionalEquipment;
+                  // Only update if an override was already stored for this product
+                  const existingOverride = dbOverrides[p.id];
+                  if (existingOverride) {
+                    const serverTime = (p.updatedAt || p.updated_at) ? new Date(p.updatedAt || p.updated_at).getTime() : 0;
+                    const localTime = Number(existingOverride?.updatedAt) || 0;
 
-                    const resolvedSku = (p.id === 'prod-accora-configura-advance-mobile-care-chair' && p.sku === 'CHA510')
-                      ? 'CR5435'
-                      : (p.sku || existingOverride.sku);
-
-                    const rawShortDesc = p.shortDescription || p.short_description || existingOverride.shortDescription;
-                    const cleanShortDesc = (rawShortDesc && !rawShortDesc.startsWith('Please complete a Referral Assessment Form'))
-                      ? rawShortDesc
-                      : (existingOverride.shortDescription || (initialFallbackProducts.find((x: any) => x.id === p.id)?.shortDescription));
-
-                    const rawIncomingVariants = Array.isArray(p.variants) && p.variants.length > 0 ? p.variants : existingOverride.variants;
-                    const normalizedVariants = Array.isArray(rawIncomingVariants)
-                      ? rawIncomingVariants.map((v: any) => {
-                          const baseVar = (initialFallbackProducts.find((x: any) => x.id === p.id)?.variants || []).find((bv: any) => bv.id === v.id || bv.sku === v.sku);
-                          const baseAttrs = (baseVar && baseVar.attributes && !Array.isArray(baseVar.attributes)) ? baseVar.attributes : {};
-                          const incomingAttrs = (v.attributes && !Array.isArray(v.attributes)) ? v.attributes : {};
-                          const mergedAttrs = { ...baseAttrs, ...incomingAttrs };
-                          if (!mergedAttrs['purchase-type']) {
-                            if (v.sku && String(v.sku).toUpperCase().startsWith('CHA')) {
-                              mergedAttrs['purchase-type'] = 'hire';
-                            } else if (v.sku && (String(v.sku).toUpperCase().startsWith('CR') || String(v.sku).toUpperCase().startsWith('CHP'))) {
-                              mergedAttrs['purchase-type'] = 'buy';
-                            }
-                          }
-                          return {
-                            ...v,
-                            attributes: mergedAttrs,
-                          };
-                        })
-                      : existingOverride.variants;
-
-                  const baseServerProps: any = {
-                    name: p.name,
-                    stock: p.stock !== undefined ? parseInt(p.stock, 10) : existingOverride.stock,
-                    category: p.category || existingOverride.category,
-                    image: p.image || existingOverride.image,
-                    thumbnail: p.image || existingOverride.thumbnail || existingOverride.image,
-                    galleryImages: p.galleryImages || p.gallery_images || existingOverride.galleryImages,
-                    images: p.galleryImages || p.gallery_images || existingOverride.images,
-                    sku: resolvedSku,
-                    brand: p.brand || existingOverride.brand,
-                    description: p.description || existingOverride.description,
-                    shortDescription: cleanShortDesc,
-                    fullDescription: p.fullDescription || p.description || existingOverride.fullDescription,
-                    badge: p.badge !== undefined ? p.badge : existingOverride.badge,
-                    attributes: Array.isArray(p.attributes) && p.attributes.length > 0 ? p.attributes : existingOverride.attributes,
-                    variants: normalizedVariants,
-                    features: Array.isArray(p.features) ? p.features : existingOverride.features,
-                    specifications: Array.isArray(p.specifications) ? p.specifications : existingOverride.specifications,
-                    // Sync pricing and availability so admin edits propagate
-                    hirePrice: p.hirePrice !== undefined ? parseFloat(p.hirePrice) : (p.hire_price !== undefined ? parseFloat(p.hire_price) : existingOverride.hirePrice),
-                    hireAvailable: p.hireAvailable ?? existingOverride.hireAvailable,
-                    buyAvailable: p.buyAvailable ?? existingOverride.buyAvailable,
-                    purchaseType: p.purchaseType || existingOverride.purchaseType,
-                    ...(incomingAddons && incomingAddons.length > 0 ? { optionalEquipment: incomingAddons } : {}),
-                    ...(p.accessories ? { accessories: p.accessories } : {}),
-                  };
-                  const inPrice = parseFloat(p.price);
-                  const inBuyPrice = parseFloat(p.buyPrice ?? p.price);
-                  if (inPrice > 0) baseServerProps.price = inPrice;
-                  if (inBuyPrice > 0) baseServerProps.buyPrice = inBuyPrice;
-
-                  const serverTime = (p.updatedAt || p.updated_at) ? new Date(p.updatedAt || p.updated_at).getTime() : 0;
-                  const localTime = Number(existingOverride?.updatedAt) || 0;
-
-                  if (serverTime > localTime) {
-                    dbOverrides[p.id] = {
-                      ...existingOverride,
-                      ...baseServerProps,
-                      updatedAt: serverTime,
-                    };
-                  } else {
-                    dbOverrides[p.id] = {
-                      ...baseServerProps,
-                      ...existingOverride,
-                    };
+                    if (serverTime > localTime) {
+                      dbOverrides[p.id] = {
+                        ...existingOverride,
+                        name: p.name,
+                        price: parseFloat(p.price) || existingOverride.price,
+                        buyPrice: parseFloat(p.buyPrice ?? p.price) || existingOverride.buyPrice,
+                        stock: p.stock !== undefined ? parseInt(p.stock, 10) : existingOverride.stock,
+                        updatedAt: serverTime,
+                      };
+                    }
                   }
+                  // If no override exists, DO NOT add to dbOverrides to prevent quota exhaustion
                 } else {
                   dbCustom.push({
                     id: p.id,
@@ -1988,7 +2032,7 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
     {
       name: 'at_specialists_v10',
       version: 12,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       migrate: (persistedState) => migrateAdminPersistedState(persistedState),
       merge: (persistedState: unknown, currentState: AdminState): AdminState => {
         return migrateAdminPersistedState({...currentState,...(persistedState as object) });
@@ -1997,11 +2041,11 @@ export const useAdminStore = create<AdminState>()(persist((set, get) => ({
       // auth, and settings. Never persist the raw 1,200+ product catalogue (~8MB)
       // which exceeds the ~5MB browser quota.
       partialize: (s) => {
-        const { products, orders, customers, ndisQuotes, inquiries, reviews,...rest } = s as any;
-        void products; void orders; void customers; void ndisQuotes; void inquiries; void reviews;
+        const { products, orders, customers, ndisQuotes, inquiries, reviews, isLoading, error,...rest } = s as any;
+        void products; void orders; void customers; void ndisQuotes; void inquiries; void reviews; void isLoading; void error;
         return {
           ...rest,
-          productOverrides: s.productOverrides || {},
+          productOverrides: cleanPersistedOverrides(s.productOverrides),
           deletedProductIds: s.deletedProductIds || [],
           customProducts: s.customProducts || [],
         } as any;
